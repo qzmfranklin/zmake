@@ -19,13 +19,18 @@
 ################################################################################
 #	ADD BRANCHES HERE
 -include heapsort/branch.mk
+-include diffpar/branch.mk
 ################################################################################ 
 -include ${DEP}# include all .d files
 ################################################################################ 
 #	LIST LINKING RULES
+diffpar.exe: diffpar/diffpar.o
+	@echo "Linking ${RED}$@${NONE}..."
+	${QUIET}${CXX} -o $@ $^ ${LIBS} 
+
 test_heapsort.exe: heapsort/heapsort.o heapsort/test_heapsort.o
 	@echo "Linking ${RED}$@${NONE}..."
-	@${QUIET}${CXX} -o $@ $^ ${LIBS}
+	${QUIET}${CXX} -o $@ $^ ${LIBS}
 ################################################################################
 #	MISC TARGETS 
 .PHONY: all 				\
