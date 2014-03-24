@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include "utils/utils.h"
 /******************************************************************************/
 void print_diffmat(const int n, const double *a, const double shift);
 void get_diff(const int n, const double *a, const double diff, double *val, int *row, int *col);
@@ -9,6 +10,8 @@ int main(int argc, char *argv[])
 	const int N=8;
 	const double a[]={0.0,27.2,30.1,97.9,102.4,190.9,200.5,210.3};
 
+	print_d(N,a);
+	printf("\n");
 	print_diffmat(N,a,0.0);
 
 	double diff;

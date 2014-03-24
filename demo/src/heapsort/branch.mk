@@ -29,26 +29,26 @@ ${DIR0001}INCS:=${INCS}
 ifeq (${OUT_OF_SOURCE},TRUE)
 # out-of-source build
 # Process variables
-${DIR0001}DEP:=${${DIR0001}CPP:%.cpp=${BUILD}%.d} ${${DIR0001}C:%.c=${BUILD}%.d} 
-${DIR0001}OBJ:=${${DIR0001}CPP:%.cpp=${BUILD}%.o} ${${DIR0001}C:%.c=${BUILD}%.o} 
-${DIR0001}ASM:=${${DIR0001}CPP:%.cpp=${BUILD}%.s} ${${DIR0001}C:%.c=${BUILD}%.s} 
+${DIR0001}DEP:=${${DIR0001}CPP:%.cpp=${BUILD}/%.d} ${${DIR0001}C:%.c=${BUILD}/%.d} 
+${DIR0001}OBJ:=${${DIR0001}CPP:%.cpp=${BUILD}/%.o} ${${DIR0001}C:%.c=${BUILD}/%.o} 
+${DIR0001}ASM:=${${DIR0001}CPP:%.cpp=${BUILD}/%.s} ${${DIR0001}C:%.c=${BUILD}/%.s} 
 # Add to global variables
 DEP:=${DEP} ${${DIR0001}DEP}
 OBJ:=${OBJ} ${${DIR0001}OBJ}
 ASM:=${ASM} ${${DIR0001}ASM}
 # C sources
-${BUILD}%.o: ${DIR0001}/%.c
+${BUILD}/%.o: ${DIR0001}/%.c
 	@echo Compiling "${GREEN}$@${NONE}"
 	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR0001}CFLAGS} ${${DIR0001}INCS}
-${BUILD}%.s: ${DIR0001}/%.c
+${BUILD}/%.s: ${DIR0001}/%.c
 	@echo Compiling "${CYAN}$@${NONE}"
 	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR0001}CFLAGS} ${${DIR0001}INCS}
 
 # C++ sources
-${BUILD}%.o: ${DIR0001}/%.cpp
+${BUILD}/%.o: ${DIR0001}/%.cpp
 	@echo Compiling "${GREEN}$@${NONE}"
 	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR0001}CXXFLAGS} ${${DIR0001}INCS}
-${BUILD}%.s: ${DIR0001}/%.cpp
+${BUILD}/%.s: ${DIR0001}/%.cpp
 	@echo Compiling "${CYAN}$@${NONE}"
 	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR0001}CXXFLAGS} ${${DIR0001}INCS}
 else

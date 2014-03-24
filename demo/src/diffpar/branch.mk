@@ -16,70 +16,70 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.  
 ################################################################################
 #  THIS DIRECTORY
-DIR0001:=${ROOT}/heapsort
+DIR0002:=${ROOT}/diffpar
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR0001}C:=
-${DIR0001}CPP:=heapsort.cpp test_heapsort.cpp
+${DIR0002}C:=diffpar.c
+${DIR0002}CPP:=
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR0001}CFLAGS:=${CFLAGS}
-${DIR0001}CXXFLAGS:=${CXXFLAGS}
-${DIR0001}INCS:=${INCS}
+${DIR0002}CFLAGS:=${CFLAGS}
+${DIR0002}CXXFLAGS:=${CXXFLAGS}
+${DIR0002}INCS:=${INCS}
 ################################################################################ 
 #		INTERNAL VARIABLES AND PATTERN RULES
 ifeq (${OUT_OF_SOURCE},TRUE)
 # out-of-source build
 # Process variables
-${DIR0001}DEP:=${${DIR0001}CPP:%.cpp=${BUILD}%.d} ${${DIR0001}C:%.c=${BUILD}%.d} 
-${DIR0001}OBJ:=${${DIR0001}CPP:%.cpp=${BUILD}%.o} ${${DIR0001}C:%.c=${BUILD}%.o} 
-${DIR0001}ASM:=${${DIR0001}CPP:%.cpp=${BUILD}%.s} ${${DIR0001}C:%.c=${BUILD}%.s} 
+${DIR0002}DEP:=${${DIR0002}CPP:%.cpp=${BUILD}/%.d} ${${DIR0002}C:%.c=${BUILD}/%.d} 
+${DIR0002}OBJ:=${${DIR0002}CPP:%.cpp=${BUILD}/%.o} ${${DIR0002}C:%.c=${BUILD}/%.o} 
+${DIR0002}ASM:=${${DIR0002}CPP:%.cpp=${BUILD}/%.s} ${${DIR0002}C:%.c=${BUILD}/%.s} 
 # Add to global variables
-DEP:=${DEP} ${${DIR0001}DEP}
-OBJ:=${OBJ} ${${DIR0001}OBJ}
-ASM:=${ASM} ${${DIR0001}ASM}
+DEP:=${DEP} ${${DIR0002}DEP}
+OBJ:=${OBJ} ${${DIR0002}OBJ}
+ASM:=${ASM} ${${DIR0002}ASM}
 # C sources
-${BUILD}%.o: ${DIR0001}/%.c
+${BUILD}/%.o: ${DIR0002}/%.c
 	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR0001}CFLAGS} ${${DIR0001}INCS}
-${BUILD}%.s: ${DIR0001}/%.c
+	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR0002}CFLAGS} ${${DIR0002}INCS}
+${BUILD}/%.s: ${DIR0002}/%.c
 	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR0001}CFLAGS} ${${DIR0001}INCS}
+	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR0002}CFLAGS} ${${DIR0002}INCS}
 
 # C++ sources
-${BUILD}%.o: ${DIR0001}/%.cpp
+${BUILD}/%.o: ${DIR0002}/%.cpp
 	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR0001}CXXFLAGS} ${${DIR0001}INCS}
-${BUILD}%.s: ${DIR0001}/%.cpp
+	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR0002}CXXFLAGS} ${${DIR0002}INCS}
+${BUILD}/%.s: ${DIR0002}/%.cpp
 	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR0001}CXXFLAGS} ${${DIR0001}INCS}
+	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR0002}CXXFLAGS} ${${DIR0002}INCS}
 else
 # in-place build
 # Process variables
-${DIR0001}DEP:=${${DIR0001}CPP:%.cpp=${DIR0001}/%.d} ${${DIR0001}C:%.c=${DIR0001}/%.d} 
-${DIR0001}OBJ:=${${DIR0001}CPP:%.cpp=${DIR0001}/%.o} ${${DIR0001}C:%.c=${DIR0001}/%.o} 
-${DIR0001}ASM:=${${DIR0001}CPP:%.cpp=${DIR0001}/%.s} ${${DIR0001}C:%.c=${DIR0001}/%.s} 
+${DIR0002}DEP:=${${DIR0002}CPP:%.cpp=${DIR0002}/%.d} ${${DIR0002}C:%.c=${DIR0002}/%.d} 
+${DIR0002}OBJ:=${${DIR0002}CPP:%.cpp=${DIR0002}/%.o} ${${DIR0002}C:%.c=${DIR0002}/%.o} 
+${DIR0002}ASM:=${${DIR0002}CPP:%.cpp=${DIR0002}/%.s} ${${DIR0002}C:%.c=${DIR0002}/%.s} 
 # Add to global variables
-DEP:=${DEP} ${${DIR0001}DEP}
-OBJ:=${OBJ} ${${DIR0001}OBJ}
-ASM:=${ASM} ${${DIR0001}ASM}
+DEP:=${DEP} ${${DIR0002}DEP}
+OBJ:=${OBJ} ${${DIR0002}OBJ}
+ASM:=${ASM} ${${DIR0002}ASM}
 
 # C sources
-${DIR0001}/%.o: ${DIR0001}/%.c
+${DIR0002}/%.o: ${DIR0002}/%.c
 	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR0001}CFLAGS} ${${DIR0001}INCS}
-${DIR0001}/%.s: ${DIR0001}/%.c
+	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR0002}CFLAGS} ${${DIR0002}INCS}
+${DIR0002}/%.s: ${DIR0002}/%.c
 	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR0001}CFLAGS} ${${DIR0001}INCS}
+	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR0002}CFLAGS} ${${DIR0002}INCS}
 
 # C++ sources
-${DIR0001}/%.o: ${DIR0001}/%.cpp
+${DIR0002}/%.o: ${DIR0002}/%.cpp
 	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR0001}CXXFLAGS} ${${DIR0001}INCS}
-${DIR0001}/%.s: ${DIR0001}/%.cpp
+	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR0002}CXXFLAGS} ${${DIR0002}INCS}
+${DIR0002}/%.s: ${DIR0002}/%.cpp
 	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR0001}CXXFLAGS} ${${DIR0001}INCS}
+	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR0002}CXXFLAGS} ${${DIR0002}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR0001}/%.o
+%.exe: ${DIR0002}/%.o
 	@echo Linking "${RED}$@${NONE}"
 	${QUIET}${CXX} -o $@ $^ ${LIBS}
 endif 

@@ -19,14 +19,15 @@
 ################################################################################
 #	ROOT LEVEL INFO - MAKEFILE SPECIFIC
 OUT_OF_SOURCE:=TRUE# TRUE=out-of-source build, otherwise in-source build
-BUILD:=./# out-of-source build directory, unused if in-source build
+BUILD:=.# out-of-source build directory, unused if in-source build
 #QUIET:=@# uncomment to silence
-ROOT :=/Users/qzmfrank/codes/zmake/src
+ROOT :=~/codes/zmake/demo/src# root of source files
 -include ${ROOT}/root.mk
 -include ${ROOT}/heapsort/branch.mk
+-include ${ROOT}/utils/branch.mk
 -include ${ROOT}/diffpar/branch.mk
 -include ${DEP}# INCLUDE DEPENDENCY FILES
 ################################################################################ 
 #	LIST LINKING RULES
-diffpar.exe: diffpar.o
-test_heapsort.exe: heapsort.o test_heapsort.o
+diffpar.exe: diffpar.o utils.o
+test_heapsort.exe: heapsort.o test_heapsort.o utils.o
