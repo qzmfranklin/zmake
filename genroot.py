@@ -1,4 +1,22 @@
-################################################################################
+#!/usr/local/bin/python3
+
+import os
+import sys
+
+# first argument as path
+if len(sys.argv)>1:
+    root=sys.argv[1]
+else:
+    root=os.getcwd() 
+
+# do not overwrite existing file
+fname=os.path.join(root,"root.mk")
+if os.path.isfile(fname):
+    print(fname,"already exists, abort")
+    sys.exit(1);
+
+frootmk=open(os.path.join(root,"root.mk"),"w")
+rootmk= """################################################################################
 #  A set of template files to build projects with a single Makefile
 #  Copyright (C) 2013-2014 Zhongming Qu <qzmfrank@umich.edu>
 #  
@@ -23,36 +41,39 @@ OS		:=$(shell uname -s)
 ARCH		:=$(shell uname -m)
 PLATFORM	:=${OS}-${ARCH}
 RELEASE_NAME	:=${PROJECT_NAME}-${PLATFORM}-${VERSION}-${DATE_TIME} 
+
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
 CC		:=icc
-CFLAGS 		:=-O3							\
-		-Wall							\
-		-prec-div -no-ftz					\
-		-restrict						\
-		-std=c99						\
-		-openmp							\
+CFLAGS 		:=-O3							\\
+		-Wall							\\
+		-prec-div -no-ftz					\\
+		-restrict						\\
+		-std=c99						\\
+		-openmp							\\
 		-Wno-deprecated
 
 CXX		:=icpc
-CXXFLAGS	:=-O3							\
-		-Wall							\
-		-prec-div -no-ftz					\
-		-restrict						\
-		-openmp							\
+CXXFLAGS	:=-O3							\\
+		-Wall							\\
+		-prec-div -no-ftz					\\
+		-restrict						\\
+		-openmp							\\
 		-Wno-deprecated
 
-		# 							\
-		-DNDEBUG						\
-		-MMD -MP						\
-		-nostdinc++						\
-		-fPIC							\
-		-fno-inline-functions					\
-		-unroll-aggressive					\
-		-fno-math-errno						\
-		-nostdinc 						\
-		-DDEBUG							\
-		-opt-report-phase ipo_inl			        \
-		-vec-report=1						\ 
+		# 							\\
+		-DNDEBUG						\\
+		-MMD -MP						\\
+		-nostdinc++						\\
+		-fPIC							\\
+		-fno-inline-functions					\\
+		-unroll-aggressive					\\
+		-fno-math-errno						\\
+		-nostdinc 						\\
+		-DDEBUG							\\
+		-opt-report-phase ipo_inl			        \\
+		-vec-report=1						\\
+
+
 
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
 ASMFLAGS	:=-S -fsource-asm# source code commented assembly code
@@ -110,7 +131,7 @@ ifeq (${PLATFORM},Darwin-x86_64)
 	#MLL_LIBS	:=-L/Applications/Mathematica.app/SystemFiles/Libraries/MacOSX-x86-64/
 endif
 #PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=${FFTW_INCS} ${MKL_INCS} ${OMP_INCS} ${MPI_INCS}
+INCS		:=${FFTW_INCS} ${MKL_INCS} ${OMP_INCS} ${MPI_LIBS}
 LIBS		:=${FFTW_LIBS} ${MKL_LIBS} ${OMP_LIBS} ${MPI_LIBS} 
 ################################################################################
 #	MISC TARGETS 
@@ -128,61 +149,64 @@ OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
 ################################################################################
-# 		PATTERN RULES
-# Undefine GNU make default pattern rules
+# 		UNDEFINE DEFAULT PATTERN RULES
 .SUFFIXES:
-.SUFFIXES: .c .cc .C .cpp .h .hh .hpp .o .a .dll .so .dylib .exe .d .s .S
-# Default pattern rule for out-of-source linking
-ifeq (${OUT_OF_SOURCE},TRUE)
-%.exe: %.o
-	@echo "Linking ${RED}$@${NONE}"
-	${QUIET}${CXX} -o $@ $^ ${LIBS} 
-endif
+.SUFFIXES: .c .cpp .o .so .dylib .exe .d .s .S .txt .log 
 ################################################################################
 #		COLORFUL SHELL ECHO!
-NONE		:=\033[00m 
+NONE		:=\\033[00m 
 #	normal colors
-BLACK		:=\033[00;30m
-RED		:=\033[00;31m
-GREEN		:=\033[00;32m
-BROWN		:=\033[00;33m 
-BLUE		:=\033[00;34m
-MAGENTA		:=\033[00;35m
-CYAN		:=\033[00;36m
-GREY		:=\033[00;37m 
+BLACK		:=\\033[00;30m
+RED		:=\\033[00;31m
+GREEN		:=\\033[00;32m
+BROWN		:=\\033[00;33m 
+BLUE		:=\\033[00;34m
+MAGENTA		:=\\033[00;35m
+CYAN		:=\\033[00;36m
+GREY		:=\\033[00;37m 
 #	bold
-B_BLACK		:=\033[01;30m
-B_RED		:=\033[01;31m
-B_GREEN		:=\033[01;32m
-B_BROWN		:=\033[01;33m 
-B_BLUE		:=\033[01;34m
-B_MAGENTA	:=\033[01;35m
-B_CYAN		:=\033[01;36m
-B_GREY		:=\033[01;37m 
+B_BLACK		:=\\033[01;30m
+B_RED		:=\\033[01;31m
+B_GREEN		:=\\033[01;32m
+B_BROWN		:=\\033[01;33m 
+B_BLUE		:=\\033[01;34m
+B_MAGENTA	:=\\033[01;35m
+B_CYAN		:=\\033[01;36m
+B_GREY		:=\\033[01;37m 
 #	underlined
-U_BLACK		:=\033[04;30m
-U_RED		:=\033[04;31m
-U_GREEN		:=\033[04;32m
-U_BROWN		:=\033[04;33m 
-U_BLUE		:=\033[04;34m
-U_MAGENTA	:=\033[04;35m
-U_CYAN		:=\033[04;36m
-U_GREY		:=\033[04;37m 
+U_BLACK		:=\\033[04;30m
+U_RED		:=\\033[04;31m
+U_GREEN		:=\\033[04;32m
+U_BROWN		:=\\033[04;33m 
+U_BLUE		:=\\033[04;34m
+U_MAGENTA	:=\\033[04;35m
+U_CYAN		:=\\033[04;36m
+U_GREY		:=\\033[04;37m 
 #	blinking
-BLK_BLACK	:=\033[05;30m
-BLK_RED		:=\033[05;31m
-BLK_GREEN	:=\033[05;32m
-BLK_BROWN	:=\033[05;33m 
-BLK_BLUE	:=\033[05;34m
-BLK_MAGENTA	:=\033[05;35m
-BLK_CYAN	:=\033[05;36m
-BLK_GREY	:=\033[05;37m 
+BLK_BLACK	:=\\033[05;30m
+BLK_RED		:=\\033[05;31m
+BLK_GREEN	:=\\033[05;32m
+BLK_BROWN	:=\\033[05;33m 
+BLK_BLUE	:=\\033[05;34m
+BLK_MAGENTA	:=\\033[05;35m
+BLK_CYAN	:=\\033[05;36m
+BLK_GREY	:=\\033[05;37m 
 #	reversed foreground and background color
-REV_BLACK	:=\033[07;30m
-REV_RED		:=\033[07;31m
-REV_GREEN	:=\033[07;32m
-REV_BROWN	:=\033[07;33m 
-REV_BLUE	:=\033[07;34m
-REV_MAGENTA	:=\033[07;35m
-REV_CYAN	:=\033[07;36m
-REV_GREY	:=\033[07;37m 
+REV_BLACK	:=\\033[07;30m
+REV_RED		:=\\033[07;31m
+REV_GREEN	:=\\033[07;32m
+REV_BROWN	:=\\033[07;33m 
+REV_BLUE	:=\\033[07;34m
+REV_MAGENTA	:=\\033[07;35m
+REV_CYAN	:=\\033[07;36m
+REV_GREY	:=\\033[07;37m 
+"""
+frootmk.write(rootmk)
+frootmk.close()
+
+#for t in os.walk(root):
+    #print(t)
+#for path,dirs,files in os.walk(root):
+    #for file in files:
+        #fname = os.path.join(path,file)
+        #print(os.path.dirname(fname))

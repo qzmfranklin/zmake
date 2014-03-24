@@ -15,12 +15,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.  
 ################################################################################
-#  Sample Makefile for in-source build
+#  Sample Makefile for out-of-source build
 ################################################################################
 #	ROOT LEVEL INFO - MAKEFILE SPECIFIC
-#OUT_OF_SOURCE:=TRUE# TRUE=out-of-source build, otherwise in-source build
+OUT_OF_SOURCE:=TRUE# TRUE=out-of-source build, otherwise in-source build
 BUILD:=./# out-of-source build directory, unused if in-source build
-QUIET:=@
+#QUIET:=@# uncomment to silence
 ROOT :=/Users/qzmfrank/codes/zmake/src
 -include ${ROOT}/root.mk
 -include ${ROOT}/heapsort/branch.mk
@@ -28,6 +28,5 @@ ROOT :=/Users/qzmfrank/codes/zmake/src
 -include ${DEP}# INCLUDE DEPENDENCY FILES
 ################################################################################ 
 #	LIST LINKING RULES
-diffpar.exe: ${ROOT}/diffpar/diffpar.o
-test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \
-	${ROOT}/heapsort/test_heapsort.o
+diffpar.exe: diffpar.o
+test_heapsort.exe: heapsort.o test_heapsort.o

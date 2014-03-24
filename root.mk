@@ -15,14 +15,21 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.  
 ################################################################################
+ROOT		:=/Users/qzmfrank/codes/zmake/src# root of sources
+#OUT_OF_SOURCE	:=TRUE# TRUE=out-of-source build, otherwise in-source build
+
 #	MISC PROJECT INFO
+CWD		:=$(shell pwd)# current working directory
+BUILD		:=$(shell pwd)# out-of-source build directory
+#QUIET		:=@
 PROJECT_NAME	:=zmake
 VERSION		:=v0.01
 DATE_TIME	:=$(shell date "+%Y-%m-%d")
 OS		:=$(shell uname -s)
 ARCH		:=$(shell uname -m)
 PLATFORM	:=${OS}-${ARCH}
-RELEASE_NAME	:=${PROJECT_NAME}-${PLATFORM}-${VERSION}-${DATE_TIME} 
+RELEASE_NAME	:=${PROJECT_NAME}-${PLATFORM}-${VERSION}-${DATE_TIME}
+
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
 CC		:=icc
 CFLAGS 		:=-O3							\
@@ -52,7 +59,9 @@ CXXFLAGS	:=-O3							\
 		-nostdinc 						\
 		-DDEBUG							\
 		-opt-report-phase ipo_inl			        \
-		-vec-report=1						\ 
+		-vec-report=1						\
+
+
 
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
 ASMFLAGS	:=-S -fsource-asm# source code commented assembly code
@@ -110,7 +119,7 @@ ifeq (${PLATFORM},Darwin-x86_64)
 	#MLL_LIBS	:=-L/Applications/Mathematica.app/SystemFiles/Libraries/MacOSX-x86-64/
 endif
 #PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=${FFTW_INCS} ${MKL_INCS} ${OMP_INCS} ${MPI_INCS}
+INCS		:=${FFTW_INCS} ${MKL_INCS} ${OMP_INCS} ${MPI_LIBS}
 LIBS		:=${FFTW_LIBS} ${MKL_LIBS} ${OMP_LIBS} ${MPI_LIBS} 
 ################################################################################
 #	MISC TARGETS 
@@ -128,16 +137,9 @@ OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
 ################################################################################
-# 		PATTERN RULES
-# Undefine GNU make default pattern rules
+# 		UNDEFINE DEFAULT PATTERN RULES
 .SUFFIXES:
-.SUFFIXES: .c .cc .C .cpp .h .hh .hpp .o .a .dll .so .dylib .exe .d .s .S
-# Default pattern rule for out-of-source linking
-ifeq (${OUT_OF_SOURCE},TRUE)
-%.exe: %.o
-	@echo "Linking ${RED}$@${NONE}"
-	${QUIET}${CXX} -o $@ $^ ${LIBS} 
-endif
+.SUFFIXES: .c .cpp .o .so .dylib .exe .d .s .S .txt .log 
 ################################################################################
 #		COLORFUL SHELL ECHO!
 NONE		:=\033[00m 
