@@ -272,19 +272,18 @@ texts['omakefile']=makefile_outofsource
 def check_overwrite(fname):
     """warn when trying to overwrite existing file"""
     if os.path.isfile(fname):
-        #print(fname,'already exists, overwrite? (Y/N/C)')
         flag=False
         rawinput=input(' '.join([fname,
-            'already exists, overwrite (Y/N)?']))
+            'already exists, overwrite (y/n/q)?']))
         raw=rawinput[0].lower()
         if raw=='y':
-            flag=True 
+            flag=False 
         elif raw=='n':
-            flag=False
-        elif raw=='c': 
+            flag=True
+        elif raw=='q': 
             exit(1)
         else:
-            print(rawinput,'does not match Y/N/C. Abort.')
+            print(rawinput,'does not match y/n/q. Abort.')
             exit(1)
         return flag
     else:
@@ -396,13 +395,14 @@ def rgen_makefile(insource,root,target,texts,depth):
         else: 
             gen_omakefile(absroot,target,texts['omakefile'])
     else:
-        print('root.mk not flag')
+        print('root.mk not found')
     return flag
 
 #rgen_imakefile(args.root,args.target,texts,args.max_recursive_depth)
 
 def delete_all(root):
     """recursively delete all root.mk and branch.mk's"""
+    #if os.path.isfile(
     for path,dirs,files in os.walk(root):
         fname=os.path.join(path,'branch.mk')
         if os.path.isfile(fname):
