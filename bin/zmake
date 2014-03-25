@@ -1,0 +1,286 @@
+#!/usr/bin/env python3
+
+import os
+import sys 
+import argparse
+
+parser=argparse.ArgumentParser(
+    description='Generating module files for constructing a single Makefile',
+    prefix_chars='+-')
+
+parser.add_argument('src',action='store')
+
+parser.add_argument('--verbose','-v',action='store_true',default=False,
+                    help='increase verbosity (%(default)s)')
+
+group=parser.add_mutually_exclusive_group()
+group.add_argument('--root-only',action='store_true',default=False,
+                  help='only generate root.mk (%(default)s)')
+group.add_argument('--branches-only',action='store_true',default=False,
+                  help='only generate all the branch.mk\'s (%(default)s)')
+
+group=parser.add_argument_group('Makefile')
+group.add_argument('--generate-makefile',action='store_true',default=False,
+                   help='generate a Makefile (%(default)s)')
+group.add_argument('-o',dest='makefile',action='store',default='Makefile',
+                  help='the target Makefile associated with --generate-makefile \
+                   (%(default)s)') 
+
+group=parser.add_mutually_exclusive_group()
+group.add_argument('--in-source',dest='insource',action='store_true',default=True,
+                  help='the generated Makefile uses in-source build (%(default)s)')
+group.add_argument('--out-of-source',dest='insource',action='store_false',default=True,
+                  help='the generated Makefile uses out-of-source build')
+
+#parser.set_defaults(verbose=False)
+args = parser.parse_args()
+
+
+print(args.makefile)
+
+
+rootmk="""################################################################################
+#	MISC PROJECT INFO
+PROJECT_NAME	:=zmake
+VERSION		:=v0.01
+DATE_TIME	:=$(shell date "+%Y-%m-%d")
+OS		:=$(shell uname -s)
+ARCH		:=$(shell uname -m)
+PLATFORM	:=${OS}-${ARCH}
+RELEASE_NAME	:=${PROJECT_NAME}-${PLATFORM}-${VERSION}-${DATE_TIME} 
+#	PROJECT-WIDE COMMON COMPILING FLAGS 
+CC		:=icc
+CFLAGS 		:=-O3							\\
+		-Wall							\\
+		-prec-div -no-ftz					\\
+		-restrict						\\
+		-std=c99						\\
+		-openmp							\\
+		-Wno-deprecated
+
+CXX		:=icpc
+CXXFLAGS	:=-O3							\\
+		-Wall							\\
+		-prec-div -no-ftz					\\
+		-restrict						\\
+		-openmp							\\
+		-Wno-deprecated
+
+		# 							\\
+		-DNDEBUG						\\
+		-MMD -MP						\\
+		-nostdinc++						\\
+		-fPIC							\\
+		-fno-inline-functions					\\
+		-unroll-aggressive					\\
+		-fno-math-errno						\\
+		-nostdinc 						\\
+		-DDEBUG							\\
+		-opt-report-phase ipo_inl			        \\
+		-vec-report=1						\\ 
+
+DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
+ASMFLAGS	:=-S -fsource-asm# source code commented assembly code
+
+#	PROJECT-WIDE INCLUDE AND LINKAGE OPTIONS
+ifeq (${PLATFORM},Linux-x86_64)
+	#	FFTW3 Library for Linux
+	#FFTW_INCS	:=-I/opt/intel/mkl/include/fftw
+	#FFTW_LIBS	:=-lfftw3
+	FFTW_DIR	:=/opt/fftw/3.3.3
+	FFTW_INCS	:=-I${FFTW_DIR}/include
+	FFTW_LIBS	:=-L${FFTW_DIR}/lib -lfftw3 -lfftw3_omp
+	#	Intel Math Kernel Library for Linux
+	MKL_INCS	:=
+	MKL_LIBS	:=-mkl
+	#	OpenMP Flags
+	OMP_INCS	:=
+	OMP_LIBS	:=-openmp
+	#	OpenMPI Library
+	MPI_INCS	:=`mpicxx -showme:compile`
+	MPI_LIBS	:=`mpicxx -showme:link`
+	#	Install Directory of Mathematica
+	#MATH_DIR	:=/opt/Wolfram/Mathematica/9.0
+	#	MathLink for Linux
+	#ML_DIR		:=${MATH_DIR}/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-86/CompilerAdditions
+	#ML_INCS		:=-I${ML_DIR}
+	#ML_LIBS		:=-L${ML_DIR} -lML64i3
+	#MPREP		:=${ML_DIR}/mprep
+	#MCC		:=${ML_DIR}/mcc
+	###	LibraryLink for MacOSX-x86-64
+	#MLL_INCS	:=-I${MATH_DIR}/SystemFiles/IncludeFiles/C
+	#MLL_LIBS	:=-L${MATH_DIR}/SystemFiles/Libraries/Linux-x86-64 -lWolframRTL
+endif
+ifeq (${PLATFORM},Darwin-x86_64)
+	#	FFTW3 Library for MacOSX-x86-64
+	FFTW_DIR	:=/opt/fftw/3.3.3
+	FFTW_INCS	:=-I${FFTW_DIR}/include
+	FFTW_LIBS	:=-L${FFTW_DIR}/lib -lfftw3 -lfftw3_omp
+	#	Intel Math Kernel Library for MacOSX-x86-64
+	#MKL_INCS	:=-iquote /opt/intel/include
+	MKL_LIBS	:=-mkl
+	#	OpenMP Flags
+	OMP_INCS	:=
+	OMP_LIBS	:=-openmp
+	#	OpenMPI Library
+	MPI_INCS	:=`mpicxx -showme:compile`
+	MPI_LIBS	:=`mpicxx -showme:link`
+	#	MathLink for MacOSX-x86-64
+	ML_DIR		:=/Applications/Mathematica.app/SystemFiles/Links/MathLink/DeveloperKit/MacOSX-x86-64/CompilerAdditions/
+	ML_INCS		:=-I${ML_DIR}
+	ML_LIBS		:=-L${ML_DIR} -lMLi3 -lstdc++ -framework Foundation
+	#MPREP		:=${ML_DIR}/mprep
+	#	LibraryLink for MacOSX-x86-64
+	#MLL_INCS	:=-I/Applications/Mathematica.app/SystemFiles/IncludeFiles/C/
+	#MLL_LIBS	:=-L/Applications/Mathematica.app/SystemFiles/Libraries/MacOSX-x86-64/
+endif
+#PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
+INCS		:=${FFTW_INCS} ${MKL_INCS} ${OMP_INCS} ${MPI_INCS} -iquote ${ROOT}
+LIBS		:=${FFTW_LIBS} ${MKL_LIBS} ${OMP_LIBS} ${MPI_LIBS} 
+################################################################################
+#	MISC TARGETS 
+.PHONY: clean cleanx cleanxx
+
+clean:
+	${QUIET}rm -f ${OBJ}
+cleanx:
+	${QUIET}rm -f ${DEP} ${ASM}
+cleanxx: clean cleanx
+	${QUIET}rm -f *.exe
+################################################################################
+#		INTERNAL VARIABLES
+OBJ		:=# .o files
+DEP		:=# .d files
+ASM		:=# .s files
+################################################################################
+# 		PATTERN RULES
+# Undefine GNU make default pattern rules
+.SUFFIXES:
+#.SUFFIXES: .c .cc .C .cpp .h .hh .hpp .o .a .dll .so .dylib .exe .d .s .S
+# Default pattern rule for out-of-source linking
+ifeq (${OUT_OF_SOURCE},TRUE)
+%.exe: %.o
+	@echo "Linking ${RED}$@${NONE}"
+	${QUIET}${CXX} -o $@ $^ ${LIBS} 
+endif
+################################################################################
+#		COLORFUL SHELL ECHO!
+NONE		:=\\033[00m 
+#	normal colors
+BLACK		:=\\033[00;30m
+RED		:=\\033[00;31m
+GREEN		:=\\033[00;32m
+BROWN		:=\\033[00;33m 
+BLUE		:=\\033[00;34m
+MAGENTA		:=\\033[00;35m
+CYAN		:=\\033[00;36m
+GREY		:=\\033[00;37m 
+#	bold
+B_BLACK		:=\\033[01;30m
+B_RED		:=\\033[01;31m
+B_GREEN		:=\\033[01;32m
+B_BROWN		:=\\033[01;33m 
+B_BLUE		:=\\033[01;34m
+B_MAGENTA	:=\\033[01;35m
+B_CYAN		:=\\033[01;36m
+B_GREY		:=\\033[01;37m 
+#	underlined
+U_BLACK		:=\\033[04;30m
+U_RED		:=\\033[04;31m
+U_GREEN		:=\\033[04;32m
+U_BROWN		:=\\033[04;33m 
+U_BLUE		:=\\033[04;34m
+U_MAGENTA	:=\\033[04;35m
+U_CYAN		:=\\033[04;36m
+U_GREY		:=\\033[04;37m 
+#	blinking
+BLK_BLACK	:=\\033[05;30m
+BLK_RED		:=\\033[05;31m
+BLK_GREEN	:=\\033[05;32m
+BLK_BROWN	:=\\033[05;33m 
+BLK_BLUE	:=\\033[05;34m
+BLK_MAGENTA	:=\\033[05;35m
+BLK_CYAN	:=\\033[05;36m
+BLK_GREY	:=\\033[05;37m 
+#	reversed foreground and background color
+REV_BLACK	:=\\033[07;30m
+REV_RED		:=\\033[07;31m
+REV_GREEN	:=\\033[07;32m
+REV_BROWN	:=\\033[07;33m 
+REV_BLUE	:=\\033[07;34m
+REV_MAGENTA	:=\\033[07;35m
+REV_CYAN	:=\\033[07;36m
+REV_GREY	:=\\033[07;37m 
+"""
+
+branchmk="""################################################################################
+#  THIS DIRECTORY
+DIR_RANDOMNUMBER:=${ROOT}/utils
+#  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
+${DIR_RANDOMNUMBER}C:=#LIST_C_SOURCE_FILES#
+${DIR_RANDOMNUMBER}CPP:=#LIST_CPP_SOURCE_FILES# 
+#  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
+${DIR_RANDOMNUMBER}CFLAGS:=${CFLAGS}
+${DIR_RANDOMNUMBER}CXXFLAGS:=${CXXFLAGS}
+${DIR_RANDOMNUMBER}INCS:=${INCS}
+################################################################################ 
+#		INTERNAL VARIABLES AND PATTERN RULES
+ifeq (${OUT_OF_SOURCE},TRUE)
+# out-of-source build
+# Process variables
+${DIR_RANDOMNUMBER}DEP:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${BUILD}/%.d} ${${DIR_RANDOMNUMBER}C:%.c=${BUILD}/%.d} 
+${DIR_RANDOMNUMBER}OBJ:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${BUILD}/%.o} ${${DIR_RANDOMNUMBER}C:%.c=${BUILD}/%.o} 
+${DIR_RANDOMNUMBER}ASM:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${BUILD}/%.s} ${${DIR_RANDOMNUMBER}C:%.c=${BUILD}/%.s} 
+# Add to global variables
+DEP:=${DEP} ${${DIR_RANDOMNUMBER}DEP}
+OBJ:=${OBJ} ${${DIR_RANDOMNUMBER}OBJ}
+ASM:=${ASM} ${${DIR_RANDOMNUMBER}ASM}
+# C sources
+${BUILD}/%.o: ${DIR_RANDOMNUMBER}/%.c
+	@echo Compiling "${GREEN}$@${NONE}"
+	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+${BUILD}/%.s: ${DIR_RANDOMNUMBER}/%.c
+	@echo Compiling "${CYAN}$@${NONE}"
+	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+
+# C++ sources
+${BUILD}/%.o: ${DIR_RANDOMNUMBER}/%.cpp
+	@echo Compiling "${GREEN}$@${NONE}"
+	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+${BUILD}/%.s: ${DIR_RANDOMNUMBER}/%.cpp
+	@echo Compiling "${CYAN}$@${NONE}"
+	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+else
+# in-place build
+# Process variables
+${DIR_RANDOMNUMBER}DEP:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${DIR_RANDOMNUMBER}/%.d} ${${DIR_RANDOMNUMBER}C:%.c=${DIR_RANDOMNUMBER}/%.d} 
+${DIR_RANDOMNUMBER}OBJ:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${DIR_RANDOMNUMBER}/%.o} ${${DIR_RANDOMNUMBER}C:%.c=${DIR_RANDOMNUMBER}/%.o} 
+${DIR_RANDOMNUMBER}ASM:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${DIR_RANDOMNUMBER}/%.s} ${${DIR_RANDOMNUMBER}C:%.c=${DIR_RANDOMNUMBER}/%.s} 
+# Add to global variables
+DEP:=${DEP} ${${DIR_RANDOMNUMBER}DEP}
+OBJ:=${OBJ} ${${DIR_RANDOMNUMBER}OBJ}
+ASM:=${ASM} ${${DIR_RANDOMNUMBER}ASM}
+
+# C sources
+${DIR_RANDOMNUMBER}/%.o: ${DIR_RANDOMNUMBER}/%.c
+	@echo Compiling "${GREEN}$@${NONE}"
+	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+${DIR_RANDOMNUMBER}/%.s: ${DIR_RANDOMNUMBER}/%.c
+	@echo Compiling "${CYAN}$@${NONE}"
+	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+
+# C++ sources
+${DIR_RANDOMNUMBER}/%.o: ${DIR_RANDOMNUMBER}/%.cpp
+	@echo Compiling "${GREEN}$@${NONE}"
+	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+${DIR_RANDOMNUMBER}/%.s: ${DIR_RANDOMNUMBER}/%.cpp
+	@echo Compiling "${CYAN}$@${NONE}"
+	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
+
+# Linking pattern rule for this directory
+%.exe: ${DIR_RANDOMNUMBER}/%.o
+	@echo Linking "${RED}$@${NONE}"
+	${QUIET}${CXX} -o $@ $^ ${LIBS}
+endif 
+"""
+
