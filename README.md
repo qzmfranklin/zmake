@@ -29,6 +29,46 @@ In short, zmake generates modules (`root.mk` and `branch.mk`'s) that are used to
 The zmake script can also generate Makefiles from existing `root.mk` and `branch.mk`'s, and can recursively clean all `root.mk` and `branch.mk`.
 
 ## How to use zmake?
+### Can I use zmake?
+Here is the list of requirements:
+
+* POSIX OS.
+* Only support C/C++ projects.
+* Must have a working python3 interpreter.
+
+Maybe in the future I can/will extend the coverage, if there is demand.
+
+### How to get help from command line?
+This always works:
+
+	zmake -h
+	
+Then you will see the usage information:
+
+```
+usage: zmake [-h] [-f] [-g | -d] [-n N] [--in-source | --out-of-source]
+             [-o TARGET]
+             [root]
+
+Generating module files for constructing a single Makefile
+
+positional arguments:
+  root                  root directory of source files (.)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f, --force           force overwrite (False)
+  -g, --generate-makefile
+                        generate a Makefile (False)
+  -d, --delete          recursively delete all root.mk and branch.mk's(False)
+  -n N, --max-recursive-depth N
+                        maximal depth for upwards search when creating
+                        Makefiles (3)
+  --in-source           the generated Makefile uses in-source build (True)
+  --out-of-source       the generated Makefile uses out-of-source build
+  -o TARGET             output the Makefile to TARGET (./Makefile)
+
+```
 ### Generate `.mk` files
 In a terminal, `cd` into the root directory of zmake. Type
 
@@ -60,7 +100,7 @@ Type
 
 	more Makefile
 
-You should see the first line is
+The first line should be
 
 	#  Sample Makefile for in-source build
 
