@@ -102,9 +102,9 @@ Add all your own linking rules after `LIST LINKING RULES`. Sample linking rules 
 	
 
 ### In-source build vs. out-of-source build
-By default, the flag `-g` directs the zmake script to generate a Makefile that builds in-source. You may use `-insource` (pairs with `+insource`]) to get Makefile that builds out-of-source. For example, type
+By default, the flag `-g` directs the zmake script to generate a Makefile that builds in-source. You may use `--out-of-source` (pairs with `--in-source`]) to get Makefile that builds out-of-source. For example, type
 
-	./zmake -g -insource demo
+	./zmake -g --out-of-source demo
 
 will generate a Makefile starting with
 

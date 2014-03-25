@@ -35,9 +35,9 @@ parser.add_argument('-n','--max-recursive-depth',metavar='N',type=int,default=3,
                     Makefiles (%(default)s)') 
 
 group=parser.add_mutually_exclusive_group()
-group.add_argument('+insource',dest='insource',action='store_true',default=True,
+group.add_argument('--in-source',dest='insource',action='store_true',default=True,
                   help='the generated Makefile uses in-source build (%(default)s)')
-group.add_argument('-insource',dest='insource',action='store_false',default=True,
+group.add_argument('--out-of-source',dest='insource',action='store_false',default=False,
                   help='the generated Makefile uses out-of-source build')
 
 parser.add_argument('-o',dest='target',action='store',default='./Makefile',
