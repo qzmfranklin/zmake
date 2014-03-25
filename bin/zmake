@@ -1,48 +1,56 @@
 #!/usr/bin/env python3
 
+
 import os
+import fnmatch
 import sys 
 import argparse
 
-parser=argparse.ArgumentParser(
-    description='Generating module files for constructing a single Makefile',
+parser=argparse.ArgumentParser(description=
+    'Generating module files for constructing a single Makefile',
     prefix_chars='+-')
 
-parser.add_argument('src',action='store')
+parser.add_argument('root',action='store',nargs='?',default='.',
+                   help='root directory of source files (%(default)s)')
 
-parser.add_argument('--verbose','-v',action='store_true',default=False,
-                    help='increase verbosity (%(default)s)')
+#parser.add_argument('-v','--verbose',action='store_true',default=False,
+                    #help='increase verbosity (%(default)s)')
+parser.add_argument('-f','--force',action='store_true',default=False,
+                    help='force overwrite (%(default)s)')
 
 group=parser.add_mutually_exclusive_group()
-group.add_argument('--root-only',action='store_true',default=False,
-                  help='only generate root.mk (%(default)s)')
-group.add_argument('--branches-only',action='store_true',default=False,
-                  help='only generate all the branch.mk\'s (%(default)s)')
-
-group=parser.add_argument_group('Makefile')
-group.add_argument('--generate-makefile',action='store_true',default=False,
+#group.add_argument('-R','--recursive',action='store_true',default=False,
+                    #help='scan [root] recursively (%(default)s)') 
+#group.add_argument('-r','--root-only',action='store_true',default=False,
+                  #help='only generate root.mk (%(default)s)')
+#group.add_argument('-b','--branches-only',action='store_true',default=True,
+                  #help='only generate all the branch.mk\'s (%(default)s)')
+group.add_argument('-g','--generate-makefile',action='store_true',default=False,
                    help='generate a Makefile (%(default)s)')
-group.add_argument('-o',dest='makefile',action='store',default='Makefile',
-                  help='the target Makefile associated with --generate-makefile \
-                   (%(default)s)') 
+group.add_argument('-d','--delete',action='store_true',default=False,
+                   help='recursively delete all root.mk and branch.mk\'s(%(default)s)')
+
+parser.add_argument('-n','--max-recursive-depth',metavar='N',type=int,default=3,
+                  help='maximal depth for upwards search when creating \
+                    Makefiles (%(default)s)') 
 
 group=parser.add_mutually_exclusive_group()
-group.add_argument('--in-source',dest='insource',action='store_true',default=True,
+group.add_argument('+insource',dest='insource',action='store_true',default=True,
                   help='the generated Makefile uses in-source build (%(default)s)')
-group.add_argument('--out-of-source',dest='insource',action='store_false',default=True,
+group.add_argument('-insource',dest='insource',action='store_false',default=True,
                   help='the generated Makefile uses out-of-source build')
 
+parser.add_argument('-o',dest='target',action='store',default='./Makefile',
+                  help='output the Makefile to TARGET (%(default)s)') 
 #parser.set_defaults(verbose=False)
 args = parser.parse_args()
 
 
-print(args.makefile)
-
 
 rootmk="""################################################################################
 #	MISC PROJECT INFO
-PROJECT_NAME	:=zmake
-VERSION		:=v0.01
+PROJECT_NAME	:=#Enter project name here#
+VERSION		:=#Enter project version here#
 DATE_TIME	:=$(shell date "+%Y-%m-%d")
 OS		:=$(shell uname -s)
 ARCH		:=$(shell uname -m)
@@ -52,91 +60,20 @@ RELEASE_NAME	:=${PROJECT_NAME}-${PLATFORM}-${VERSION}-${DATE_TIME}
 CC		:=icc
 CFLAGS 		:=-O3							\\
 		-Wall							\\
-		-prec-div -no-ftz					\\
-		-restrict						\\
 		-std=c99						\\
-		-openmp							\\
 		-Wno-deprecated
 
 CXX		:=icpc
 CXXFLAGS	:=-O3							\\
 		-Wall							\\
-		-prec-div -no-ftz					\\
-		-restrict						\\
-		-openmp							\\
 		-Wno-deprecated
-
-		# 							\\
-		-DNDEBUG						\\
-		-MMD -MP						\\
-		-nostdinc++						\\
-		-fPIC							\\
-		-fno-inline-functions					\\
-		-unroll-aggressive					\\
-		-fno-math-errno						\\
-		-nostdinc 						\\
-		-DDEBUG							\\
-		-opt-report-phase ipo_inl			        \\
-		-vec-report=1						\\ 
 
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
 ASMFLAGS	:=-S -fsource-asm# source code commented assembly code
 
-#	PROJECT-WIDE INCLUDE AND LINKAGE OPTIONS
-ifeq (${PLATFORM},Linux-x86_64)
-	#	FFTW3 Library for Linux
-	#FFTW_INCS	:=-I/opt/intel/mkl/include/fftw
-	#FFTW_LIBS	:=-lfftw3
-	FFTW_DIR	:=/opt/fftw/3.3.3
-	FFTW_INCS	:=-I${FFTW_DIR}/include
-	FFTW_LIBS	:=-L${FFTW_DIR}/lib -lfftw3 -lfftw3_omp
-	#	Intel Math Kernel Library for Linux
-	MKL_INCS	:=
-	MKL_LIBS	:=-mkl
-	#	OpenMP Flags
-	OMP_INCS	:=
-	OMP_LIBS	:=-openmp
-	#	OpenMPI Library
-	MPI_INCS	:=`mpicxx -showme:compile`
-	MPI_LIBS	:=`mpicxx -showme:link`
-	#	Install Directory of Mathematica
-	#MATH_DIR	:=/opt/Wolfram/Mathematica/9.0
-	#	MathLink for Linux
-	#ML_DIR		:=${MATH_DIR}/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-86/CompilerAdditions
-	#ML_INCS		:=-I${ML_DIR}
-	#ML_LIBS		:=-L${ML_DIR} -lML64i3
-	#MPREP		:=${ML_DIR}/mprep
-	#MCC		:=${ML_DIR}/mcc
-	###	LibraryLink for MacOSX-x86-64
-	#MLL_INCS	:=-I${MATH_DIR}/SystemFiles/IncludeFiles/C
-	#MLL_LIBS	:=-L${MATH_DIR}/SystemFiles/Libraries/Linux-x86-64 -lWolframRTL
-endif
-ifeq (${PLATFORM},Darwin-x86_64)
-	#	FFTW3 Library for MacOSX-x86-64
-	FFTW_DIR	:=/opt/fftw/3.3.3
-	FFTW_INCS	:=-I${FFTW_DIR}/include
-	FFTW_LIBS	:=-L${FFTW_DIR}/lib -lfftw3 -lfftw3_omp
-	#	Intel Math Kernel Library for MacOSX-x86-64
-	#MKL_INCS	:=-iquote /opt/intel/include
-	MKL_LIBS	:=-mkl
-	#	OpenMP Flags
-	OMP_INCS	:=
-	OMP_LIBS	:=-openmp
-	#	OpenMPI Library
-	MPI_INCS	:=`mpicxx -showme:compile`
-	MPI_LIBS	:=`mpicxx -showme:link`
-	#	MathLink for MacOSX-x86-64
-	ML_DIR		:=/Applications/Mathematica.app/SystemFiles/Links/MathLink/DeveloperKit/MacOSX-x86-64/CompilerAdditions/
-	ML_INCS		:=-I${ML_DIR}
-	ML_LIBS		:=-L${ML_DIR} -lMLi3 -lstdc++ -framework Foundation
-	#MPREP		:=${ML_DIR}/mprep
-	#	LibraryLink for MacOSX-x86-64
-	#MLL_INCS	:=-I/Applications/Mathematica.app/SystemFiles/IncludeFiles/C/
-	#MLL_LIBS	:=-L/Applications/Mathematica.app/SystemFiles/Libraries/MacOSX-x86-64/
-endif
 #PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=${FFTW_INCS} ${MKL_INCS} ${OMP_INCS} ${MPI_INCS} -iquote ${ROOT}
-LIBS		:=${FFTW_LIBS} ${MKL_LIBS} ${OMP_LIBS} ${MPI_LIBS} 
+INCS		:=-iquote ${ROOT}
+LIBS		:=
 ################################################################################
 #	MISC TARGETS 
 .PHONY: clean cleanx cleanxx
@@ -215,7 +152,7 @@ REV_GREY	:=\\033[07;37m
 
 branchmk="""################################################################################
 #  THIS DIRECTORY
-DIR_RANDOMNUMBER:=${ROOT}/utils
+DIR_RANDOMNUMBER:=${ROOT}#RELATIVE_PATH_FROM_ROOT#
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR_RANDOMNUMBER}C:=#LIST_C_SOURCE_FILES#
 ${DIR_RANDOMNUMBER}CPP:=#LIST_CPP_SOURCE_FILES# 
@@ -284,3 +221,201 @@ ${DIR_RANDOMNUMBER}/%.s: ${DIR_RANDOMNUMBER}/%.cpp
 endif 
 """
 
+makefile_insource="""#  Sample Makefile for in-source build
+################################################################################
+#QUIET:=@# uncomment this line to silence
+ROOT :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
+# Include the top-level .mk file, i.e., the root.mk
+-include ${ROOT}/root.mk
+# Include all branches here#INCLUDE_ALL_BRANCHES_HERE#
+# Then include all dependency files
+-include ${DEP}
+################################################################################ 
+#	LIST LINKING RULES
+# Sample linking rules:
+# The redundancy in ${ROOT} is a must. There is no easy way around.
+#test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \\
+	#${ROOT}/heapsort/test_heapsort.o \\
+	#${ROOT}/utils/utils.o
+"""
+
+makefile_outofsource="""#  Sample Makefile for out-of-source build
+################################################################################
+#	ROOT LEVEL INFO - MAKEFILE SPECIFIC
+OUT_OF_SOURCE:=TRUE# TRUE = out-of-source build, otherwise = in-source build
+BUILD:=.# out-of-source build directory, unused in in-source build mode
+# Strongly recommend only using ${BUILD}=. as it simplifies the linking rules
+#QUIET:=@# uncomment this line to silence
+ROOT :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
+# Include the top-level .mk file, i.e., the root.mk
+-include ${ROOT}/root.mk
+# Include all branches here#INCLUDE_ALL_BRANCHES_HERE#
+# Then include all dependency files
+-include ${DEP}
+################################################################################ 
+#	LIST LINKING RULES
+# Sample linking tules:
+# If ${BUILD}==. (current directory), then we can use the following linking rule
+#diffpar.exe: diffpar.o utils.o
+#test_heapsort.exe: heapsort.o test_heapsort.o utils.o
+# Otherwise, we need to use the following linking rule
+#${BUILD}/diffpar.exe: ${BUILD}/diffpar.o ${BUILD}/utils.o
+#${BUILD}/test_heapsort.exe: ${BUILD}/heapsort.o ${BUILD}/test_heapsort.o ${BUILD}/utils.o
+"""
+
+texts=dict()
+texts['root']=rootmk
+texts['branch']=branchmk
+texts['imakefile']=makefile_insource
+texts['omakefile']=makefile_outofsource
+
+def check_overwrite(fname):
+    """warn when trying to overwrite existing file"""
+    if os.path.isfile(fname):
+        #print(fname,'already exists, overwrite? (Y/N/C)')
+        flag=False
+        rawinput=input(' '.join([fname,
+            'already exists, overwrite (Y/N)?']))
+        raw=rawinput[0].lower()
+        if raw=='y':
+            flag=True 
+        elif raw=='n':
+            flag=False
+        elif raw=='c': 
+            exit(1)
+        else:
+            print(rawinput,'does not match Y/N/C. Abort.')
+            exit(1)
+        return flag
+    else:
+        return False
+
+#print(check_overwrite('/Users/qzmfrank/.vimrc'))
+
+def strfile(fname,str):
+    """create file, copy string into it""" 
+    fd=open(fname,'w')
+    fd.write(str)
+    fd.close()
+
+def strfile2(fname,str):
+    """create file, copy string into it, check existing file"""
+    if args.force:
+        strfile(fname,str)
+        return True
+    else:
+        if check_overwrite(fname)==False:
+            strfile(fname,str) 
+            return True
+        else:
+            return False
+
+#strfile2('rootnew.mk',rootmk)
+
+def gen_root(root,text):
+    """generate root.mk"""
+    fname=os.path.join(root,'root.mk')
+    if strfile2(fname,text):
+        print('generated',fname)
+
+#gen_root(args.root,rootmk)
+
+def gen_branch(root,path,text,src,num):
+    """generate the num-th branch.mk"""
+    fname=os.path.join(path,'branch.mk') 
+
+    tmp=text.replace('DIR_RANDOMNUMBER','-'.join(['DIR',str(num)]))
+
+    tmp=tmp.replace('#RELATIVE_PATH_FROM_ROOT#',path.replace(root,''))
+
+    c_str=' '.join(fnmatch.filter(src,'*.c'))
+    tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
+
+    cpp_str=' '.join(fnmatch.filter(src,'*.cpp'))
+    tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
+    if strfile2(fname,tmp): 
+        print(num,'generated',fname) 
+
+def rwalk(root,texts):
+    """recursively scan and generate root.mk and branch.mk's"""
+    num=100
+    gen_root(root,texts['root'])
+    for path,dirs,files in os.walk(root):
+        gen_branch(root,path,texts['branch'],files,num)
+        num=num+1
+    return True
+
+#rwalk(args.root,texts)
+
+def gen_imakefile(absroot,target,text):
+    """generate in-source makefile""" 
+    tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#',absroot)
+    dirlist=list();
+    for path,dirs,files in os.walk(absroot):
+        fname=os.path.join(path,'branch.mk')
+        if os.path.isfile(fname):
+            dirlist.append(os.path.join(path.replace(absroot,''),'branch.mk'))
+    tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
+                    '\n-include ${ROOT}'.join(dirlist))
+    if strfile2(target,tmp):
+        print('generated',target)
+
+#gen_imakefile(args.root,args.target,texts['imakefile'])
+
+def gen_omakefile(absroot,target,text):
+    """generate in-source makefile""" 
+    tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#',absroot)
+    dirlist=list();
+    for path,dirs,files in os.walk(absroot):
+        fname=os.path.join(path,'branch.mk')
+        if os.path.isfile(fname):
+            dirlist.append(os.path.join(path.replace(absroot,''),'branch.mk'))
+    tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
+                    '\n-include ${ROOT}'.join(dirlist))
+    if strfile2(target,tmp):
+        print('generated',target)
+
+#gen_omakefile(args.root,args.target,texts['imakefile'])
+
+def rgen_makefile(insource,root,target,texts,depth):
+    """recursively find root.mk before generating makefile"""
+    flag=False
+    absroot=os.path.join(os.getcwd(),root)
+    if os.path.isfile(os.path.join(absroot,'root.mk')):
+        flag=True
+    else:
+        for i in range(depth-1):
+            absroot=os.path.normpath(os.path.join(absroot,'..'))
+            print(absroot)
+            if os.path.isfile(os.path.join(absroot,'root.mk')):
+                flag=True
+                break
+    if flag:
+        if insource:
+            gen_imakefile(absroot,target,texts['imakefile'])
+        else: 
+            gen_omakefile(absroot,target,texts['omakefile'])
+    else:
+        print('root.mk not flag')
+    return flag
+
+#rgen_imakefile(args.root,args.target,texts,args.max_recursive_depth)
+
+def delete_all(root):
+    """recursively delete all root.mk and branch.mk's"""
+    for path,dirs,files in os.walk(root):
+        fname=os.path.join(path,'branch.mk')
+        if os.path.isfile(fname):
+            os.remove(fname)
+            print('deleted',fname)
+        fname=os.path.join(path,'root.mk')
+        if os.path.isfile(fname):
+            os.remove(fname)
+            print('deleted',fname) 
+
+if args.delete:
+    delete_all(args.root)
+elif args.generate_makefile:
+    rgen_makefile(args.insource,args.root,args.target,texts,args.max_recursive_depth)
+else:
+    rwalk(args.root,texts)
