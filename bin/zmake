@@ -319,29 +319,33 @@ def gen_root(root,text):
 
 #gen_root(args.root,rootmk)
 
-def gen_branch(root,path,text,src,num):
+def gen_branch(root,path,text,c_src,cpp_src,num):
     """generate the num-th branch.mk"""
     fname=os.path.join(path,'branch.mk') 
 
     tmp=text.replace('DIR_RANDOMNUMBER','-'.join(['DIR',str(num)]))
 
-    tmp=tmp.replace('#RELATIVE_PATH_FROM_ROOT#',path.replace(root,''))
+    tmp=tmp.replace('#RELATIVE_PATH_FROM_ROOT#',
+                    path.replace(os.path.normpath(root),''))
 
-    c_str=' '.join(fnmatch.filter(src,'*.c'))
+    c_str=' '.join(c_src)
     tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
 
-    cpp_str=' '.join(fnmatch.filter(src,'*.cpp'))
+    cpp_str=' '.join(cpp_src)
     tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
     if strfile2(fname,tmp): 
         print(num,'generated',fname) 
 
 def rwalk(root,texts):
     """recursively scan and generate root.mk and branch.mk's"""
-    num=100
+    num=10000
     gen_root(root,texts['root'])
     for path,dirs,files in os.walk(root):
-        gen_branch(root,path,texts['branch'],files,num)
-        num=num+1
+        c_src=fnmatch.filter(files,'*.c')
+        cpp_src=fnmatch.filter(files,'*.cpp')
+        if len(c_src)>0 or len(cpp_src)>0:
+            gen_branch(root,path,texts['branch'],c_src,cpp_src,num)
+            num=num+1
     return True
 
 #rwalk(args.root,texts)
@@ -383,7 +387,7 @@ def rgen_makefile(insource,root,target,texts,depth):
     if os.path.isfile(os.path.join(absroot,'root.mk')):
         flag=True
     else:
-        for i in range(depth-1):
+        for i in range(depth):
             absroot=os.path.normpath(os.path.join(absroot,'..'))
             print(absroot)
             if os.path.isfile(os.path.join(absroot,'root.mk')):
