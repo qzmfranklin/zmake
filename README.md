@@ -46,8 +46,8 @@ This always works:
 Then you will see the usage information:
 
 ```
-usage: zmake [-h] [-f] [-g | -d] [-n N] [--in-source | --out-of-source]
-             [-o TARGET]
+usage: zmake [-h] [-f] [-u | -d | -g] [-o TARGET] [-n N]
+             [--in-source | --out-of-source]
              [root]
 
 Generating module files for constructing a single Makefile
@@ -58,15 +58,16 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -f, --force           force overwrite (False)
+  -u, --update          skip existing .mk files (False)
+  -d, --delete          recursively delete all root.mk and branch.mk's (False)
   -g, --generate-makefile
                         generate a Makefile (False)
-  -d, --delete          recursively delete all root.mk and branch.mk's(False)
+  -o TARGET             output the Makefile to TARGET (./Makefile)
   -n N, --max-recursive-depth N
                         maximal depth for upwards search when creating
                         Makefiles (3)
   --in-source           the generated Makefile uses in-source build (True)
   --out-of-source       the generated Makefile uses out-of-source build
-  -o TARGET             output the Makefile to TARGET (./Makefile)
 
 ```
 ### Generate `.mk` files
@@ -152,8 +153,62 @@ will generate a Makefile starting with
 
 **Note** that out-of-source Makefiles and in-source Makefiles use different link rules. For details and instructions, see the actually generated Makefiles.
 
-## How does zmake work?
-[TODO: explain the design of zmake (really neccessary?)]
+### What should I do if I modified the sources after `.mk` files and Makefiles were generated?
+In short, `zmake` will take care of compiling and you will have to take care of linking.
+
+#### I have only added/removed some `.c` and `.cpp` files, but have not changed the structure of the directories
+Then a simple
+
+	./zmake [root] -f
+
+will do the work. The flag `-f/--force` forces overwriting existing `.mk` files. If you do not specify `-f/--force`, you will be prompted
+
+	bin/demo/diffpar/branch.mk already exists, overwrite (y/n/q)?
+	
+so you can decide whether to overwrite on each file.
+
+
+#### I have changed the directory structure
+This might seem to be very challenging. But all you have to do is regenerate all the `.mk` files and then update the linking rules in Makefiles. The `zmake` script can do the update for you.
+The following command
+
+	./zmake --update
+ 
+ will update all `.mk` files.
+ 
+ Of course, you have to update the linking rules in Makefiles manually. There is no easy way around.
+
+## How to delete all the `.mk` files?
+If your codes are in `[root]` directory, then
+
+	./zmake --delete [root]
+	
+will delete all the `.mk` files. 
+
+For example. In the `bin` directory, type 
+
+	./zmake --delete demo
+	
+A sample message is:
+
+```
+deleted demo/root.mk
+deleted demo/diffpar/branch.mk
+deleted demo/heapsort/branch.mk
+deleted demo/utils/branch.mk
+```
+
+## Some notes on usage
+* The default value of `[root]` is `.`, which is the current working directory of the `zmake` script.
+* `-u,-d,-g` are mutually exclusive. You may only specify at most one of them at a time. You may try to specify more than one, the python3 interpreter will report error.
+* `./zmake -g` will automatically search for `root.mk` from the `[root]` directory, which default value is the current directory `./`. If `root.mk` is not in `[root]`, `zmake` will search upwards, i.e., search `[root]/..` and `[root]/../..` and so on. By default, the maximal recursive search depth is 3. You may change this behavior by specifying `-n N, --max-recursive-depth N`, where `N` is the depth.
+* `--in-source` and `--out-of-source` are mutually exclusive.
+* `--force` and `--update` are *not* mutually exclusive. `--update` overwrite `--force`.
+* You may specify `-o TARGET` without `-g`. But in that case `-o TARGET` is just not used.
+
+## Other projects that are using `zmake`
+* [spoons](https://github.com/qzmfranklin/spoons.git)
+* (more to come)
 
 ## What more?
-[TODO: ]
+I am considering adding support for `Fortran` source files. That may help more people migrate to `zmake`.
