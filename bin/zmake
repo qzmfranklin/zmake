@@ -13,23 +13,19 @@ parser=argparse.ArgumentParser(description=
 parser.add_argument('root',action='store',nargs='?',default='.',
                    help='root directory of source files (%(default)s)')
 
-#parser.add_argument('-v','--verbose',action='store_true',default=False,
-                    #help='increase verbosity (%(default)s)')
 parser.add_argument('-f','--force',action='store_true',default=False,
                     help='force overwrite (%(default)s)')
 
 group=parser.add_mutually_exclusive_group()
-#group.add_argument('-R','--recursive',action='store_true',default=False,
-                    #help='scan [root] recursively (%(default)s)') 
-#group.add_argument('-r','--root-only',action='store_true',default=False,
-                  #help='only generate root.mk (%(default)s)')
-#group.add_argument('-b','--branches-only',action='store_true',default=True,
-                  #help='only generate all the branch.mk\'s (%(default)s)')
+group.add_argument('-u','--update',action='store_true',default=False,
+                   help='skip existing .mk files (%(default)s)')
+group.add_argument('-d','--delete',action='store_true',default=False,
+                   help='recursively delete all root.mk and branch.mk\'s (%(default)s)')
 group.add_argument('-g','--generate-makefile',action='store_true',default=False,
                    help='generate a Makefile (%(default)s)')
-group.add_argument('-d','--delete',action='store_true',default=False,
-                   help='recursively delete all root.mk and branch.mk\'s(%(default)s)')
 
+parser.add_argument('-o',dest='target',action='store',default='./Makefile',
+                  help='output the Makefile to TARGET (%(default)s)') 
 parser.add_argument('-n','--max-recursive-depth',metavar='N',type=int,default=3,
                   help='maximal depth for upwards search when creating \
                     Makefiles (%(default)s)') 
@@ -40,8 +36,6 @@ group.add_argument('--in-source',dest='insource',action='store_true',default=Tru
 group.add_argument('--out-of-source',dest='insource',action='store_false',default=False,
                   help='the generated Makefile uses out-of-source build')
 
-parser.add_argument('-o',dest='target',action='store',default='./Makefile',
-                  help='output the Makefile to TARGET (%(default)s)') 
 #parser.set_defaults(verbose=False)
 args = parser.parse_args()
 
@@ -319,36 +313,43 @@ def gen_root(root,text):
 
 #gen_root(args.root,rootmk)
 
-def gen_branch(root,path,text,c_src,cpp_src,num):
+def gen_branch(root,path,text,files,num):
     """generate the num-th branch.mk"""
-    fname=os.path.join(path,'branch.mk') 
-
-    tmp=text.replace('DIR_RANDOMNUMBER','-'.join(['DIR',str(num)]))
-
-    tmp=tmp.replace('#RELATIVE_PATH_FROM_ROOT#',
-                    path.replace(os.path.normpath(root),''))
-
-    c_str=' '.join(c_src)
-    tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
-
-    cpp_str=' '.join(cpp_src)
-    tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
-    if strfile2(fname,tmp): 
-        print(num,'generated',fname) 
+    c_src=fnmatch.filter(files,'*.c')
+    cpp_src=fnmatch.filter(files,'*.cpp')
+    if len(c_src)+len(cpp_src)>0:
+        fname=os.path.join(path,'branch.mk') 
+        tmp=text.replace('DIR_RANDOMNUMBER','-'.join(['DIR',str(num)]))
+        tmp=tmp.replace('#RELATIVE_PATH_FROM_ROOT#',
+                        path.replace(os.path.normpath(root),''))
+        c_str=' '.join(c_src)
+        tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
+        cpp_str=' '.join(cpp_src)
+        tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
+        if strfile2(fname,tmp): 
+            print(num,'generated',fname) 
 
 def rwalk(root,texts):
     """recursively scan and generate root.mk and branch.mk's"""
     num=10000
     gen_root(root,texts['root'])
     for path,dirs,files in os.walk(root):
-        c_src=fnmatch.filter(files,'*.c')
-        cpp_src=fnmatch.filter(files,'*.cpp')
-        if len(c_src)>0 or len(cpp_src)>0:
-            gen_branch(root,path,texts['branch'],c_src,cpp_src,num)
-            num=num+1
+        gen_branch(root,path,texts['branch'],files,num)
+        num=num+1
     return True
 
 #rwalk(args.root,texts)
+
+def rwalk_update(root,texts):
+    """recursively scan and generate root.mk and branch.mk's"""
+    num=10000
+    if os.path.isfile(os.path.join(root,'root.mk'))==False:
+        gen_root(root,texts['root'])
+    for path,dirs,files in os.walk(root): 
+        if os.path.isfile(os.path.join(path,'branch.mk'))==False:
+            gen_branch(root,path,texts['branch'],files,num)
+        num=num+1
+    return True
 
 def gen_imakefile(absroot,target,text):
     """generate in-source makefile""" 
@@ -421,5 +422,7 @@ if args.delete:
     delete_all(args.root)
 elif args.generate_makefile:
     rgen_makefile(args.insource,args.root,args.target,texts,args.max_recursive_depth)
+elif args.update:
+    rwalk_update(args.root,texts)
 else:
     rwalk(args.root,texts)
