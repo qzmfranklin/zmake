@@ -64,9 +64,6 @@ CXXFLAGS	:=-O3							\\
 		-Wall							\\
 		-Wno-deprecated
 
-DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
-ASMFLAGS	:=-S -fsource-asm# source code commented assembly code
-
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
@@ -75,11 +72,13 @@ LIBS		:=
 OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
-################################################################################
-# 	PATTERN RULES
+DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
+ASMFLAGS	:=-S -fsource-asm# source code commented assembly code 
 .SUFFIXES:
+################################################################################
+# 	OUT-OF-SOURCE PATTERN RULES
 ifeq (OUT_OF_SOURCE,TRUE)
-%.exe: %.o
+${BUILD}/%.exe: ${BUILD}/%.o
 	${QUIET}${CXX} -o $@ $^ ${LIBS} 
 endif
 """
@@ -171,9 +170,11 @@ ROOT :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
 	#${ROOT}/utils/utils.o
 ################################################################################
 #	MISC PHONY TARGETS 
-.PHONY: all clean cleanx cleanxx
+.PHONY: all asm clean cleanx cleanxx
 
 all: ${OBJ}
+
+asm: ${ASM}
 
 clean:
 	${QUIET}rm -f ${OBJ}
