@@ -2,6 +2,7 @@
 
 
 import os
+import glob
 import fnmatch
 import sys 
 import argparse
@@ -10,31 +11,40 @@ parser=argparse.ArgumentParser(description=
     'Generating module files for constructing a single Makefile',
     prefix_chars='+-')
 
-parser.add_argument('root',action='store',nargs='?',default='.',
-                   help='root directory of source files (%(default)s)')
+parser.add_argument('dir',action='store',nargs='?',default='.',
+                   help='directory of source files (%(default)s)')
 
-parser.add_argument('-f','--force',action='store_true',default=False,
-                    help='force overwrite (%(default)s)')
+# group_general, mutually exlusive
+group_general=parser.add_mutually_exclusive_group()
+group_general.add_argument('-f','--force',action='store_true',default=False,
+                   help='force overwriting existing files (%(default)s)')
+group_general.add_argument('-s','--skip',action='store_true',default=False,
+                   help='skip any existing file (%(default)s)')
+group_general.add_argument('-d','--delete',action='store_true',default=False,
+                    help='recursively delete all .mk files in [dir] (%(default)s)') 
 
-group=parser.add_mutually_exclusive_group()
-group.add_argument('-u','--update',action='store_true',default=False,
-                   help='skip existing .mk files (%(default)s)')
-group.add_argument('-d','--delete',action='store_true',default=False,
-                   help='recursively delete all root.mk and branch.mk\'s (%(default)s)')
-group.add_argument('-g','--generate-makefile',action='store_true',default=False,
-                   help='generate a Makefile (%(default)s)')
+group_mk=parser.add_mutually_exclusive_group()
+group_mk.add_argument('-r','--root-only',action='store_true',default=False,
+                 help='generate [dir]/root.mk (%(default)s)')
+group_mk.add_argument('-b','--branch-only',action='store_true',default=False,
+                 help='generate [dir]/rules.mk (%(default)s)')
+group_mk.add_argument('-R','--recursive',action='store_true',default=False,
+                 help='recursively generate rules.mk\'s (%(default)s)') 
 
-parser.add_argument('-o',dest='target',action='store',default='./Makefile',
+# group_makefile
+group_makefile=parser.add_argument_group('Makefile')
+group_makefile.add_argument('-g','--makefile',action='store_true',default=False,
+         help='generate a Makefile (%(default)s)')
+group_makefile.add_argument('-o',dest='target',action='store',default='./Makefile',
                   help='output the Makefile to TARGET (%(default)s)') 
-parser.add_argument('-n','--max-recursive-depth',metavar='N',type=int,default=3,
-                  help='maximal depth for upwards search when creating \
-                    Makefiles (%(default)s)') 
+group_insource=group_makefile.add_mutually_exclusive_group()
+group_insource.add_argument('--in-source',dest='insource',action='store_true',
+                            default=True,help='Makefile builds in-source')
+group_insource.add_argument('--out-of-source',dest='insource',action='store_false',
+                            default=False,help='Makefile builds out-of-source')
+#group_makefile.add_argument('-n','--max-recursive-depth',metavar='N',type=int,default=99,
+                  #help='search depth when creating Makefile (%(default)s)') 
 
-group=parser.add_mutually_exclusive_group()
-group.add_argument('--in-source',dest='insource',action='store_true',default=True,
-                  help='the generated Makefile uses in-source build (%(default)s)')
-group.add_argument('--out-of-source',dest='insource',action='store_false',default=False,
-                  help='the generated Makefile uses out-of-source build')
 
 #parser.set_defaults(verbose=False)
 args = parser.parse_args()
@@ -42,14 +52,6 @@ args = parser.parse_args()
 
 
 rootmk="""################################################################################
-#	MISC PROJECT INFO
-PROJECT_NAME	:=#Enter project name here#
-VERSION		:=#Enter project version here#
-DATE_TIME	:=$(shell date "+%Y-%m-%d")
-OS		:=$(shell uname -s)
-ARCH		:=$(shell uname -m)
-PLATFORM	:=${OS}-${ARCH}
-RELEASE_NAME	:=${PROJECT_NAME}-${PLATFORM}-${VERSION}-${DATE_TIME} 
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
 CC		:=icc
 CFLAGS 		:=-O3							\\
@@ -65,12 +67,113 @@ CXXFLAGS	:=-O3							\\
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
 ASMFLAGS	:=-S -fsource-asm# source code commented assembly code
 
-#PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
+#       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
 ################################################################################
-#	MISC TARGETS 
-.PHONY: clean cleanx cleanxx
+#		INTERNAL VARIABLES
+OBJ		:=# .o files
+DEP		:=# .d files
+ASM		:=# .s files
+################################################################################
+# 	PATTERN RULES
+.SUFFIXES:
+ifeq (OUT_OF_SOURCE,TRUE)
+%.exe: %.o
+	${QUIET}${CXX} -o $@ $^ ${LIBS} 
+endif
+"""
+
+branchmk="""################################################################################
+#  THIS DIRECTORY
+DIR:=${ROOT}#RELATIVE_PATH_FROM_ROOT#
+#  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
+${DIR}C:=#LIST_C_SOURCE_FILES#
+${DIR}CPP:=#LIST_CPP_SOURCE_FILES# 
+#  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
+${DIR}CFLAGS:=${CFLAGS}
+${DIR}CXXFLAGS:=${CXXFLAGS}
+${DIR}INCS:=${INCS}
+################################################################################ 
+#		INTERNAL VARIABLES AND PATTERN RULES
+ifeq (${OUT_OF_SOURCE},TRUE)
+# out-of-source build
+# Add local targets to global variables
+DEP:=${DEP} ${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
+OBJ:=${OBJ} ${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
+ASM:=${ASM} ${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
+# C sources
+${BUILD}/%.o: ${DIR}/%.c
+	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+${BUILD}/%.s: ${DIR}/%.c
+	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+
+# C++ sources
+${BUILD}/%.o: ${DIR}/%.cpp
+	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+${BUILD}/%.s: ${DIR}/%.cpp
+	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+else
+# in-place build
+# Add local targets to global variables
+DEP:=${DEP} ${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
+OBJ:=${OBJ} ${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
+ASM:=${ASM} ${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
+
+# C sources
+${DIR}/%.o: ${DIR}/%.c
+	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+${DIR}/%.s: ${DIR}/%.c
+	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+
+# C++ sources
+${DIR}/%.o: ${DIR}/%.cpp
+	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+${DIR}/%.s: ${DIR}/%.cpp
+	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+
+# Linking pattern rule for this directory
+%.exe: ${DIR}/%.o
+	${QUIET}${CXX} -o $@ $^ ${LIBS}
+endif 
+"""
+
+makefile="""#  Sample Makefile
+################################################################################
+#	ROOT LEVEL INFO - MAKEFILE SPECIFIC
+#INSOURCE#OUT_OF_SOURCE:=TRUE# TRUE = out-of-source build, otherwise = in-source build
+#INSOURCE#BUILD:=.# out-of-source build directory, unused in in-source build mode
+# Strongly recommend only using ${BUILD}=. as it simplifies the linking rules
+#QUIET:=@# uncomment this line to silence
+ROOT :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
+# Include the top-level .mk file, i.e., the root.mk
+-include ${ROOT}/root.mk
+# Include all branches here
+-include ${ROOT}#INCLUDE_ALL_BRANCHES_HERE#
+# Then include all dependency files
+-include ${DEP}
+################################################################################ 
+#	LIST YOUR LINKING RULES HERE
+
+# Sample linking rules for out-of-source build:
+# If ${BUILD}==. (current directory), then we can use the following linking rule
+#diffpar.exe: diffpar.o utils.o
+#test_heapsort.exe: heapsort.o test_heapsort.o utils.o
+
+# If ${BUILD} is anything else, we have to use the following linking rule
+#${BUILD}/diffpar.exe: ${BUILD}/diffpar.o ${BUILD}/utils.o
+#${BUILD}/test_heapsort.exe: ${BUILD}/heapsort.o ${BUILD}/test_heapsort.o ${BUILD}/utils.o
+
+
+# Sample linking rules for in-source build:
+#test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \\
+	#${ROOT}/heapsort/test_heapsort.o \\
+	#${ROOT}/utils/utils.o
+################################################################################
+#	MISC PHONY TARGETS 
+.PHONY: all clean cleanx cleanxx
+
+all: ${OBJ}
 
 clean:
 	${QUIET}rm -f ${OBJ}
@@ -78,206 +181,29 @@ cleanx:
 	${QUIET}rm -f ${DEP} ${ASM}
 cleanxx: clean cleanx
 	${QUIET}rm -f *.exe
-################################################################################
-#		INTERNAL VARIABLES
-OBJ		:=# .o files
-DEP		:=# .d files
-ASM		:=# .s files
-################################################################################
-# 		PATTERN RULES
-# Undefine GNU make default pattern rules
-.SUFFIXES:
-#.SUFFIXES: .c .cc .C .cpp .h .hh .hpp .o .a .dll .so .dylib .exe .d .s .S
-# Default pattern rule for out-of-source linking
-ifeq (${OUT_OF_SOURCE},TRUE)
-%.exe: %.o
-	@echo "Linking ${RED}$@${NONE}"
-	${QUIET}${CXX} -o $@ $^ ${LIBS} 
-endif
-################################################################################
-#		COLORFUL SHELL ECHO!
-NONE		:=\\033[00m 
-#	normal colors
-BLACK		:=\\033[00;30m
-RED		:=\\033[00;31m
-GREEN		:=\\033[00;32m
-BROWN		:=\\033[00;33m 
-BLUE		:=\\033[00;34m
-MAGENTA		:=\\033[00;35m
-CYAN		:=\\033[00;36m
-GREY		:=\\033[00;37m 
-#	bold
-B_BLACK		:=\\033[01;30m
-B_RED		:=\\033[01;31m
-B_GREEN		:=\\033[01;32m
-B_BROWN		:=\\033[01;33m 
-B_BLUE		:=\\033[01;34m
-B_MAGENTA	:=\\033[01;35m
-B_CYAN		:=\\033[01;36m
-B_GREY		:=\\033[01;37m 
-#	underlined
-U_BLACK		:=\\033[04;30m
-U_RED		:=\\033[04;31m
-U_GREEN		:=\\033[04;32m
-U_BROWN		:=\\033[04;33m 
-U_BLUE		:=\\033[04;34m
-U_MAGENTA	:=\\033[04;35m
-U_CYAN		:=\\033[04;36m
-U_GREY		:=\\033[04;37m 
-#	blinking
-BLK_BLACK	:=\\033[05;30m
-BLK_RED		:=\\033[05;31m
-BLK_GREEN	:=\\033[05;32m
-BLK_BROWN	:=\\033[05;33m 
-BLK_BLUE	:=\\033[05;34m
-BLK_MAGENTA	:=\\033[05;35m
-BLK_CYAN	:=\\033[05;36m
-BLK_GREY	:=\\033[05;37m 
-#	reversed foreground and background color
-REV_BLACK	:=\\033[07;30m
-REV_RED		:=\\033[07;31m
-REV_GREEN	:=\\033[07;32m
-REV_BROWN	:=\\033[07;33m 
-REV_BLUE	:=\\033[07;34m
-REV_MAGENTA	:=\\033[07;35m
-REV_CYAN	:=\\033[07;36m
-REV_GREY	:=\\033[07;37m 
 """
-
-branchmk="""################################################################################
-#  THIS DIRECTORY
-DIR_RANDOMNUMBER:=${ROOT}#RELATIVE_PATH_FROM_ROOT#
-#  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR_RANDOMNUMBER}C:=#LIST_C_SOURCE_FILES#
-${DIR_RANDOMNUMBER}CPP:=#LIST_CPP_SOURCE_FILES# 
-#  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR_RANDOMNUMBER}CFLAGS:=${CFLAGS}
-${DIR_RANDOMNUMBER}CXXFLAGS:=${CXXFLAGS}
-${DIR_RANDOMNUMBER}INCS:=${INCS}
-################################################################################ 
-#		INTERNAL VARIABLES AND PATTERN RULES
-ifeq (${OUT_OF_SOURCE},TRUE)
-# out-of-source build
-# Process variables
-${DIR_RANDOMNUMBER}DEP:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${BUILD}/%.d} ${${DIR_RANDOMNUMBER}C:%.c=${BUILD}/%.d} 
-${DIR_RANDOMNUMBER}OBJ:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${BUILD}/%.o} ${${DIR_RANDOMNUMBER}C:%.c=${BUILD}/%.o} 
-${DIR_RANDOMNUMBER}ASM:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${BUILD}/%.s} ${${DIR_RANDOMNUMBER}C:%.c=${BUILD}/%.s} 
-# Add to global variables
-DEP:=${DEP} ${${DIR_RANDOMNUMBER}DEP}
-OBJ:=${OBJ} ${${DIR_RANDOMNUMBER}OBJ}
-ASM:=${ASM} ${${DIR_RANDOMNUMBER}ASM}
-# C sources
-${BUILD}/%.o: ${DIR_RANDOMNUMBER}/%.c
-	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-${BUILD}/%.s: ${DIR_RANDOMNUMBER}/%.c
-	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-
-# C++ sources
-${BUILD}/%.o: ${DIR_RANDOMNUMBER}/%.cpp
-	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-${BUILD}/%.s: ${DIR_RANDOMNUMBER}/%.cpp
-	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-else
-# in-place build
-# Process variables
-${DIR_RANDOMNUMBER}DEP:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${DIR_RANDOMNUMBER}/%.d} ${${DIR_RANDOMNUMBER}C:%.c=${DIR_RANDOMNUMBER}/%.d} 
-${DIR_RANDOMNUMBER}OBJ:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${DIR_RANDOMNUMBER}/%.o} ${${DIR_RANDOMNUMBER}C:%.c=${DIR_RANDOMNUMBER}/%.o} 
-${DIR_RANDOMNUMBER}ASM:=${${DIR_RANDOMNUMBER}CPP:%.cpp=${DIR_RANDOMNUMBER}/%.s} ${${DIR_RANDOMNUMBER}C:%.c=${DIR_RANDOMNUMBER}/%.s} 
-# Add to global variables
-DEP:=${DEP} ${${DIR_RANDOMNUMBER}DEP}
-OBJ:=${OBJ} ${${DIR_RANDOMNUMBER}OBJ}
-ASM:=${ASM} ${${DIR_RANDOMNUMBER}ASM}
-
-# C sources
-${DIR_RANDOMNUMBER}/%.o: ${DIR_RANDOMNUMBER}/%.c
-	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-${DIR_RANDOMNUMBER}/%.s: ${DIR_RANDOMNUMBER}/%.c
-	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-
-# C++ sources
-${DIR_RANDOMNUMBER}/%.o: ${DIR_RANDOMNUMBER}/%.cpp
-	@echo Compiling "${GREEN}$@${NONE}"
-	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-${DIR_RANDOMNUMBER}/%.s: ${DIR_RANDOMNUMBER}/%.cpp
-	@echo Compiling "${CYAN}$@${NONE}"
-	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOMNUMBER}CXXFLAGS} ${${DIR_RANDOMNUMBER}INCS}
-
-# Linking pattern rule for this directory
-%.exe: ${DIR_RANDOMNUMBER}/%.o
-	@echo Linking "${RED}$@${NONE}"
-	${QUIET}${CXX} -o $@ $^ ${LIBS}
-endif 
-"""
-
-makefile_insource="""#  Sample Makefile for in-source build
-################################################################################
-#QUIET:=@# uncomment this line to silence
-ROOT :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
-# Include the top-level .mk file, i.e., the root.mk
--include ${ROOT}/root.mk
-# Include all branches here#INCLUDE_ALL_BRANCHES_HERE#
-# Then include all dependency files
--include ${DEP}
-################################################################################ 
-#	LIST LINKING RULES
-# Sample linking rules:
-# The redundancy in ${ROOT} is a must. There is no easy way around.
-#test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \\
-	#${ROOT}/heapsort/test_heapsort.o \\
-	#${ROOT}/utils/utils.o
-"""
-
-makefile_outofsource="""#  Sample Makefile for out-of-source build
-################################################################################
-#	ROOT LEVEL INFO - MAKEFILE SPECIFIC
-OUT_OF_SOURCE:=TRUE# TRUE = out-of-source build, otherwise = in-source build
-BUILD:=.# out-of-source build directory, unused in in-source build mode
-# Strongly recommend only using ${BUILD}=. as it simplifies the linking rules
-#QUIET:=@# uncomment this line to silence
-ROOT :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
-# Include the top-level .mk file, i.e., the root.mk
--include ${ROOT}/root.mk
-# Include all branches here#INCLUDE_ALL_BRANCHES_HERE#
-# Then include all dependency files
--include ${DEP}
-################################################################################ 
-#	LIST LINKING RULES
-# Sample linking tules:
-# If ${BUILD}==. (current directory), then we can use the following linking rule
-#diffpar.exe: diffpar.o utils.o
-#test_heapsort.exe: heapsort.o test_heapsort.o utils.o
-# Otherwise, we need to use the following linking rule
-#${BUILD}/diffpar.exe: ${BUILD}/diffpar.o ${BUILD}/utils.o
-#${BUILD}/test_heapsort.exe: ${BUILD}/heapsort.o ${BUILD}/test_heapsort.o ${BUILD}/utils.o
-"""
-
 texts=dict()
 texts['root']=rootmk
 texts['branch']=branchmk
-texts['imakefile']=makefile_insource
-texts['omakefile']=makefile_outofsource
+texts['makefile']=makefile
 
 def check_overwrite(fname):
     """warn when trying to overwrite existing file"""
+    # False=overwrite, True=do not overwrite
     if os.path.isfile(fname):
         flag=False
         rawinput=input(' '.join([fname,
-            'already exists, overwrite (y/n/q)?']))
+                                 'already exists, overwrite (y/n/q)? ']))
         raw=rawinput[0].lower()
         if raw=='y':
             flag=False 
         elif raw=='n':
             flag=True
         elif raw=='q': 
+            print('abort')
             exit(1)
         else:
-            print(rawinput,'does not match y/n/q. Abort.')
+            print(rawinput,'does not match y/n/q, abort.')
             exit(1)
         return flag
     else:
@@ -290,126 +216,128 @@ def strfile(fname,str):
     fd=open(fname,'w')
     fd.write(str)
     fd.close()
+    print('generated',fname)
 
 def strfile2(fname,str):
     """create file, copy string into it, check existing file"""
     if args.force:
         strfile(fname,str)
-        return True
+    elif args.skip:
+        pass
     else:
         if check_overwrite(fname)==False:
             strfile(fname,str) 
-            return True
-        else:
-            return False
 
 #strfile2('rootnew.mk',rootmk)
+
+def find_root(dir):
+    flag=False
+    root=os.path.normpath(os.path.join(os.getcwd(),dir))
+    if os.path.isfile(os.path.join(root,'root.mk')):
+        flag=True
+    else:
+        #print('search \'root.mk\' in:')
+        depth=99
+        for i in range(depth):
+            root=os.path.normpath(os.path.join(root,'..'))
+            #print(root)
+            if root=='/':
+                if os.path.isfile('/root.mk'):
+                    flag=True
+                break
+            else:
+                if os.path.isfile(os.path.join(root,'root.mk')):
+                    flag=True
+                    break 
+    if flag:
+        return root 
+    else:
+        print('root.mk not found')
+        exit(1)
+
+#find_root(args.dir,args.max_recursive_depth)
 
 def gen_root(root,text):
     """generate root.mk"""
     fname=os.path.join(root,'root.mk')
-    if strfile2(fname,text):
-        print('generated',fname)
+    strfile2(fname,text)
 
 #gen_root(args.root,rootmk)
 
-def gen_branch(root,path,text,files,num):
-    """generate the num-th branch.mk"""
+def gen_branch(dir,path,text,files):
+    """generate rules.mk"""
     c_src=fnmatch.filter(files,'*.c')
     cpp_src=fnmatch.filter(files,'*.cpp')
     if len(c_src)+len(cpp_src)>0:
-        fname=os.path.join(path,'branch.mk') 
-        tmp=text.replace('DIR_RANDOMNUMBER','-'.join(['DIR',str(num)]))
-        tmp=tmp.replace('#RELATIVE_PATH_FROM_ROOT#',
-                        path.replace(os.path.normpath(root),''))
+        fname=os.path.join(path,'rules.mk') 
+        tmp=text.replace('#RELATIVE_PATH_FROM_ROOT#',
+                        path.replace(os.path.normpath(dir),''))
         c_str=' '.join(c_src)
         tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
         cpp_str=' '.join(cpp_src)
         tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
-        if strfile2(fname,tmp): 
-            print(num,'generated',fname) 
+        strfile2(fname,tmp)
 
-def rwalk(root,texts):
-    """recursively scan and generate root.mk and branch.mk's"""
-    num=10000
-    gen_root(root,texts['root'])
+def gen_branch_only(dir,text):
+    """only generate one rules.mk"""
+    root=find_root(dir)
+    path=os.path.normpath(dir)
+    files=next(os.walk(path))[2] # only files, no subdirectories
+    gen_branch(root,path,text,files)
+
+def rwalk(dir,texts):
+    """recursively rules.mk's"""
+    root=find_root(dir)
     for path,dirs,files in os.walk(root):
-        gen_branch(root,path,texts['branch'],files,num)
-        num=num+1
-    return True
+        gen_branch(root,path,texts['branch'],files)
 
-#rwalk(args.root,texts)
+#rwalk(args.dir,texts)
 
-def rwalk_update(root,texts):
-    """recursively scan and generate root.mk and branch.mk's"""
-    num=10000
-    if os.path.isfile(os.path.join(root,'root.mk'))==False:
-        gen_root(root,texts['root'])
+def rwalk_skip(dir,texts):
+    """recursively generate rules.mk's, skip any existing file"""
+    root=find_root(dir)
     for path,dirs,files in os.walk(root): 
-        if os.path.isfile(os.path.join(path,'branch.mk'))==False:
-            gen_branch(root,path,texts['branch'],files,num)
-        num=num+1
+        if os.path.isfile(os.path.join(path,'rules.mk'))==False:
+            gen_branch(root,path,texts['branch'],files)
     return True
 
-def gen_imakefile(absroot,target,text):
-    """generate in-source makefile""" 
-    tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#',absroot)
-    dirlist=list();
-    for path,dirs,files in os.walk(absroot):
-        fname=os.path.join(path,'branch.mk')
+
+def collect_branch(root):
+    dirlist=list()
+    for path,dirs,files in os.walk(root):
+        fname=os.path.join(path,'rules.mk')
         if os.path.isfile(fname):
-            dirlist.append(os.path.join(path.replace(absroot,''),'branch.mk'))
-    tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
-                    '\n-include ${ROOT}'.join(dirlist))
-    if strfile2(target,tmp):
-        print('generated',target)
+            dirlist.append(os.path.join(path.replace(root,''),'rules.mk'))
+    return dirlist
 
-#gen_imakefile(args.root,args.target,texts['imakefile'])
 
-def gen_omakefile(absroot,target,text):
-    """generate in-source makefile""" 
-    tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#',absroot)
-    dirlist=list();
-    for path,dirs,files in os.walk(absroot):
-        fname=os.path.join(path,'branch.mk')
-        if os.path.isfile(fname):
-            dirlist.append(os.path.join(path.replace(absroot,''),'branch.mk'))
-    tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
-                    '\n-include ${ROOT}'.join(dirlist))
-    if strfile2(target,tmp):
-        print('generated',target)
-
-#gen_omakefile(args.root,args.target,texts['imakefile'])
-
-def rgen_makefile(insource,root,target,texts,depth):
+def gen_makefile(insource,dir,target,text):
     """recursively find root.mk before generating makefile"""
-    flag=False
-    absroot=os.path.join(os.getcwd(),root)
-    if os.path.isfile(os.path.join(absroot,'root.mk')):
-        flag=True
+    root=find_root(dir)
+    tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#',root)
+    #dirlist=list()
+    #for path,dirs,files in os.walk(root):
+        #fname=os.path.join(path,'rules.mk')
+        #if os.path.isfile(fname):
+            #dirlist.append(os.path.join(path.replace(root,''),'rules.mk'))
+    dirlist=collect_branch(root)
+    tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
+                    '\n-include ${ROOT}'.join(dirlist)) 
+
+    if args.insource:
+        tmp=tmp.replace('#INSOURCE#','#')
     else:
-        for i in range(depth):
-            absroot=os.path.normpath(os.path.join(absroot,'..'))
-            print(absroot)
-            if os.path.isfile(os.path.join(absroot,'root.mk')):
-                flag=True
-                break
-    if flag:
-        if insource:
-            gen_imakefile(absroot,target,texts['imakefile'])
-        else: 
-            gen_omakefile(absroot,target,texts['omakefile'])
-    else:
-        print('root.mk not found')
-    return flag
+        tmp=tmp.replace('#INSOURCE#','') 
+
+    strfile2(target,tmp)
 
 #rgen_imakefile(args.root,args.target,texts,args.max_recursive_depth)
 
-def delete_all(root):
-    """recursively delete all root.mk and branch.mk's"""
-    #if os.path.isfile(
-    for path,dirs,files in os.walk(root):
-        fname=os.path.join(path,'branch.mk')
+def delete_all(dir):
+    """recursively delete all .mk files"""
+    #root=find_root(dir)
+    for path,dirs,files in os.walk(dir):
+        fname=os.path.join(path,'rules.mk')
         if os.path.isfile(fname):
             os.remove(fname)
             print('deleted',fname)
@@ -419,10 +347,13 @@ def delete_all(root):
             print('deleted',fname) 
 
 if args.delete:
-    delete_all(args.root)
-elif args.generate_makefile:
-    rgen_makefile(args.insource,args.root,args.target,texts,args.max_recursive_depth)
-elif args.update:
-    rwalk_update(args.root,texts)
-else:
-    rwalk(args.root,texts)
+    delete_all(args.dir)
+    exit(0)
+if args.root_only:
+    gen_root(args.dir,texts['root'])
+if args.branch_only:
+    gen_branch_only(args.dir,texts['branch'])
+if args.recursive:
+    rwalk(args.dir,texts) 
+if args.makefile:
+    gen_makefile(args.insource,args.dir,args.target,texts['makefile'])

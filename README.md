@@ -1,32 +1,118 @@
 zmake
 =====
-Tools for generating modules for constructing GNU Makefiles.
+A new method of writing `Makefile`s.
 
-## What's in a Makefile?
-### GNU make
-The GNU make utility and Makefiles has been the de facto standard building tool on POSIX systems for decades. Almost all other building tools such as the CMake and the GNU autotools all build on the make utility.
-### Recursive make
-The GNU make utility takes a single, complete directed-acyclic-graph (DAG) as input, parses the DAG, travserses it, then arranges for proper target: prerequisite rules to take action. Many large projects tend to use a technique called recursive make because it is perhaps the easiest way one can think of. 
+## What's in a `Makefile`?
+### The GNU `make` program and `Makefile`s
+The  `make` program takes a file, typically called `Makefile`, from the command line. The `Makefile` provides information on dependencies in the form of `target: prerequisite(s)`. There is usually also a `recipe` associated with each `target`. If the `target` is older than any of its `prerequisite`s, the `make` program will invoke the `recipe` associated with the `target`.
 
-However, Peter Miller, in his famous [*Recursive Make Considered Harmful*](http://aegis.sourceforge.net/auug97.pdf), pointed out that using recursive make breaks the completeness of the DAG. Much manual work must be done to complete the DAG. The resulting set of Makefiles is usually very hard to read, modify, and maintain.
-### Single Makefile approach
-Peter Miller was right in pointing out the source of problem in using recursive make. He also proposed an alternative implementation using a single Makefile. [His implementation](http://evbergen.home.xs4all.nl/nonrecursive-make.html) avoided using recursive make by keeping track of a global stack depth variable `sp`, a directory-specific stack `dirstack_(sp)`, and a stack pointer `d`.
+The dependencies in a project will form a *directed acyclic graph* (DAG). The `make` program relies on the DAG to function properly.
 
-However, Peter Miller's implementation is recursive in nature and is vulnerable to mistakes as it involves manual tracking of stacks and stack pointers in a non-trivial way.
+`Makefile`s are old, vast, and complicated. Writing good `Makefile`s is not easy.
 
-Can we write a Makefile that is non-recursive in nature and still preserves the directory-specific modularity? Yes, we can.
-### Good single Makefile approach
-The core idea is to use directory-specific pattern rules.
-For example, only the `.cpp` files in `heapsort/` are automatically matched to `%.o: heapsort/%.cpp`. `%.o: heapsort/%.cpp` does not apply to `utils.o: utils/utils.cpp`.
+To illustrate various approaches, let's first introduce a sample project.
 
-[TODO: Explain the modules and Makefile]
 
-See `demo/` for more information.
+#### Sample project
+
+Suppose we have a C++ project with the following source tree:
+
+```
+src/
+├── heapsort/
+│   ├── heapsort.cpp
+│   ├── heapsort.h
+│   └── test_heapsort.cpp
+└── utils/
+    ├── test_utils.cpp
+    ├── utils.cpp
+    └── utils.h
+```
+Suppose there are two executables to build: `test_heapsort.exe` and `test_utils.exe`. And we want to use `-O3` and `-g` as the compiling flags for `heapsort` and `utils`, respectively. We also want to link `test_heapsort.o` with `-lm` but link `test_utils.o` with no extra libraries. 
+
+This is a small project. But it is complicated enough to demonstrate our points.
+
+
+### The old single `Makefile` approach
+
+Build the sample project using a single monolithic `Makefile` (`demo0/Makefile`):
+
+```
+CXX:=icpc
+
+
+CFLAGS1:=-O3
+CFLAGS2:=-g
+INCS:=-iquote .
+
+test_heapsort.exe: test_heapsort.o heapsort.o utils.o
+	${CXX} -o $@ $^ -lm
+
+test_utils.exe: test_utils.o utils.o
+	${CXX} -o $@ $^
+
+test_heapsort.o: heapsort/test_heapsort.cpp \
+			heapsort/heapsort.h utils/utils.h 
+	${CXX} -o $@ -c $< ${CFLAGS1} ${INCS}
+
+heapsort.o: heapsort/heapsort.cpp heapsort/heapsort.h
+	${CXX} -o $@ -c $< ${CFLAGS1} ${INCS} 
+	
+test_utils.o: utils/test_utils.cpp utils/utils.h
+	${CXX} -o $@ -c $< ${CFLAGS2} ${INCS}
+
+utils.o: utils/utils.cpp utils/utils.h
+	${CXX} -o $@ -c $< ${CFLAGS2} ${INCS}
+
+.PHONY: all clean cleanxx
+
+all: 
+
+clean:
+	rm -f *.o
+cleanxx: clean
+	rm -f *.exe
+```
+
+The problem with the traditional single `Makefile` approach, i.e., writing a monolithic `Makefile` for a large project, has some major disadavantages.
+
+* Programmers have to manually list all the dependencies.  As the project grows larger and larger, it would at some point become practically impossible to read, modify, and maintain.
+* In theory, pattern rules such as `.o .c` and `%.o : %.c` can be used to reduce the amount of manual work. But in practice, such pattern rules do not permit ***directory-specific*** recipes, which renders them almost useless for large projects that have different compiling and building rules for different directories.
+
+To counter these issues, especially as an effort to achieve the modularity at the *directory level*, people found a new way of writing `Makefiles` - using *recursive `make`*.
+
+### Recursive make considered harmful
+
+Recursive `make` has good modularity. But, as Peter Miller pointed out in his famous [*Recursive make considered harmful*](http://aegis.sourceforge.net/auug97.pdf), recursive `make` breaks the completeness of the DAG. This has several consequencies:
+
+* The incompleteness of the DAG means that the `make` program will build too little. 
+* Manually "patching" the DAG would usually result in an over-complete `Makefile` that builds too much.
+* Parallel `make` using the `-j` flag becomes very tricky, if not at all impossible.
+* Indeed, `Makefile`s written using recursive `make` are hard to maintain, too.
+
+Understandably, these problems are hard to solve within the scope of the recursive `make`. So, Peter Miller came to the conclusion that recursive `make` is harmful and the right way of writing `Makefile`s is to write a single `Makefile` the builds the entire project. He referred readers to the implementation of Emile van Bergen for a new solution.
+
+### The single `Makefile` solution due to Emile van Bergen
+The implementation due to [Emile](http://evbergen.home.xs4all.nl/nonrecursive-make.html) is a single `Makefile` approach that has modularity at the directory level. 
+or what Emile did. But we will start from this plain version `Makefile`.
+
+#### Emile's solution
+
+
+
+
+
+### Finally: a good single `Makefile` solution
+
+
+
+
+
 
 ## What does zmake do?
-In short, zmake generates modules (`root.mk` and `branch.mk`'s) that are used to construct Makefiles. Makefiles constructed this way fully support directory-specific pattern rules, and are single-Makefile projects.
+In short, zmake generates modules (`root.mk` and `rules.mk`'s) that are used to construct Makefiles. Makefiles constructed this way fully support directory-specific pattern rules, and are single-Makefile projects.
 
-The zmake script can also generate Makefiles from existing `root.mk` and `branch.mk`'s, and can recursively clean all `root.mk` and `branch.mk`.
+The zmake script can also generate Makefiles from existing `root.mk` and `rules.mk`'s, and can recursively clean all `root.mk` and `rules.mk`.
 
 ## How to use zmake?
 ### Can I use zmake?
@@ -50,6 +136,7 @@ usage: zmake [-h] [-f] [-u | -d | -g] [-o TARGET] [-n N]
              [--in-source | --out-of-source]
              [root]
 
+[TODO: ]
 Generating module files for constructing a single Makefile
 
 positional arguments:
@@ -59,7 +146,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -f, --force           force overwrite (False)
   -u, --update          skip existing .mk files (False)
-  -d, --delete          recursively delete all root.mk and branch.mk's (False)
+  -d, --delete          recursively delete all root.mk and rules.mk's (False)
   -g, --generate-makefile
                         generate a Makefile (False)
   -o TARGET             output the Makefile to TARGET (./Makefile)
@@ -79,10 +166,10 @@ In a terminal, `cd` into the root directory of zmake. Type
 The positional argument `demo` is the root directory of all the source files. The zmake script recursively scans the `demo/` directory for `.c` and `.cpp` files to generates various `.mk` files. You will see the following message:
 
 	generated demo/root.mk
-	100 generated demo/branch.mk
-	101 generated demo/diffpar/branch.mk
-	102 generated demo/heapsort/branch.mk
-	103 generated demo/utils/branch.mk
+	100 generated demo/rules.mk
+	101 generated demo/diffpar/rules.mk
+	102 generated demo/heapsort/rules.mk
+	103 generated demo/utils/rules.mk
 
 The number 100,101,102,103 are internal numbers used to distinguish different directories. As long as all of the numbers are **distinct**, we are in good shape.
 
@@ -123,10 +210,10 @@ Your `./Makefile` should have the following content:
 ROOT :=#your own directory#
 # Include the top-level .mk file, i.e., the root.mk
 -include ${ROOT}/root.mk
-# Include all branches herebranch.mk
--include ${ROOT}/diffpar/branch.mk
--include ${ROOT}/heapsort/branch.mk
--include ${ROOT}/utils/branch.mk
+# Include all branches hererules.mk
+-include ${ROOT}/diffpar/rules.mk
+-include ${ROOT}/heapsort/rules.mk
+-include ${ROOT}/utils/rules.mk
 # Then include all dependency files
 -include ${DEP}
 ################################################################################ 
@@ -163,7 +250,7 @@ Then a simple
 
 will do the work. The flag `-f/--force` forces overwriting existing `.mk` files. If you do not specify `-f/--force`, you will be prompted
 
-	bin/demo/diffpar/branch.mk already exists, overwrite (y/n/q)?
+	bin/demo/diffpar/rules.mk already exists, overwrite (y/n/q)?
 	
 so you can decide whether to overwrite on each file.
 
@@ -193,9 +280,9 @@ A sample message is:
 
 ```
 deleted demo/root.mk
-deleted demo/diffpar/branch.mk
-deleted demo/heapsort/branch.mk
-deleted demo/utils/branch.mk
+deleted demo/diffpar/rules.mk
+deleted demo/heapsort/rules.mk
+deleted demo/utils/rules.mk
 ```
 
 ## Some notes on usage
