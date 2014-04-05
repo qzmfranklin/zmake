@@ -13,9 +13,4 @@ clean:
 	${QUIET}rm -f *.exe ${OBJ} ${DEP} ${ASM}
 ################################################################################ 
 #	LIST YOUR LINKING RULES HERE
-# Sample linking rules for in-source build:
-test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \
-	${ROOT}/heapsort/test_heapsort.o \
-	${ROOT}/utils/utils.o
-test_utils.exe: ${ROOT}/utils/test_utils.o \
-	${ROOT}/utils/utils.o
+test_heapsort.exe: ${d}/test_utils.o ${d}/utils.o

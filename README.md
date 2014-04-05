@@ -1,14 +1,14 @@
 zmake
 =====
-A new method of writing `Makefile`s.
+A new method of writing Makefiles.
 
-## What's in a `Makefile`?
-### The GNU `make` program and `Makefile`s
-The  `make` program takes a file, typically called `Makefile`, from the command line. The `Makefile` provides information on dependencies in the form of `target: prerequisite(s)`. There is usually also a `recipe` associated with each `target`. If the `target` is older than any of its `prerequisite`s, the `make` program will invoke the `recipe` associated with the `target`.
+## What's in a Makefile?
+### The GNU make program and Makefiles
+The `make` program takes a file, typically called `Makefile`, from the command line. The Makefile provides information on dependencies in the form of `target: prerequisite(s)`. There is usually also a `recipe` associated with each `target`. If the `target` is older than any of its `prerequisite`s, the `make` program will invoke the `recipe` associated with the `target`.
 
 The dependencies in a project will form a *directed acyclic graph* (DAG). The `make` program relies on the DAG to function properly.
 
-`Makefile`s are old, vast, and complicated. Writing good `Makefile`s is not easy.
+Makefiles are old, vast, and complicated. Writing good `Makefile`s is not easy.
 
 To illustrate various approaches, let's first introduce a sample project.
 
@@ -20,9 +20,9 @@ Suppose we have a C++ project with the following source tree:
 ```
 .
 ├── heapsort/
-│   ├── heapsort.cpp
-│   ├── heapsort.h
-│   └── test_heapsort.cpp
+│   ├── heapsort.cpp
+│   ├── heapsort.h
+│   └── test_heapsort.cpp
 └── utils/
     ├── test_utils.cpp
     ├── utils.cpp
@@ -33,9 +33,9 @@ Suppose there are two executables to build: `test_heapsort.exe` and `test_utils.
 This is a small project. But it is complicated enough to demonstrate our points.
 
 
-### The old monolithic `Makefile` approach
+### The classic monolithic Makefile approach
 
-Build the sample project using a single monolithic `Makefile` (`demo0/Makefile`):
+Build the sample project using a monolithic Makefile (`demo0/Makefile`):
 
 ```
 CXX:=icpc
@@ -74,138 +74,114 @@ cleanxx: clean
 	rm -f *.exe
 ```
 
-The problem with the traditional single `Makefile` approach, i.e., writing a monolithic `Makefile` for a large project, has some major disadavantages.
+The method of writing a monolithic Makefile for a large project has a major disadavantage:
 
-* Programmers have to manually list all the dependencies.  As the project grows larger and larger, it would at some point become practically impossible to read, modify, and maintain.
-* In theory, pattern rules such as `.o .c` and `%.o : %.c` can be used to reduce the amount of manual work. But in practice, such pattern rules do not permit ***directory-specific*** recipes, which renders them almost useless for large projects that have different compiling and building rules for different directories.
+* Programmers have to manually list all the dependencies, including dependencies on `.h` files. As the project grows larger and larger, it would at some point become practically impossible to read, modify, and maintain.
+
+In theory, pattern rules such as `.o .c` and `%.o : %.c` can be used to reduce the amount of manual work. But in practice, such pattern rules do not permit ***directory-specific*** recipes, which renders them almost useless for large projects that have different compiling and building rules for different directories.
 
 To counter these issues, especially as an effort to achieve the modularity at the *directory level*, people found a new way of writing `Makefiles` - using *recursive `make`*.
 
 ### Recursive make considered harmful
 
-Recursive `make` has good modularity. But, as Peter Miller pointed out in his famous [*Recursive make considered harmful*](http://aegis.sourceforge.net/auug97.pdf), recursive `make` breaks the completeness of the DAG. This has several consequencies:
+Recursive make has good modularity. But, as Peter Miller pointed out in his famous [*Recursive make considered harmful*](http://aegis.sourceforge.net/auug97.pdf), recursive make breaks the completeness of the DAG. This has several consequencies:
 
-* The incompleteness of the DAG means that the `make` program will build too little. 
-* Manually "patching" the DAG would usually result in an over-complete `Makefile` that builds too much.
-* Parallel `make` using the `-j` flag becomes very tricky, if at all possible.
-* `Makefile`s written using recursive `make` are not easy to maintain, either.
+* The incompleteness of the DAG means that the make program will usually build too little. 
+* Manually "patching" the DAG would usually result in an over-complete Makefile that builds too much.
+* Parallel make using the `-j` flag becomes very tricky, if at all possible.
+* Makefiles written using recursive make are not easy to maintain, either.
 
-Understandably, these problems are hard to solve within the scope of the recursive `make`. So, Peter Miller came to the conclusion that recursive `make` is harmful and the right way of writing `Makefile`s is to write a single `Makefile` the builds the entire project. 
+Understandably, these problems are hard to resolve within the scope of the recursive make method. So, Peter Miller came to the conclusion that recursive make was harmful and the right way of writing Makefiles was to write a single Makefile the could build the entire project. 
 
-Peter Miller proposed an alternative single `Makefile` solution (section 7 Big Picture in his paper). His solution has a `modules.mk` in each subdirectory that actually contains source files, and has the `Makefile` in the root directory include all the `modules.mk`'s. His solution has drawbacks as well:
-
-* The `modules.mk` files hardcode their relative path to the root directory.
-* It is still using a global `${CFLAGS}` variable to pass the compiling options. The global compiling options are not compatible with *directory-specific pattern rules*, which is the key to achieving the modularity at the *directory level*.
+Peter Miller proposed an alternative single Makefile solution (section 7 Big Picture in his paper). His solution had a file called `modules.mk` in each subdirectory that actually contains source files, and had the `Makefile` in the root directory include all the `modules.mk` files. His solution was still using a global `${CFLAGS}` variable to pass the compiling options, which was not fit for achieving the desired *directory-specific pattern rules*.
 
 Emile van Bergen, was aware of these, and proposed a new solution.
 
 ### The single `Makefile` solution due to Emile van Bergen
 The implementation due to [Emile](http://evbergen.home.xs4all.nl/nonrecursive-make.html) is a single `Makefile` approach that can achieve the modularity at the directory level. 
 
-Its basic idea is to write `Rules.mk` files for each subdirectory that actually contains source files, and have the `Makefile` in the root directory `-inlcude` all the `Rules.mk` at once. 
+Its basic idea is to write `Rules.mk` files for each subdirectory that actually contains source files, and have the `Makefile` in the root directory inlcude all the `Rules.mk` in the right order.
 
-Emile's solution uses stacks and stack pointers. As the `make` program enters a `Rules.mk` (assuming `Rules.mk` is in a subdirectory called `subdir`), the parent directory of `subdir` is pushed into a stack and the stack pointer points shifted accordingly to `subdir`. As the `make` leaves `subdir`, the parent directory is poped from the stack. 
+Emile's solution uses stacks and stack pointers. As the `make` program enters a `Rules.mk` (assuming `Rules.mk` is in a subdirectory called `subdir`), the parent directory of `subdir` is pushed into a stack and the stack pointer shifts to `subdir`. As the `make` leaves `subdir`, the parent directory is poped from the stack and the stack pointer shifts back to the parent directory.
 
 The advantages of Emile's solution are:
 
 * Each `Rules.mk` is oblivious of any other `Rules.mk`'s. This is a significant progress towards better modularity.
-* This solution allows programmers to specify recipes for each *target*.
+* In principle, Emile's solution allows programmers to specify recipes for each *target*.
 
 The disadvantages of Emile's solutions are:
 
-* The use of stacks introduced an extra layer of indirection. The correctness of the `Makefile` will have to depend on the order in which the `Rules.mk` files are `include`d.
-* It does not support *directory-specific pattern rules* either. Although it support *target-specific recipes*, sometimes it is just an overkill and much labor is needed to list all the recipes.
+* The use of stacks introduces an extra layer of indirection. The correctness of the `Makefile` depends on the order in which the `Rules.mk` files are included.
+* It does not support *directory-specific pattern rules*. Although it support *target-specific recipes*, sometimes it is just an overkill and much labor is still needed to list all the recipes.
 
-Given these, we may wish to have a yet better single `Makefile` solution.
+Given these, we may wish to have a yet better single Makefile solution.
 
-## A new single `Makefile` solution
-In this part, we will introduce a new method for writing `Makefile`s.
+## A new single Makefile solution
+In this part, we will introduce a new method for writing Makefiles.
 
 ### Sample project again
-Let's demonstrate the method with a sample project. The resulting codes are in `demo1/`. The details of the sample project being used is explained in a previous section. The source tree is listed below to save you from scrolling the mouse:
+Let's demonstrate the method with a sample project. The codes are in `demo1/`. The sample project is explained in a previous section. For convenience the source tree is listed below:
 
 ```
 demo1/
 ├── heapsort/
-│   ├── heapsort.cpp
-│   ├── heapsort.h
-│   └── test_heapsort.cpp
+│   ├── heapsort.cpp
+│   ├── heapsort.h
+│   └── test_heapsort.cpp
 └── utils/
     ├── test_utils.cpp
     ├── utils.cpp
     └── utils.h
 ```
-### Overall structure
-Our method has `rules.mk` files in every subdirectory has actually contains source files and a `root.mk` in the root directory. `Makefile`s are constructed using these `.mk` files. As an example, see `demo1`:
+### Overall structure of the Makefiles
+Our method has `rules.mk` files in every subdirectory has actually contains source files and a `root.mk` in the root directory. Makefiles are constructed using these .mk files. All the files related to constructing the Makefile for `demo1/` are listed below:
 
 ```
 demo1/
-├── *Makefile
+├── Makefile
 ├── heapsort/
-│   ├── heapsort.cpp
-│   ├── heapsort.h
-│   ├── *rules.mk
-│   └── test_heapsort.cpp
-├── *root.mk
+│   └─── rules.mk
+├── root.mk
 └── utils/
-    ├── *rules.mk
-    ├── test_utils.cpp
-    ├── utils.cpp
-    └── utils.h
+    └─── rules.mk
 ```
 
-Stars indicate that the files are part of our method. In the following sections, we will go over `Makefile`, `root.mk`, and `rules.mk` one at a time.
+In the following sections, we will go over Makefile, root.mk, and rules.mk one at a time.
 
 ### Makefile
 The `demo1/Makefile`:
 
 ```
-#  Sample Makefile
-################################################################################
-#	ROOT LEVEL INFO - MAKEFILE SPECIFIC
-#OUT_OF_SOURCE:=TRUE# TRUE = out-of-source build, otherwise = in-source build
-#BUILD:=.# out-of-source build directory, unused in in-source build mode
-# Strongly recommend only using ${BUILD}=. as it simplifies the linking rules
-#QUIET:=@# uncomment this line to silence
-ROOT :=/Users/qzmfrank/codes/zmake/demo1
-# Include the top-level .mk file, i.e., the root.mk
+QUIET  :=@# comment this line to print more information 
+ROOT    :=/media/MyData/codes/zmake/demo
+d       :=${ROOT}/utils# this directory
 -include ${ROOT}/root.mk
-# Include all branches here
--include ${ROOT}/heapsort/rules.mk
 -include ${ROOT}/utils/rules.mk
-# Then include all dependency files
+-include ${ROOT}/heapsort/rules.mk
 -include ${DEP}
-################################################################################ 
+################################################################################
+.PHONY: all asm clean
+all: ${OBJ}
+asm: ${ASM}
+clean:
+	${QUIET}rm -f *.exe ${OBJ} ${DEP} ${ASM}
+################################################################################
 #	LIST YOUR LINKING RULES HERE
 test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \
 	${ROOT}/heapsort/test_heapsort.o \
 	${ROOT}/utils/utils.o
 test_utils.exe: ${ROOT}/utils/test_utils.o \
 	${ROOT}/utils/utils.o
-################################################################################
-#	MISC PHONY TARGETS 
-.PHONY: all clean cleanx cleanxx
-
-all: ${OBJ}
-
-clean:
-	${QUIET}rm -f ${OBJ}
-cleanx:
-	${QUIET}rm -f ${DEP} ${ASM}
-cleanxx: clean cleanx
-	${QUIET}rm -f *.exe
-
 ```
 
-* `OUT_OF_SOURCE` is a global flag. If and only if it is set to `TRUE`, the `Makefile` will build out-of-source. Otherwise it is in-source build. We will get to out-of-source build later. We will go through this example with in-source.
-* `BUILD` is the build directory for out-of-source build. `BUILD` is not used at all when in in-source build mode. We will expalin the `BUILD` later as we go through out-of-source build.
-* `QUIET` is a global flag variable. If `QUIET` is set to `@`, very few messages are printed when using this `Makefile`.
+* `QUIET` is a global flag. If `QUIET` is set to `@`, few messages are printed when using this Makefile.
 * `ROOT` is the *absolute* path of the root directory of the source files.
-* The `root.mk` file and the several `rules.mk` files are explained the the next section. In short, they contain pattern rules that are specific to each directory and are the key to achieving modularity. You have to always include the `root.mk`. You only need to include `rules.mk` files that are used by the linking rules in the "LIST YOUR LINKING RULES HERE" section.
-* `DEP` is all the dependency files, i.e., `.d` files. The minus sign before `include` suppresses unwanted warning messages. Usually, the user does not need to change the `-inlcude ${DEP}` line.
+* The root.mk file and the several rules.mk files are explained the the next sections. In short, root.mk stores the project-wide compiling options, include directories, and libraries to link against. The rules.mk files store pattern rules that are specific to each directory. The root.mk should always be included at the beginning of the Makefile. The rules.mk files should be included after the root.mk.
+* `DEP` is all the dependency files, i.e., `.d` files. The minus sign before `include` suppresses unwanted warning messages.
+* Several phony targets, i.e., all, asm, and clean are defined to make life easier. `OBJ` is all the `.o` files. `DEP` is all the `.d` files. `AMS` is all the `.s` files, i.e., assembly listing files.
 * In the "LIST YOUR LINKING RULES HERE" section, list all the dependencies of the executables we want to build, and the `.o` files they depend on. Where are the recipes? There are pattern rules to do the build. The pattern rules are in the `rule.mk` files. We will expalin this in the next section.
-* At last, in the section "MISC PHONY TARGETS", several useful phony targets are defined to make life easier. `OBJ` is all the `.o` files. `DEP` is all the `.d` files. `AMS` is all the `.s` files, i.e., assembly codes. You may modify this part any way you like.
-* `ROOT`, `QUIET`, `OUT_OF_SOURCE`, and `BUILD` are defined in the `Makefile`. `OBJ`, `DEP`, and `ASM` are defined in `root.mk`. Pattern rules, compiling options, and linking options that are specific to each subdirectory are defined in `rules.mk`.
+
+**NOTE**: `ROOT` and `QUIET` are defined in the Makefile. `OBJ`, `DEP`, and `ASM` are defined in root.mk. Pattern rules, compiling options, and linking options that are specific to each subdirectory are defined in rules.mk files.
 
 
 ### root.mk
@@ -333,10 +309,6 @@ There *may* be a problem of overloading pattern rules. If we specify both `%.o: 
 .SUFFIXES:
 ```
 
-
-### Out-of-source build
-[TODO]
-
 ### Summary
 Our method of writing `Makefile`s
 
@@ -347,12 +319,11 @@ Our method of writing `Makefile`s
 
 The `make` program and `Makefile`s are vast and complicated. Building a project from sources is by itself a good project. People have attempted to address various problems such as modularity, maintainability, and portability. The new method of writing `Makefile`s explained here mainly addresses the modularity and maintainability problems. We sincerely hope that it will be helpful.
 
-## The `zmake` script
+## The zmake script
 The `zmake` script can generate `root.mk`, `rules.mk` files, and `Makefile`s.
+**NOTE**: The out-of-source build function is removed from the the `zmake` script. The old `zmake` that supports out-of-source build is renamed to `zmake2`.
 
-### Requirement
-Here is the list of requirements:
-
+### List of requirement
 * POSIX OS.
 * Only support C/C++ projects.
 * A working python3 interpreter.
@@ -362,12 +333,10 @@ Make sure that the `zmake` script is included in `$PATH`, type
 
 	zmake -h
 	
-It should print out the following usage information:
+Then you should see:
 
 ```
-usage: zmake [-h] [-f | -s | -d] [-r | -b | -R] [-g] [-o TARGET]
-             [--in-source | --out-of-source]
-             [dir]
+usage: zmake [-h] [-f | -s | -d] [-r | -b | -R] [-g] [-o TARGET] [dir]
 
 Generating module files for constructing a single Makefile
 
@@ -386,12 +355,10 @@ optional arguments:
 Makefile:
   -g, --makefile     generate a Makefile (False)
   -o TARGET          output the Makefile to TARGET (./Makefile)
-  --in-source        Makefile builds in-source
-  --out-of-source    Makefile builds out-of-source
 ```
 
 
-### Generate `root.mk`
+### Generate root.mk
 In a terminal, `cd` into the root directory of `zmake`. Type
 
 	zmake demo -r
@@ -446,7 +413,7 @@ to skip creating any existing files.
 
 **NOTE**: The `-f/--force` and `-s/--skip` options apply to `-r/--root-only`, `-b/--branch-only`, `-R/--recursive`, and `-g/--makefile`.
 
-### Generate only one `rules.mk`
+### Generate only one rules.mk
 Sometimes it might be desirable to generate the `rules.mk` for a single subdirectory. The `zmake` script can do this too.
 
 In terminal, in the root directory of `zmake`, type
