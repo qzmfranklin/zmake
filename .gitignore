@@ -13,3 +13,6 @@
 *.a
 
 !build/Makefile
+*.o
+*.d
+*.exe

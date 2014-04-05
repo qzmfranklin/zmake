@@ -8,7 +8,8 @@ import sys
 import argparse
 
 parser=argparse.ArgumentParser(description=
-    'Generating module files for constructing a single Makefile',
+    'Generating module files for constructing a single Makefile (support\
+                               out-of-source build',
     prefix_chars='+-')
 
 parser.add_argument('dir',action='store',nargs='?',default='.',
@@ -37,17 +38,33 @@ group_makefile.add_argument('-g','--makefile',action='store_true',default=False,
          help='generate a Makefile (%(default)s)')
 group_makefile.add_argument('-o',dest='target',action='store',default='./Makefile',
                   help='output the Makefile to TARGET (%(default)s)') 
+group_insource=group_makefile.add_mutually_exclusive_group()
+group_insource.add_argument('--in-source',dest='insource',action='store_true',
+                            default=True,help='Makefile builds in-source')
+group_insource.add_argument('--out-of-source',dest='insource',action='store_false',
+                            default=False,help='Makefile builds out-of-source')
+#group_makefile.add_argument('-n','--max-recursive-depth',metavar='N',type=int,default=99,
+                  #help='search depth when creating Makefile (%(default)s)') 
+
+
 #parser.set_defaults(verbose=False)
+args = parser.parse_args()
 
-args = parser.parse_args() 
 
-rootmk="""\
+
+rootmk="""################################################################################
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
-CC		:=gcc
-CFLAGS 		:=-O3 -Wall -std=c99
+CC		:=icc
+CFLAGS 		:=-O3							\\
+		-Wall							\\
+		-std=c99						\\
+		-Wno-deprecated
 
-CXX		:=g++
-CXXFLAGS	:=-O3 -Wall
+CXX		:=icpc
+CXXFLAGS	:=-O3							\\
+		-Wall							\\
+		-Wno-deprecated
+
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
@@ -59,9 +76,15 @@ ASM		:=# .s files
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
 ASMFLAGS	:=-S -fsource-asm# source code commented assembly code 
 .SUFFIXES:
+################################################################################
+# 	OUT-OF-SOURCE PATTERN RULES
+ifeq (OUT_OF_SOURCE,TRUE)
+${BUILD}/%.exe: ${BUILD}/%.o
+	${QUIET}${CXX} -o $@ $^ ${LIBS} 
+endif
 """
 
-branchmk="""\
+branchmk="""################################################################################
 #  THIS DIRECTORY
 DIR:=${ROOT}#RELATIVE_PATH_FROM_ROOT#
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
@@ -73,6 +96,25 @@ ${DIR}CXXFLAGS:=${CXXFLAGS}
 ${DIR}INCS:=${INCS}
 ################################################################################ 
 #		INTERNAL VARIABLES AND PATTERN RULES
+ifeq (${OUT_OF_SOURCE},TRUE)
+# out-of-source build
+# Add local targets to global variables
+DEP:=${DEP} ${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
+OBJ:=${OBJ} ${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
+ASM:=${ASM} ${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
+# C sources
+${BUILD}/%.o: ${DIR}/%.c
+	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+${BUILD}/%.s: ${DIR}/%.c
+	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+
+# C++ sources
+${BUILD}/%.o: ${DIR}/%.cpp
+	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+${BUILD}/%.s: ${DIR}/%.cpp
+	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+else
+# in-place build
 # Add local targets to global variables
 DEP:=${DEP} ${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
 OBJ:=${OBJ} ${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
@@ -93,25 +135,54 @@ ${DIR}/%.s: ${DIR}/%.cpp
 # Linking pattern rule for this directory
 %.exe: ${DIR}/%.o
 	${QUIET}${CXX} -o $@ $^ ${LIBS}
+endif 
 """
 
-makefile="""\
-QUIET  :=@# comment this line to print more information 
-ROOT    :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
-d       :=#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY## this directory
--include ${ROOT}/root.mk
--include ${ROOT}#INCLUDE_ALL_BRANCHES_HERE#
--include ${DEP}
+makefile="""#  Sample Makefile
 ################################################################################
-.PHONY: all asm clean
-all: ${OBJ}
-asm: ${ASM}
-clean:
-	${QUIET}rm -f *.exe ${OBJ} ${DEP} ${ASM}
+#	ROOT LEVEL INFO - MAKEFILE SPECIFIC
+#INSOURCE#OUT_OF_SOURCE:=TRUE# TRUE = out-of-source build, otherwise = in-source build
+#INSOURCE#BUILD:=.# out-of-source build directory, unused in in-source build mode
+# Strongly recommend only using ${BUILD}=. as it simplifies the linking rules
+#QUIET:=@# uncomment this line to silence
+ROOT :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
+# Include the top-level .mk file, i.e., the root.mk
+-include ${ROOT}/root.mk
+# Include all branches here
+-include ${ROOT}#INCLUDE_ALL_BRANCHES_HERE#
+# Then include all dependency files
+-include ${DEP}
 ################################################################################ 
 #	LIST YOUR LINKING RULES HERE
+
+# Sample linking rules for out-of-source build:
+# If ${BUILD}==. (current directory), then we can use the following linking rule
+#diffpar.exe: diffpar.o utils.o
+#test_heapsort.exe: heapsort.o test_heapsort.o utils.o
+
+# If ${BUILD} is anything else, we have to use the following linking rule
+#${BUILD}/diffpar.exe: ${BUILD}/diffpar.o ${BUILD}/utils.o
+#${BUILD}/test_heapsort.exe: ${BUILD}/heapsort.o ${BUILD}/test_heapsort.o ${BUILD}/utils.o
+
+
 # Sample linking rules for in-source build:
-#test_heapsort.exe: ${d}/heapsort.o ${d}/test_heapsort.o ${ROOT}/utils/utils.o
+#test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \\
+	#${ROOT}/heapsort/test_heapsort.o \\
+	#${ROOT}/utils/utils.o
+################################################################################
+#	MISC PHONY TARGETS 
+.PHONY: all asm clean cleanx cleanxx
+
+all: ${OBJ}
+
+asm: ${ASM}
+
+clean:
+	${QUIET}rm -f ${OBJ}
+cleanx:
+	${QUIET}rm -f ${DEP} ${ASM}
+cleanxx: clean cleanx
+	${QUIET}rm -f *.exe
 """
 texts=dict()
 texts['root']=rootmk
@@ -161,22 +232,13 @@ def strfile2(fname,str):
 
 #strfile2('rootnew.mk',rootmk)
 
-def find_abspath(dir):
-    """return the absolute path of dir"""
-    if dir[0]=='/':
-        root=dir
-    else: 
-        root=os.path.normpath(os.path.join(os.getcwd(),dir))
-    return root
-
 def find_root(dir):
-    """return the absolute path of root.mk (excluding file name)"""
     flag=False
-    root=find_abspath(dir)
-
+    root=os.path.normpath(os.path.join(os.getcwd(),dir))
     if os.path.isfile(os.path.join(root,'root.mk')):
         flag=True
     else:
+        #print('search \'root.mk\' in:')
         depth=99
         for i in range(depth):
             root=os.path.normpath(os.path.join(root,'..'))
@@ -251,15 +313,23 @@ def collect_branch(root):
     return dirlist
 
 
-def gen_makefile(dir,target,text):
+def gen_makefile(insource,dir,target,text):
     """recursively find root.mk before generating makefile"""
     root=find_root(dir)
     tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#',root)
+    #dirlist=list()
+    #for path,dirs,files in os.walk(root):
+        #fname=os.path.join(path,'rules.mk')
+        #if os.path.isfile(fname):
+            #dirlist.append(os.path.join(path.replace(root,''),'rules.mk'))
     dirlist=collect_branch(root)
     tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
                     '\n-include ${ROOT}'.join(dirlist)) 
-    tmp=tmp.replace('#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY#',
-                    find_abspath(dir).replace(root,'${ROOT}'))
+
+    if args.insource:
+        tmp=tmp.replace('#INSOURCE#','#')
+    else:
+        tmp=tmp.replace('#INSOURCE#','') 
 
     strfile2(target,tmp)
 
@@ -288,4 +358,4 @@ if args.branch_only:
 if args.recursive:
     rwalk(args.dir,texts) 
 if args.makefile:
-    gen_makefile(args.dir,args.target,texts['makefile'])
+    gen_makefile(args.insource,args.dir,args.target,texts['makefile'])
