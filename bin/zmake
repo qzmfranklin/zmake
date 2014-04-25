@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import os
 import glob
 import fnmatch
@@ -21,13 +20,11 @@ group_general.add_argument('-f','--force',action='store_true',default=False,
 group_general.add_argument('-s','--skip',action='store_true',default=False,
                    help='skip any existing file (%(default)s)')
 group_general.add_argument('-d','--delete',action='store_true',default=False,
-                    help='recursively delete all .mk files in [dir] (%(default)s)') 
+                   help='recursively delete all .mk files in [dir] (%(default)s)') 
 
 group_mk=parser.add_mutually_exclusive_group()
 group_mk.add_argument('-r','--root-only',action='store_true',default=False,
                  help='generate [dir]/root.mk (%(default)s)')
-group_mk.add_argument('-b','--branch-only',action='store_true',default=False,
-                 help='generate [dir]/rules.mk (%(default)s)')
 group_mk.add_argument('-R','--recursive',action='store_true',default=False,
                  help='recursively generate rules.mk\'s (%(default)s)') 
 
@@ -35,7 +32,7 @@ group_mk.add_argument('-R','--recursive',action='store_true',default=False,
 group_makefile=parser.add_argument_group('Makefile')
 group_makefile.add_argument('-g','--makefile',action='store_true',default=False,
          help='generate a Makefile (%(default)s)')
-group_makefile.add_argument('-o',dest='target',action='store',default='./Makefile',
+group_makefile.add_argument('-o',dest='target',action='store',default='Makefile',
                   help='output the Makefile to TARGET (%(default)s)') 
 #parser.set_defaults(verbose=False)
 
@@ -43,11 +40,11 @@ args = parser.parse_args()
 
 rootmk="""\
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
-CC		:=gcc
-CFLAGS 		:=-O3 -Wall -std=c99
+CC		:=g++
+CFLAGS 		:=-O3 -Wall
 
-CXX		:=g++
-CXXFLAGS	:=-O3 -Wall
+CXX		:=${CC}
+CXXFLAGS	:=${CFLAGS}
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
@@ -71,45 +68,38 @@ ${DIR}CPP:=#LIST_CPP_SOURCE_FILES#
 ${DIR}CFLAGS:=${CFLAGS}
 ${DIR}CXXFLAGS:=${CXXFLAGS}
 ${DIR}INCS:=${INCS}
-################################################################################ 
-#		INTERNAL VARIABLES AND PATTERN RULES
-# Add local targets to global variables
-DEP:=${DEP} ${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
-OBJ:=${OBJ} ${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
-ASM:=${ASM} ${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
 
-# C sources
+DEP+=${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
+OBJ+=${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
+ASM+=${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
+
 ${DIR}/%.o: ${DIR}/%.c
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
 ${DIR}/%.s: ${DIR}/%.c
-	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
 
-# C++ sources
 ${DIR}/%.o: ${DIR}/%.cpp
-	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
 ${DIR}/%.s: ${DIR}/%.cpp
-	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
 
 # Linking pattern rule for this directory
 %.exe: ${DIR}/%.o
-	${QUIET}${CXX} -o $@ $^ ${LIBS}
+	${CXX} -o $@ $^ ${LIBS}
 """
 
 makefile="""\
-QUIET  :=@# comment this line to print more information 
 ROOT    :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
 d       :=#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY## this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}#INCLUDE_ALL_BRANCHES_HERE#
 -include ${DEP}
-################################################################################
+
 .PHONY: all asm clean
 all: ${OBJ}
 asm: ${ASM}
 clean:
-	${QUIET}rm -f *.exe ${OBJ} ${DEP} ${ASM}
-################################################################################ 
-#	LIST YOUR LINKING RULES HERE
+	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 # Sample linking rules for in-source build:
 #test_heapsort.exe: ${d}/heapsort.o ${d}/test_heapsort.o ${ROOT}/utils/utils.o
 """
@@ -122,6 +112,10 @@ def check_overwrite(fname):
     """warn when trying to overwrite existing file"""
     # False=overwrite, True=do not overwrite
     if os.path.isfile(fname):
+        if args.skip==True:
+            return True
+        #elif args.force==True:
+            #return False
         flag=False
         rawinput=input(' '.join([fname,
                                  'already exists, overwrite (y/n/q)? ']))
@@ -153,11 +147,8 @@ def strfile2(fname,str):
     """create file, copy string into it, check existing file"""
     if args.force:
         strfile(fname,str)
-    elif args.skip:
-        pass
-    else:
-        if check_overwrite(fname)==False:
-            strfile(fname,str) 
+    elif check_overwrite(fname)==False:
+        strfile(fname,str) 
 
 #strfile2('rootnew.mk',rootmk)
 
@@ -218,13 +209,6 @@ def gen_branch(dir,path,text,files):
         tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
         strfile2(fname,tmp)
 
-def gen_branch_only(dir,text):
-    """only generate one rules.mk"""
-    root=find_root(dir)
-    path=os.path.normpath(dir)
-    files=next(os.walk(path))[2] # only files, no subdirectories
-    gen_branch(root,path,text,files)
-
 def rwalk(dir,texts):
     """recursively rules.mk's"""
     root=find_root(dir)
@@ -283,8 +267,6 @@ if args.delete:
     exit(0)
 if args.root_only:
     gen_root(args.dir,texts['root'])
-if args.branch_only:
-    gen_branch_only(args.dir,texts['branch'])
 if args.recursive:
     rwalk(args.dir,texts) 
 if args.makefile:
