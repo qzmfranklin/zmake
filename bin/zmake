@@ -49,12 +49,6 @@ CXXFLAGS	:=${CFLAGS}
 INCS		:=-iquote ${ROOT}
 LIBS		:=
 
-.PHONY: all asm clean
-all: ${OBJ}
-asm: ${ASM}
-clean:
-	rm -f *.exe ${OBJ} ${DEP} ${ASM}
-
 #	INTERNAL VARIABLES
 OBJ		:=# .o files
 DEP		:=# .d files
@@ -101,6 +95,12 @@ d       :=#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY## this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}#INCLUDE_ALL_BRANCHES_HERE#
 -include ${DEP}
+
+.PHONY: all asm clean
+all: ${OBJ}
+asm: ${ASM}
+clean:
+	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 # Sample linking rules for in-source build:
 #test_heapsort.exe: ${d}/heapsort.o ${d}/test_heapsort.o ${ROOT}/utils/utils.o
