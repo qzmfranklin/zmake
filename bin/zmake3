@@ -66,33 +66,33 @@ ASMFLAGS	:=-S -fsource-asm# source code commented assembly code
 
 branchmk="""\
 #  THIS DIRECTORY
-DIR_RANDOM_NUM:=${ROOT}#RELATIVE_PATH_FROM_ROOT#
+DIR:=${ROOT}#RELATIVE_PATH_FROM_ROOT#
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR_RANDOM_NUM}C:=#LIST_C_SOURCE_FILES#
-${DIR_RANDOM_NUM}CPP:=#LIST_CPP_SOURCE_FILES# 
+${DIR}C:=#LIST_C_SOURCE_FILES#
+${DIR}CPP:=#LIST_CPP_SOURCE_FILES# 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR_RANDOM_NUM}CFLAGS:=${CFLAGS}
-${DIR_RANDOM_NUM}CXXFLAGS:=${CXXFLAGS}
-${DIR_RANDOM_NUM}INCS:=${INCS}
-${DIR_RANDOM_NUM}LIBS:=${LIBS}
+${DIR}CFLAGS:=${CFLAGS}
+${DIR}CXXFLAGS:=${CXXFLAGS}
+${DIR}INCS:=${INCS}
+${DIR}LIBS:=${LIBS}
 
-DEP+=${${DIR_RANDOM_NUM}CPP:%.cpp=${DIR_RANDOM_NUM}/%.d} ${${DIR_RANDOM_NUM}C:%.c=${DIR_RANDOM_NUM}/%.d} 
-OBJ+=${${DIR_RANDOM_NUM}CPP:%.cpp=${DIR_RANDOM_NUM}/%.o} ${${DIR_RANDOM_NUM}C:%.c=${DIR_RANDOM_NUM}/%.o} 
-ASM+=${${DIR_RANDOM_NUM}CPP:%.cpp=${DIR_RANDOM_NUM}/%.s} ${${DIR_RANDOM_NUM}C:%.c=${DIR_RANDOM_NUM}/%.s} 
+DEP+=${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
+OBJ+=${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
+ASM+=${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
 
-${DIR_RANDOM_NUM}/%.o: ${DIR_RANDOM_NUM}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOM_NUM}CFLAGS} ${${DIR_RANDOM_NUM}INCS}
-${DIR_RANDOM_NUM}/%.s: ${DIR_RANDOM_NUM}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOM_NUM}CFLAGS} ${${DIR_RANDOM_NUM}INCS}
+${DIR}/%.o: ${DIR}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+${DIR}/%.s: ${DIR}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
 
-${DIR_RANDOM_NUM}/%.o: ${DIR_RANDOM_NUM}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOM_NUM}CXXFLAGS} ${${DIR_RANDOM_NUM}INCS}
-${DIR_RANDOM_NUM}/%.s: ${DIR_RANDOM_NUM}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOM_NUM}CXXFLAGS} ${${DIR_RANDOM_NUM}INCS}
+${DIR}/%.o: ${DIR}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+${DIR}/%.s: ${DIR}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR_RANDOM_NUM}/%.o
-	${CXX} -o $@ $^ ${${DIR_RANDOM_NUM}LIBS}
+%.exe: ${DIR}/%.o
+	${CXX} -o $@ $^ ${${DIR}LIBS}
 """
 
 makefile="""\
@@ -197,7 +197,7 @@ def gen_root(root,text):
 
 #gen_root(args.root,rootmk)
 
-def gen_branch(dir_num,dir,path,text,files):
+def gen_branch(dir,path,text,files):
     """generate rules.mk"""
     c_src=fnmatch.filter(files,'*.c')
     cpp_src=fnmatch.filter(files,'*.cpp')
@@ -205,7 +205,6 @@ def gen_branch(dir_num,dir,path,text,files):
         fname=os.path.join(path,'rules.mk') 
         tmp=text.replace('#RELATIVE_PATH_FROM_ROOT#',
                         path.replace(os.path.normpath(dir),''))
-        tmp=tmp.replace('DIR_RANDOM_NUM','DIR'+str(dir_num).zfill(5))
         c_str=' '.join(c_src)
         tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
         cpp_str=' '.join(cpp_src)
@@ -215,21 +214,17 @@ def gen_branch(dir_num,dir,path,text,files):
 def rwalk(dir,texts):
     """recursively rules.mk's"""
     root=find_root(dir)
-    dir_num=1;
     for path,dirs,files in os.walk(root):
-        dir_num = dir_num + 1
-        gen_branch(dir_num,root,path,texts['branch'],files)
+        gen_branch(root,path,texts['branch'],files)
 
 #rwalk(args.dir,texts)
 
 def rwalk_skip(dir,texts):
     """recursively generate rules.mk's, skip any existing file"""
     root=find_root(dir)
-    dir_num=1;
     for path,dirs,files in os.walk(root): 
-        dir_num = dir_num + 1
         if os.path.isfile(os.path.join(path,'rules.mk'))==False:
-            gen_branch(dir_num,root,path,texts['branch'],files)
+            gen_branch(root,path,texts['branch'],files)
     return True
 
 
