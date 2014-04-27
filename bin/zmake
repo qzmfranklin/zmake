@@ -48,8 +48,14 @@ CXXFLAGS	:=${CFLAGS}
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
-################################################################################
-#		INTERNAL VARIABLES
+
+.PHONY: all asm clean
+all: ${OBJ}
+asm: ${ASM}
+clean:
+	rm -f *.exe ${OBJ} ${DEP} ${ASM}
+
+#	INTERNAL VARIABLES
 OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
@@ -68,6 +74,7 @@ ${DIR}CPP:=#LIST_CPP_SOURCE_FILES#
 ${DIR}CFLAGS:=${CFLAGS}
 ${DIR}CXXFLAGS:=${CXXFLAGS}
 ${DIR}INCS:=${INCS}
+${DIR}LIBS:=${LIBS}
 
 DEP+=${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
 OBJ+=${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
@@ -85,7 +92,7 @@ ${DIR}/%.s: ${DIR}/%.cpp
 
 # Linking pattern rule for this directory
 %.exe: ${DIR}/%.o
-	${CXX} -o $@ $^ ${LIBS}
+	${CXX} -o $@ $^ ${${DIR}LIBS}
 """
 
 makefile="""\
@@ -95,11 +102,6 @@ d       :=#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY## this directory
 -include ${ROOT}#INCLUDE_ALL_BRANCHES_HERE#
 -include ${DEP}
 
-.PHONY: all asm clean
-all: ${OBJ}
-asm: ${ASM}
-clean:
-	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 # Sample linking rules for in-source build:
 #test_heapsort.exe: ${d}/heapsort.o ${d}/test_heapsort.o ${ROOT}/utils/utils.o
 """
