@@ -1,5 +1,5 @@
 ROOT    :=/media/qzmfranklin/data/git/zmake/demo
-d       :=${ROOT}# this directory
+d       :=${ROOT}/sort# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/utils/rules.mk
 -include ${ROOT}/sort/rules.mk
@@ -13,5 +13,5 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-# Sample linking rules for in-source build:
-#test_heapsort.exe: ${d}/heapsort.o ${d}/test_heapsort.o ${ROOT}/utils/utils.o
+cmp_sort.exe: ${d}/cmp_sort.o ${d}/heapsort/heapsort.o ${d}/quicksort/quicksort.o \
+	${ROOT}/utils/utils.o ${ROOT}/utils/Table.o

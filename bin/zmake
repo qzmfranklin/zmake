@@ -41,10 +41,11 @@ args = parser.parse_args()
 rootmk="""\
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
 CC		:=g++
-CFLAGS 		:=-O3 -Wall
+CFLAGS 		:=-O3 -Wall -Drestrict=__restrict__ -DNDEBUG
 
 CXX		:=${CC}
 CXXFLAGS	:=${CFLAGS}
+
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
@@ -54,7 +55,7 @@ OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
-ASMFLAGS	:=-S -fsource-asm# source code commented assembly code 
+ASMFLAGS	:=-S# source code commented assembly code 
 .SUFFIXES:
 """
 
@@ -170,7 +171,7 @@ def find_root(dir):
     if os.path.isfile(os.path.join(root,'root.mk')):
         flag=True
     else:
-        depth=99
+        depth=99 #default maximal depth of search
         for i in range(depth):
             root=os.path.normpath(os.path.join(root,'..'))
             #print(root)

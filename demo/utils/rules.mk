@@ -1,31 +1,28 @@
 #  THIS DIRECTORY
-DIR:=${ROOT}/utils
+DIR00003:=${ROOT}/utils
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR}C:=
-${DIR}CPP:=utils.cpp test_utils.cpp 
+${DIR00003}C:=
+${DIR00003}CPP:=test_timestat.cpp test_table.cpp test_stat.cpp utils.cpp Table.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR}CFLAGS:=${CFLAGS}
-${DIR}CXXFLAGS:=${CXXFLAGS}
-${DIR}INCS:=${INCS}
-################################################################################ 
-#		INTERNAL VARIABLES AND PATTERN RULES
-# Add local targets to global variables
-DEP:=${DEP} ${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
-OBJ:=${OBJ} ${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
-ASM:=${ASM} ${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
+${DIR00003}CFLAGS:=${CFLAGS}
+${DIR00003}CXXFLAGS:=${CXXFLAGS}
+${DIR00003}INCS:=${INCS}
+${DIR00003}LIBS:=${LIBS}
 
-# C sources
-${DIR}/%.o: ${DIR}/%.c
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
-${DIR}/%.s: ${DIR}/%.c
-	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
+DEP+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.d} ${${DIR00003}C:%.c=${DIR00003}/%.d} 
+OBJ+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.o} ${${DIR00003}C:%.c=${DIR00003}/%.o} 
+ASM+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.s} ${${DIR00003}C:%.c=${DIR00003}/%.s} 
 
-# C++ sources
-${DIR}/%.o: ${DIR}/%.cpp
-	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
-${DIR}/%.s: ${DIR}/%.cpp
-	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
+${DIR00003}/%.o: ${DIR00003}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
+${DIR00003}/%.s: ${DIR00003}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
+
+${DIR00003}/%.o: ${DIR00003}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
+${DIR00003}/%.s: ${DIR00003}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR}/%.o
-	${QUIET}${CXX} -o $@ $^ ${LIBS}
+%.exe: ${DIR00003}/%.o
+	${CXX} -o $@ $^ ${${DIR00003}LIBS}

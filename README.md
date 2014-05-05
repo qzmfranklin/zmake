@@ -2,333 +2,242 @@ zmake
 =====
 A new method of writing Makefiles.
 
-## What's in a Makefile?
-### The GNU make program and Makefiles
-The `make` program takes a file, typically called `Makefile`, from the command line. The Makefile provides information on dependencies in the form of `target: prerequisite(s)`. There is usually also a `recipe` associated with each `target`. If the `target` is older than any of its `prerequisite`s, the `make` program will invoke the `recipe` associated with the `target`.
+# A Brief History of Makefiles
 
-The dependencies in a project will form a *directed acyclic graph* (DAG). The `make` program relies on the DAG to function properly.
+## Sample Project
 
-Makefiles are old, vast, and complicated. Writing good `Makefile`s is not easy.
-
-To illustrate various approaches, let's first introduce a sample project.
-
-
-#### Sample project
-
-Suppose we have a C++ project with the following source tree:
+There is a `demo/` directory in this repo. The source tree is:
 
 ```
-.
-├── heapsort/
-│   ├── heapsort.cpp
-│   ├── heapsort.h
-│   └── test_heapsort.cpp
+demo/
+├── sort/
+│   ├── cmp_sort.cpp
+│   ├── cmp_sort.exe
+│   ├── heapsort/
+│   │   ├── heapsort.cpp
+│   │   ├── heapsort.h
+│   │   ├── test_heapsort.cpp
+│   │   └── test_heapsort.exe
+│   ├── quicksort/
+│   │   ├── quicksort.cpp
+│   │   ├── quicksort.h
+│   │   ├── test_quicksort.cpp
+│   │   └── test_quicksort.exe
 └── utils/
-    ├── test_utils.cpp
+    ├── StatVector.h
+    ├── Table.cpp
+    ├── Table.h
+    ├── test_stat.cpp
+    ├── test_stat.exe
+    ├── test_table.cpp
+    ├── test_table.exe
+    ├── test_timestat.cpp
+    ├── test_timestat.exe
+    ├── TimeStamp.h
+    ├── TimeStat.h
     ├── utils.cpp
     └── utils.h
-```
-Suppose there are two executables to build: `test_heapsort.exe` and `test_utils.exe`. And we want to use `-O3` and `-g` as the compiling flags for `heapsort` and `utils`, respectively. We also want to link `test_heapsort.o` with `-lm` but link `test_utils.o` with no extra libraries. 
-
-This is a small project. But it is complicated enough to demonstrate our points.
-
-
-### The classic monolithic Makefile approach
-
-Build the sample project using a monolithic Makefile (`demo0/Makefile`):
 
 ```
-CXX:=icpc
 
+The .cpp files are the C++ source files.
 
-CFLAGS1:=-O3
-CFLAGS2:=-g
-INCS:=-iquote .
+The .h files are the C/C++ header files.
 
-test_heapsort.exe: test_heapsort.o heapsort.o utils.o
-	${CXX} -o $@ $^ -lm
+The .exe files are the executables *to build*.
 
-test_utils.exe: test_utils.o utils.o
-	${CXX} -o $@ $^
+A questions arises naturally: how to build the executables?
 
-test_heapsort.o: heapsort/test_heapsort.cpp \
-			heapsort/heapsort.h utils/utils.h 
-	${CXX} -o $@ -c $< ${CFLAGS1} ${INCS}
+## The make Program
 
-heapsort.o: heapsort/heapsort.cpp heapsort/heapsort.h
-	${CXX} -o $@ -c $< ${CFLAGS1} ${INCS} 
-	
-test_utils.o: utils/test_utils.cpp utils/utils.h
-	${CXX} -o $@ -c $< ${CFLAGS2} ${INCS}
+The standard way of building executables from a source tree like this is to use the make program. The make program takes a file, by default called Makefile, from the commandline.
 
-utils.o: utils/utils.cpp utils/utils.h
-	${CXX} -o $@ -c $< ${CFLAGS2} ${INCS}
+The Makefile provides information on the dependencies in the form of `target: prerequisite(s)`. There is usually also a `recipe` associated with each target. If the target is outdated, that is, older than any of its prerequisites, the make program will invoke the recipe associated with the target in an attempt to rebuild the target.
 
-.PHONY: all clean cleanxx
+The dependencies in a project will form a *directed acyclic graph* (DAG). The make program parses the DAG, determines which recipes to invoke, and invokes the recipes in a proper order.
 
-all: 
+The reader is assumed to be familiar with tagets, prerequisites, recipes, dependencies, Unix shell commands, and compiler options.
 
-clean:
-	rm -f *.o
-cleanxx: clean
-	rm -f *.exe
-```
+## Several Important Methods
 
-The method of writing a monolithic Makefile for a large project has a major disadavantage:
+In principle, one can list dependencies by hand in a *monolithic* Makefile. In practice, nobody cares to do that because
 
-* Programmers have to manually list all the dependencies, including dependencies on `.h` files. As the project grows larger and larger, it would at some point become practically impossible to read, modify, and maintain.
+> As the project grows larger, it would at some point become practically impossible to read, modify, and maintain the monolithic Makefile.
 
-In theory, pattern rules such as `.o .c` and `%.o : %.c` can be used to reduce the amount of manual work. But in practice, such pattern rules do not permit ***directory-specific*** recipes, which renders them almost useless for large projects that have different compiling and building rules for different directories.
+Pattern rules such as `.o .c` and `%.o : %.c` can save some work. But such pattern rules do not permit ***directory-specific*** compiling and linking options, which are the keys to achieving ***directory level modularity***.
 
-To counter these issues, especially as an effort to achieve the modularity at the *directory level*, people found a new way of writing `Makefiles` - using *recursive `make`*.
+The method of *recursive make* can easily achieve the directory level modularity. But, as Peter Miller pointed out in his famous [*Recursive make considered harmful*](http://aegis.sourceforge.net/auug97.pdf), recursive make breaks the completeness of the DAG. This has several consequencies:
 
-### Recursive make considered harmful
+* The incompleteness of the DAG means that the make program will usually build too little.
 
-Recursive make has good modularity. But, as Peter Miller pointed out in his famous [*Recursive make considered harmful*](http://aegis.sourceforge.net/auug97.pdf), recursive make breaks the completeness of the DAG. This has several consequencies:
-
-* The incompleteness of the DAG means that the make program will usually build too little. 
 * Manually "patching" the DAG would usually result in an over-complete Makefile that builds too much.
-* Parallel make using the `-j` flag becomes very tricky, if at all possible.
-* Makefiles written using recursive make are not easy to maintain, either.
 
-Understandably, these problems are hard to resolve within the scope of the recursive make method. So, Peter Miller came to the conclusion that recursive make was harmful and the right way of writing Makefiles was to write a single Makefile the could build the entire project. 
+* Parallel make using the `make -j` becomes very tricky, if at all possible.
 
-Peter Miller proposed an alternative single Makefile solution (section 7 Big Picture in his paper). His solution had a file called `modules.mk` in each subdirectory that actually contains source files, and had the `Makefile` in the root directory include all the `modules.mk` files. His solution was still using a global `${CFLAGS}` variable to pass the compiling options, which was not fit for achieving the desired *directory-specific pattern rules*.
+Peter Miller concluded that 
+> the right way of writing Makefiles was to write a single Makefile the could build the entire project.
 
-Emile van Bergen, was aware of these, and proposed a new solution.
+Peter Miller proposed an *alternative single Makefile solution* (section 7 'Big Picture' in his paper). His solution had a file called `modules.mk` in each subdirectory to store directory specific information, and had the Makefile in the root directory include all the `modules.mk` files. However, his solution did not fully support directory level modularity because it passed compiling options using a global variable. 
 
-### The single `Makefile` solution due to Emile van Bergen
-The implementation due to [Emile](http://evbergen.home.xs4all.nl/nonrecursive-make.html) is a single `Makefile` approach that can achieve the modularity at the directory level. 
+Emile van Bergen, was aware of these, and proposed a [new solution](http://evbergen.home.xs4all.nl/nonrecursive-make.html).
 
-Its basic idea is to write `Rules.mk` files for each subdirectory that actually contains source files, and have the `Makefile` in the root directory inlcude all the `Rules.mk` in the right order.
+Similar to Peter's approach, Emile's solution was to write `Rules.mk` files for each subdirectory and have the Makefile in the root directory inlcude all the `Rules.mk` in the right order.
 
-Emile's solution uses stacks and stack pointers. As the `make` program enters a `Rules.mk` (assuming `Rules.mk` is in a subdirectory called `subdir`), the parent directory of `subdir` is pushed into a stack and the stack pointer shifts to `subdir`. As the `make` leaves `subdir`, the parent directory is poped from the stack and the stack pointer shifts back to the parent directory.
+Emile's solution used stacks and stack pointers to keep track of paths. As the make program enters a `Rules.mk` (assuming `Rules.mk` is in a subdirectory called `subdir`), the parent directory of `subdir` is pushed into a stack and the stack pointer shifts to `subdir`. As the make program leaves `subdir`, the parent directory is poped from the stack and the stack pointer shifts back to the parent directory.
 
 The advantages of Emile's solution are:
 
-* Each `Rules.mk` is oblivious of any other `Rules.mk`'s. This is a significant progress towards better modularity.
+* Each `Rules.mk` is oblivious of any other `Rules.mk`'s.
 * In principle, Emile's solution allows programmers to specify recipes for each *target*.
 
 The disadvantages of Emile's solutions are:
 
-* The use of stacks introduces an extra layer of indirection. The correctness of the `Makefile` depends on the order in which the `Rules.mk` files are included.
-* It does not support *directory-specific pattern rules*. Although it support *target-specific recipes*, sometimes it is just an overkill and much labor is still needed to list all the recipes.
+* The correctness of the `Makefile` depends on the order in which the `Rules.mk` files are included.
+* Recipes for each target sounds great. But in most situations it is an overkill and means that the programmers still have to list recipes by hand.
 
-Given these, we may wish to have a yet better single Makefile solution.
 
-## A new single Makefile solution
-In this part, we will introduce a new method for writing Makefiles.
+# Yet Another Method of Writing Makefiles
 
-### Sample project again
-Let's demonstrate the method with a sample project. The codes are in `demo1/`. The sample project is explained in a previous section. For convenience the source tree is listed below:
+## Introduction to Modules
+The above discussion on the history of Makefiles lead us to think of a method of writing a single Makefile that supports ***directory-specific pattern rules***.
 
-```
-demo1/
-├── heapsort/
-│   ├── heapsort.cpp
-│   ├── heapsort.h
-│   └── test_heapsort.cpp
-└── utils/
-    ├── test_utils.cpp
-    ├── utils.cpp
-    └── utils.h
-```
-### Overall structure of the Makefiles
-Our method has `rules.mk` files in every subdirectory has actually contains source files and a `root.mk` in the root directory. Makefiles are constructed using these .mk files. All the files related to constructing the Makefile for `demo1/` are listed below:
+Similar to Peter's and Emile's methods, my solution has a `rules.mk` file in each subdirectory. Take a look at `demo/sort/quicksort/rules.mk` as an example:
 
 ```
-demo1/
-├── Makefile
-├── heapsort/
-│   └─── rules.mk
-├── root.mk
-└── utils/
-    └─── rules.mk
+#  THIS DIRECTORY
+DIR00006:=${ROOT}/sort/quicksort
+#  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
+${DIR00006}C:=
+${DIR00006}CPP:=quicksort.cpp test_quicksort.cpp 
+#  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
+${DIR00006}CFLAGS:=${CFLAGS}
+${DIR00006}CXXFLAGS:=${CXXFLAGS}
+${DIR00006}INCS:=${INCS}
+${DIR00006}LIBS:=${LIBS}
+
+DEP+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.d} ${${DIR00006}C:%.c=${DIR00006}/%.d} 
+OBJ+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.o} ${${DIR00006}C:%.c=${DIR00006}/%.o} 
+ASM+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.s} ${${DIR00006}C:%.c=${DIR00006}/%.s} 
+
+${DIR00006}/%.o: ${DIR00006}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00006}CFLAGS} ${${DIR00006}INCS}
+${DIR00006}/%.s: ${DIR00006}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00006}CFLAGS} ${${DIR00006}INCS}
+
+${DIR00006}/%.o: ${DIR00006}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00006}CXXFLAGS} ${${DIR00006}INCS}
+${DIR00006}/%.s: ${DIR00006}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00006}CXXFLAGS} ${${DIR00006}INCS}
+
+# Linking pattern rule for this directory
+%.exe: ${DIR00006}/%.o
+	${CXX} -o $@ $^ ${${DIR00006}LIBS}
 ```
 
-In the following sections, we will go over Makefile, root.mk, and rules.mk one at a time.
+* `ROOT` stores the *absolute path* of the root of the source tree. `ROOT` is defined in Makefiles as a global variable, e.g., `ROOT:=~/git/zmake/demo`.
 
-### Makefile
-The `demo1/Makefile`:
+* `DIRXXXXX` (in this case, `XXXXX` is `00006`) stores the *absolute path* of this subdirectory (in this case, `${ROOT}/sort/quicksort`). Each subdirectory is given a unique number.
 
-```
-QUIET  :=@# comment this line to print more information 
-ROOT    :=/media/MyData/codes/zmake/demo
-d       :=${ROOT}/utils# this directory
--include ${ROOT}/root.mk
--include ${ROOT}/utils/rules.mk
--include ${ROOT}/heapsort/rules.mk
--include ${DEP}
-################################################################################
-.PHONY: all asm clean
-all: ${OBJ}
-asm: ${ASM}
-clean:
-	${QUIET}rm -f *.exe ${OBJ} ${DEP} ${ASM}
-################################################################################
-#	LIST YOUR LINKING RULES HERE
-test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \
-	${ROOT}/heapsort/test_heapsort.o \
-	${ROOT}/utils/utils.o
-test_utils.exe: ${ROOT}/utils/test_utils.o \
-	${ROOT}/utils/utils.o
-```
+* `${DIRXXXXX}CFLAGS/CXXFLAGS/INCS/LIBS` store the C compiling options, C++ compiling options, include directories, and the linking options for all recipes in this subdirectory, respectively. Because `DIRXXXXX` is unique, all four variables are unique across different `rules.mk` files.
 
-* `QUIET` is a global flag. If `QUIET` is set to `@`, few messages are printed when using this Makefile.
-* `ROOT` is the *absolute* path of the root directory of the source files.
-* The root.mk file and the several rules.mk files are explained the the next sections. In short, root.mk stores the project-wide compiling options, include directories, and libraries to link against. The rules.mk files store pattern rules that are specific to each directory. The root.mk should always be included at the beginning of the Makefile. The rules.mk files should be included after the root.mk.
-* `DEP` is all the dependency files, i.e., `.d` files. The minus sign before `include` suppresses unwanted warning messages.
-* Several phony targets, i.e., all, asm, and clean are defined to make life easier. `OBJ` is all the `.o` files. `DEP` is all the `.d` files. `AMS` is all the `.s` files, i.e., assembly listing files.
-* In the "LIST YOUR LINKING RULES HERE" section, list all the dependencies of the executables we want to build, and the `.o` files they depend on. Where are the recipes? There are pattern rules to do the build. The pattern rules are in the `rule.mk` files. We will expalin this in the next section.
+* `CXX` is the C++ compiler. It is defined in `demo/root.mk`: `CXX:=g++`.
 
-**NOTE**: `ROOT` and `QUIET` are defined in the Makefile. `OBJ`, `DEP`, and `ASM` are defined in root.mk. Pattern rules, compiling options, and linking options that are specific to each subdirectory are defined in rules.mk files.
+* `DEPFlAGS` is defined in `demo/root.mk`: `DEPFLAGS:=-MMD -MP`. It instructs the compiler to generate .d files.
+
+* `ASMFLAGS` is defined in `demo/root.mk`: `ASMFLAGS:=-S`. It instructs the compiler to generate assembly listing files.
 
 
-### root.mk
-
-The `root.mk` contains the project-wide/ top-level information:
+The core of this method lies in the pattern rules such as the following:
 
 ```
-################################################################################
+${DIR00006}/%.o: ${DIR00006}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00006}CXXFLAGS} ${${DIR00006}INCS}
+```
+The above pattern rule applies to
+```
+${ROOT}/sort/quicksort/*.o: ${ROOT}/sort/quicksort/*.cpp
+```
+But it does **not** applyt to targets in other directories. For example, it does not apply to
+```
+${ROOT}/sort/cmp_sort.o: ${ROOT}/sort/cmp_sort.cpp
+```
+Because `${${DIXXXXX}CXXFLAGS}` and `${${DIRXXXXX}INCS}` are unique to each subdirectory, the pattern rules defined in `rules.mk` only apply to their own subdirectory.
+
+The `demo/root.mk` mentioned before is:
+```
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
-CC		:=icc
-CFLAGS 	:=-O3							\
-		-Wall							\
-		-std=c99						\
-		-Wno-deprecated
+CC		:=g++
+CFLAGS 		:=-O3 -Wall -Drestrict=__restrict__
 
-CXX		:=icpc
-CXXFLAGS:=-O3							\
-		-Wall							\
-		-Wno-deprecated
+CXX		:=${CC}
+CXXFLAGS	:=${CFLAGS}
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
-################################################################################
-#		INTERNAL VARIABLES
+
+#	INTERNAL VARIABLES
 OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
-DEPFLAGS:=-MMD -MP# preprocessor generates .d files
-ASMFLAGS:=-S -fsource-asm# source code commented assembly code 
-.SUFFIXES:
-################################################################################
-# 	OUT-OF-SOURCE PATTERN RULES
-ifeq (OUT_OF_SOURCE,TRUE)
-${BUILD}/%.exe: ${BUILD}/%.o
-	${QUIET}${CXX} -o $@ $^ ${LIBS} 
-endif
-
-```
-
-* `CC` and `CXX` are the C and C++ compilers, respectively. 
-* `CFLAGS` and `CXXFLAGS` are the project-wide C and C++ compiling options. We emphasize that the C and C++ compiling options can be fully customized for each subdirectory. `CFLAGS` and `CXXFLAGS` are only the default settings.
-* `INCS` tells the include directories when compiling. `ROOT` is explained in the previous section about the Makefile. 
-* The `-iquote dir` option is a preprocessor options that adds the directory `dir` to the search path for `include "..."` in `.c` and `.cpp` files. `-iquote ${ROOT}` simplifies the `include` directives. For example, `heapsort/test_heapsort.cpp` needs to include `utils/utils.h`. With `-iquote ${ROOT}`, a simple `include "utils/utils.h"` will do. This also makes the codes much less vunerable to changes in the structures of the source directories.
-* `OBJ`, `DEP`, and `ASM` are explained in the comments.
-* `DEPFLAGS`. The `-MMD -MP` options directs the compiler the generate `.d` files automatically. So that we no longer need to rely on the mysterious `%.d: %.c` rules.
-* `ASMFLAGS`. The `-S` option directs the compiler the generate assembly listing files of the corresponding `.c`/`.cpp` file. The `-fsource-asm` option adds original C/C++ codes to the assembly listing files as comments. How to generate assembly listing file for `utils/utils.cpp`? Just type `make utils/utils.s`. We will explain how this works in the rule.mk section.
-* `.SUFFIXES:` undefines any existing pattern rules. This is crucial for the directory-specific pattern rules to function correctly. We will explain this later in the rules.mk section.
-* The "OUT-OF-SOURCE PATTERN RULES" section is not processed if `OUT_OF_SOURCE` is not `TRUE` (case sensitive). We will explain this part together with `OUT_OF_SOURCE` and `BUILD` when we explain out-of-source build.
-
-### rules.mk
-
-Let's look at the `utils/rules.mk`:
-
-
-```
-################################################################################
-#  THIS DIRECTORY
-DIR:=${ROOT}/utils
-#  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR}C:=
-${DIR}CPP:=test_utils.cpp utils.cpp 
-#  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR}CFLAGS:=${CFLAGS}
-${DIR}CXXFLAGS:=${CXXFLAGS}
-${DIR}INCS:=${INCS}
-################################################################################ 
-#		INTERNAL VARIABLES AND PATTERN RULES
-ifeq (${OUT_OF_SOURCE},TRUE)
-# out-of-source build
-(omitted here...)
-# in-place build
-# Add local targets to global variables
-DEP:=${DEP} ${${DIR}CPP:%.cpp=${DIR}/%.d} ${${DIR}C:%.c=${DIR}/%.d} 
-OBJ:=${OBJ} ${${DIR}CPP:%.cpp=${DIR}/%.o} ${${DIR}C:%.c=${DIR}/%.o} 
-ASM:=${ASM} ${${DIR}CPP:%.cpp=${DIR}/%.s} ${${DIR}C:%.c=${DIR}/%.s} 
-
-# C sources
-${DIR}/%.o: ${DIR}/%.c
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
-${DIR}/%.s: ${DIR}/%.c
-	${QUIET}${CC} -o $@ $< ${ASMFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
-
-# C++ sources
-${DIR}/%.o: ${DIR}/%.cpp
-	${QUIET}${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
-${DIR}/%.s: ${DIR}/%.cpp
-	${QUIET}${CXX} -o $@ $< ${ASMFLAGS} ${${DIR}CXXFLAGS} ${${DIR}INCS}
-
-# Linking pattern rule for this directory
-%.exe: ${DIR}/%.o
-	${QUIET}${CXX} -o $@ $^ ${LIBS}
-endif 
-```
-
-* `DIR` stores the full path of the subdirectory, in this case, `utils/`. The `DIR` in `utils/rules.mk` and `heapsort/rules.mk` have different values, but the variable name is the same. In `utils/rules.mk`, `DIR` is `${ROOT}/utils`. In `heapsort/rules.mk`, `DIR` is `${ROOT}/heapsort`.
-* `${DIR}C` and `${DIR}CPP` store the `.c` and `.cpp` files in `utils/`. Note that in `utils/rules.mk`, `${DIR}C` is indeed recognized by the `make` program as the variable whose name is `${ROOT}/utilsC`, whereas in `heapsort/rules.mk`, `${DIR}C` is the same as the variable whose name is `${ROOT}/heapsortC`. This is different from `DIR`, which has the same variable name across different `rules.mk`.
-* `${DIR}CFLAGS` and `${DIR}CXXFLAGS` store the C and C++ compiling options that are used for all `.o` files in `utils/`, respectively. By default, as in the above sample `utils/rules.mk`, they are the same as the global `CFLAGS` and `CXXFLAGS`, respectively. But the we can modify them to anything we like.
-* `${DIR}INCS` store the include directories that are passed to the compiler when compiling source files in `utils/`. By default, it is just the global `INCS`. But we  can modify it. **NOTE**: `${DIR}INCS` is passed to the compiler as is, without any modification. So, for example, we want to have `/opt/fftw/3.4.3/include` to the `include <>` or `include ""` search path, we need to wrtie `${DIR}INCS:=-I/opt/fftw/3.4.3/include` or `${DIR}INCS:=-iquote/opt/fftw/3.4.3/include`. In practice, however, it is most convenient to write a monolithic global `INCS` and leave the `${DIR}INCS` in each `rules.mk` files unchanged.
-* The "INTERNAL VARIABLES AND PATTERN RULES" section record the pattern rules that are specific to `utils/`. The pattern rules are slightly different for in-source build and out-of-source build. The `ifeq(OUT_OF_SOURCE,TRUE) (...) else (...) endif` chooses out-of-source build if and only if `OUT_OF_SOURCE` is exactly `TRUE` (case sensitive). Otherwise it will choose in-source build. We have omitted the out-of-source part and will get to it later.
-* `OBJ`, `DEP`, and `ASM` are global variables. They are updated with local information. **NOTE**: `${OBJ}:=${OBJ} ...` is not really redefining `OBJ`. Rather, it is adding something new to `OBJ`.
-
-Now, let's explain the core of our method that lies in the following pattern rules:
-
-```
-${DIR}/%.o: ${DIR}/%.c
-	${QUIET}${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR}CFLAGS} ${${DIR}INCS}
-```
-
-Let's start from the obvious. The recipe is quite self-explanatory. It just compile the prerequisite `.c` file to get the target `.o` file. The `.o` file is in the same directory as the `.c` file. So, it is in-source build. The compiling options and include directories are passed using *directory-specific* variables `${DIR}CFALGS` and `${DIR}INCS`, respectively. Next, we wish explain that the pattern rule `${DIR}/%.o: ${DIR}/%.c` will apply to and only apply to `utils/*.c`. So that this pattern becomes completely local to the subdirectory `utils/`.
-
-One may wonder: what's the difference between `%.o: %.c` and `${DIR}/%.o: ${DIR}/%.c`? Indeed, they are very different. For instance, we may have the following two dependencies:
-
-```
-utils/utils.o: utils/utils.c
-
-heapsort/heapsort.o: heapsort/heapsort.c
-```
-
-The pattern rule `%.o: %.c` will apply to both of them. But in `utils/rules.mk`, because `DIR:=${ROOT}/utils`, `${DIR}/%.o: ${DIR}/%.c` will only apply to the first one. In `heapsort/rules.mk`, because, `DIR:=${ROOT}/heapsort`, `${DIR}/%.o: ${DIR}/%.c` will only apply to the second one. So, such use of pattern rules helps us achieve *directory-specific pattern rules*.
-
-There *may* be a problem of overloading pattern rules. If we specify both `%.o: %.c` and `${DIR}/%.o: ${DIR}/%.c` at the same time, the `make` program may behave strangely. The `make` program on different platforms may have different behaviors in situations with overloaded pattern rules. To make it portable, as well as stable and predictable, we have to make sure that the `make` internal pattern rule `%.o: %.c` is undefined, which is done by the following line in the `root.mk`:
-
-```
+DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
+ASMFLAGS	:=-S# source code commented assembly code 
 .SUFFIXES:
 ```
 
-### Summary
-Our method of writing `Makefile`s
+The comments are very self-explanatory. I will only explain the last line:
+```
+.SUFFIXES:
+```
+It undefines any existing pattern rules. The default pattern rules will conflict with the pattern rules defined in `rules.mk` files.
 
-* is a single `Makefile` approach, and 
-* completely supports directory-specific pattern rules, and
-* supports and can switch between in-source build and out-of-source build very easily, and 
-* in the in-source build mode, allows multiple `Makefile`s to work coherently.
+## Constructing Makefiles from Modules
 
-The `make` program and `Makefile`s are vast and complicated. Building a project from sources is by itself a good project. People have attempted to address various problems such as modularity, maintainability, and portability. The new method of writing `Makefile`s explained here mainly addresses the modularity and maintainability problems. We sincerely hope that it will be helpful.
+Take `demo/sort/Makefile` as an example:
+```
+ROOT    :/path/to/zmake/demo
+d       :=${ROOT}/sort# this directory
+-include ${ROOT}/root.mk
+-include ${ROOT}/utils/rules.mk
+-include ${ROOT}/sort/rules.mk
+-include ${ROOT}/sort/heapsort/rules.mk
+-include ${ROOT}/sort/quicksort/rules.mk
+-include ${DEP}
 
-## The zmake script
+.PHONY: all asm clean
+all: ${OBJ}
+asm: ${ASM}
+clean:
+	rm -f *.exe ${OBJ} ${DEP} ${ASM}
+
+cmp_sort.exe: ${d}/cmp_sort.o ${d}/heapsort/heapsort.o ${d}/quicksort/quicksort.o \
+	${ROOT}/utils/utils.o ${ROOT}/utils/Table.o
+```
+First tell the Makefile the path of the source tree (`ROOT`) and the current subdirecotry (`d`). Then include `root.mk`. Then include `rules.mk` files in **any order** you want. Then include .d files (`-include ${DEP}`). Then define some basic phony targets (`all asm clean`). Then list the dependencies (in the form of `target: prerequisites`) for **each executables** to build.
+
+**NOTE**:
+* The Makefile only uses absolute paths and filenames.
+
+* This method has removed the support for out-of-source build. Please contact me at qzmfranklin_at_gmail_dot_com for more information.
+
+* `d` stores the absolute path of *this directory*. It is only defined for convenience.
+
+* The default recipe for .exe files are defined in `rules.mk` files. You can still overwrite it in the Makefile because explicit recipes overwrite pattern rules.
+
+
+# The zmake Script
 The `zmake` script can generate `root.mk`, `rules.mk` files, and `Makefile`s.
+
 **NOTE**: The out-of-source build function is removed from the the `zmake` script. The old `zmake` that supports out-of-source build is renamed to `zmake2`.
 
-### List of requirement
+**WARNING/TODO**: This part is slightly outdated. Will update soon!
+
+## List of Requirement
 * POSIX OS.
 * Only support C/C++ projects.
 * A working python3 interpreter.
 
-### How to get help from the command line?
+## How to get help from the command line?
 Make sure that the `zmake` script is included in `$PATH`, type
 
 	zmake -h
@@ -336,29 +245,28 @@ Make sure that the `zmake` script is included in `$PATH`, type
 Then you should see:
 
 ```
-usage: zmake [-h] [-f | -s | -d] [-r | -b | -R] [-g] [-o TARGET] [dir]
+usage: zmake [-h] [-f | -s | -d] [-r | -R] [-g] [-o TARGET] [dir]
 
 Generating module files for constructing a single Makefile
 
 positional arguments:
-  dir                directory of source files (.)
+  dir              directory of source files (.)
 
 optional arguments:
-  -h, --help         show this help message and exit
-  -f, --force        force overwriting existing files (False)
-  -s, --skip         skip any existing file (False)
-  -d, --delete       recursively delete all .mk files in [dir] (False)
-  -r, --root-only    generate [dir]/root.mk (False)
-  -b, --branch-only  generate [dir]/rules.mk (False)
-  -R, --recursive    recursively generate rules.mk's (False)
+  -h, --help       show this help message and exit
+  -f, --force      force overwriting existing files (False)
+  -s, --skip       skip any existing file (False)
+  -d, --delete     recursively delete all .mk files in [dir] (False)
+  -r, --root-only  generate [dir]/root.mk (False)
+  -R, --recursive  recursively generate rules.mk's (False)
 
 Makefile:
-  -g, --makefile     generate a Makefile (False)
-  -o TARGET          output the Makefile to TARGET (./Makefile)
+  -g, --makefile   generate a Makefile (False)
+  -o TARGET        output the Makefile to TARGET (Makefile)
 ```
 
 
-### Generate root.mk
+## Generate root.mk
 In a terminal, `cd` into the root directory of `zmake`. Type
 
 	zmake demo -r
@@ -382,7 +290,7 @@ You may try either of y=yes, n=no, q=quit and it is *not* case sensitive.
 
 If you type "y", the existing `root.mk` will be overwritten. If you type "n", `zmake` will skip the generation of `root.mk` and go on to its next target, if any. If you type "q", `zmake` will quit immediately.
 
-### Generate `rules.mk` recursively
+## Generate `rules.mk` recursively
 **After** the `root.mk` is generated, we can go on to generate the `rules.mk` files by typing (still inthe root directory of `zmake`)
 
 	zmake demo -R
@@ -413,7 +321,7 @@ to skip creating any existing files.
 
 **NOTE**: The `-f/--force` and `-s/--skip` options apply to `-r/--root-only`, `-b/--branch-only`, `-R/--recursive`, and `-g/--makefile`.
 
-### Generate only one rules.mk
+## Generate only one rules.mk
 Sometimes it might be desirable to generate the `rules.mk` for a single subdirectory. The `zmake` script can do this too.
 
 In terminal, in the root directory of `zmake`, type
@@ -427,7 +335,7 @@ You will see
 	
 This time, the `-b/--branch-only` options instructs the `zmake` script to only generate one `rules.mk` file.
 
-### Delete `.mk` files
+## Delete `.mk` files
 
 The option `-d/--delete` instructs the `zmake` script to 
 
@@ -462,32 +370,17 @@ You will see
 
 The `-g/--makefile` option instructs the `zmake` script to first find `root.mk` and then generate a `Makefile`. The `-o TARGET` option redirects the `Makefile` to `TARGET`. The default value of `TARGET` is `./Makefile`.
 
-Open the `demo/heapsort/Makefile` with your favorite editor, uncomment the following lines (delete the `#` at the start of each line)
-
+Open the `demo/heapsort/Makefile` with your favorite editor, add
 ```
-#test_heapsort.exe: ${ROOT}/heapsort/heapsort.o \
-	#${ROOT}/heapsort/test_heapsort.o \
-	#${ROOT}/utils/utils.o
+cmp_sort.exe: ${d}/cmp_sort.o ${d}/heapsort/heapsort.o ${d}/quicksort/quicksort.o \
+    ${ROOT}/utils/utils.o ${ROOT}/utils/Table.o
 ```
-Save the modified `Makefile`. Back in terminal, type
+at the end of the Makefile. Save, back to terminal, type
+```
+cd demo/sort
+make cmp_sort.exe
+```
 
-	cd demo/heapsort
-	make test_heapsort.exe
-
-You will see an executable `test_heapsort.exe` in the `demo/heapsort/` directory. Type
-
-	./test_heapsort.exe
-
-You will see something interesting.
+If everything goes right, you can run the `cmp_sort.exe` to compare different sorting algorithms. It may take a while to run.
 
 **NOTE**: The `-f/--force` and `-s/--skip` options work with `-g/--makefile` too.
-
-### Generate out-of-source build `Makefile`s
-To get out-of-source `Makefile`s, we can either uncomment the following line in the in-source `Makefile`s:
-
-	#OUT_OF_SOURCE:=TRUE# TRUE = out-of-source build, otherwise = in-source build
-	#BUILD:=.# out-of-source build directory, unused in in-source build mode
-
-or use the `--out-of-source` option with `-g/--makefile`. These two methods will give exactly the same result.
-
-**NOTE**: It is strongly recommended to set `BUILD:=.` for out-of-source `Makefile`s. This will simplify the listing of linking rules.

@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include "heapsort.h"
-/******************************************************************************/
+
+#ifdef NDEBUG
+#define fprintf(stderr,...)
+#endif
+
 static void swp(int *a, int *b);
-/******************************************************************************/
 static int swp_count=0;
 
 static void swp(int *a, int *b)
 {
 	swp_count++;
-	printf("\t%3d <-> %3d\n",*a,*b);
+	fprintf(stderr,"\t%3d <-> %3d\n",*a,*b);
 	int c = *a;
 	*a = *b;
 	*b = c;
@@ -39,12 +42,12 @@ static void sink2(const int size, int *a, const int n)
 }
 static void crtheap2(const int size, int *a)
 { 
-	printf("crtheap\n");
+	fprintf(stderr,"crtheap2\n");
 	if (size<2) return; 
 
 	int n=size/2;
 	while (--n>-1) {
-		printf("n = %d\n",n);
+		fprintf(stderr,"n = %d\n",n);
 		sink2(size,a,n);
 	}
 
@@ -87,12 +90,12 @@ static void sink3(const int size, int *a, const int n)
 }
 static void crtheap3(const int size, int *a)
 { 
-	printf("crtheap\n");
+	fprintf(stderr,"crtheap3\n");
 	if (size<2) return; 
 
 	int n=size/3;
 	while (--n>-1) {
-		printf("n = %d\n",n);
+		fprintf(stderr,"n = %d\n",n);
 		sink3(size,a,n);
 	}
 
@@ -100,7 +103,7 @@ static void crtheap3(const int size, int *a)
 }
 static void sink4(const int size, int *a, const int n)
 {
-	//fprintf(stderr,"sink\n");
+	//fprintf(stderr,"sink4\n");
 	int *pt = a+n;
 	int *c1 = a+4*n+1;
 	int *c2 = a+4*n+2;
@@ -150,21 +153,21 @@ static void sink4(const int size, int *a, const int n)
 }
 static void crtheap4(const int size, int *a)
 { 
-	printf("crtheap\n");
+	fprintf(stderr,"crtheap4\n");
 	if (size<2) return; 
 
 	int n=size/4;
 	while (--n>-1) {
-		printf("n = %d\n",n);
+		fprintf(stderr,"n = %d\n",n);
 		sink4(size,a,n);
 	}
 
 	return;
 }
 /******************************************************************************/
-void heapsort(int size, int *a)
+void heapsort2(int size, int *a)
 {
-	fprintf(stderr,"heapsort\n");
+	fprintf(stderr,"heapsort2\n");
 
 	if (!size) return;
 
@@ -173,13 +176,55 @@ void heapsort(int size, int *a)
 	crtheap2(size,a); 
 
 	do {
-		printf("pop\n");
+		fprintf(stderr,"pop\n");
 		swp(a,a+size-1);
 		sink2(size-1,a,0);
 	}
 	while (--size>0);
 
-	printf("swp_count=%d\n",swp_count);
+	fprintf(stderr,"swp_count=%d\n",swp_count);
+
+	return;
+}
+void heapsort3(int size, int *a)
+{
+	fprintf(stderr,"heapsort3\n");
+
+	if (!size) return;
+
+	swp_count=0;
+
+	crtheap3(size,a); 
+
+	do {
+		fprintf(stderr,"pop\n");
+		swp(a,a+size-1);
+		sink3(size-1,a,0);
+	}
+	while (--size>0);
+
+	fprintf(stderr,"swp_count=%d\n",swp_count);
+
+	return;
+}
+void heapsort4(int size, int *a)
+{
+	fprintf(stderr,"heapsort4\n");
+
+	if (!size) return;
+
+	swp_count=0;
+
+	crtheap4(size,a); 
+
+	do {
+		fprintf(stderr,"pop\n");
+		swp(a,a+size-1);
+		sink4(size-1,a,0);
+	}
+	while (--size>0);
+
+	fprintf(stderr,"swp_count=%d\n",swp_count);
 
 	return;
 }

@@ -1,17 +1,18 @@
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
-CC		:=gcc
-CFLAGS 		:=-O3 -Wall -std=c99
+CC		:=g++
+CFLAGS 		:=-O3 -Wall -Drestrict=__restrict__ -DNDEBUG
 
-CXX		:=g++
-CXXFLAGS	:=-O3 -Wall
+CXX		:=${CC}
+CXXFLAGS	:=${CFLAGS}
+
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
 LIBS		:=
-################################################################################
-#		INTERNAL VARIABLES
+
+#	INTERNAL VARIABLES
 OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
-ASMFLAGS	:=-S -fsource-asm# source code commented assembly code 
+ASMFLAGS	:=-S# source code commented assembly code 
 .SUFFIXES:
