@@ -1,4 +1,4 @@
-ROOT    :=/media/qzmfranklin/data/git/zmake/demo
+ROOT    :=/Users/qzmfrank/codes/zmake/demo
 d       :=${ROOT}/sort/quicksort# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/utils/rules.mk

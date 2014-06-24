@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import shutil
 import os
 import glob
 import fnmatch
@@ -29,11 +30,18 @@ group_mk.add_argument('-R','--recursive',action='store_true',default=False,
                  help='recursively generate rules.mk\'s (%(default)s)') 
 
 # group_makefile
-group_makefile=parser.add_argument_group('Makefile')
-group_makefile.add_argument('-g','--makefile',action='store_true',default=False,
-         help='generate a Makefile (%(default)s)')
-group_makefile.add_argument('-o',dest='target',action='store',default='Makefile',
-                  help='output the Makefile to TARGET (%(default)s)') 
+group_makefile=parser.add_mutually_exclusive_group()
+#=parser.add_argument_group('Makefile')
+group_makefile.add_argument('-g','--makefile',action='store_true',default=False, 
+        help='generate a Makefile (%(default)s)')
+#group_makefile.add_argument('-o',dest='target',action='store',default='Makefile',
+        #help='output the Makefile to TARGET (%(default)s)') 
+target='Makefile'
+group_makefile.add_argument('--renew',action='store_true',default=False,
+        help='renew ${ROOT} in all Makefiles (%(default)s)')
+
+
+
 #parser.set_defaults(verbose=False)
 
 args = parser.parse_args() 
@@ -235,6 +243,7 @@ def rwalk_skip(dir,texts):
 
 
 def collect_branch(root):
+    """return the list of rules.mk files for generating Makefile"""
     dirlist=list()
     for path,dirs,files in os.walk(root):
         fname=os.path.join(path,'rules.mk')
@@ -270,6 +279,45 @@ def delete_all(dir):
             os.remove(fname)
             print('deleted',fname) 
 
+
+def replace_1stline(fname,root):
+    """replace the 1st line in a Makefile"""
+    tmp=fname+'.orig'
+    shutil.copyfile(fname,tmp)
+    lines=open(tmp,'r').readlines()
+    os.remove(tmp)
+
+    #ROOT    :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
+    # find the line containing the def of ROOT
+    ln_num=0
+    index=0
+    for line in lines:
+        index=line.find('ROOT    :=')
+        if index>=0:
+            line=line[0:index]+'ROOT    :='+root+'\n'
+            break
+        ln_num=ln_num+1
+    lines[ln_num]=lines[ln_num][0:index]+'ROOT    :='+root+'\n'
+
+    fout=open(fname,'w')
+    fout.writelines(lines)
+    fout.close()
+
+    print('renewed',fname)
+
+def renew_makefiles(dir,target):
+    """renew ${ROOT} in all Makefiles"""
+    root=find_root(dir)
+    i=0
+    for path,dirs,files in os.walk(root):
+        fname=os.path.join(path,target)
+        #i=i+1 # only for test use
+        #if i>2:
+            #continue
+        if os.path.isfile(fname):
+            replace_1stline(fname,root)
+
+
 if args.delete:
     delete_all(args.dir)
     exit(0)
@@ -278,4 +326,7 @@ if args.root_only:
 if args.recursive:
     rwalk(args.dir,texts) 
 if args.makefile:
-    gen_makefile(args.dir,args.target,texts['makefile'])
+    #gen_makefile(args.dir,args.target,texts['makefile'])
+    gen_makefile(args.dir,'Makefile',texts['makefile'])
+if args.renew:
+    renew_makefiles(args.dir,'Makefile')

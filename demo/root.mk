@@ -1,5 +1,5 @@
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
-CC		:=g++
+CC		:=icpc
 CFLAGS 		:=-O3 -Wall -Drestrict=__restrict__ -DNDEBUG
 
 CXX		:=${CC}
@@ -7,7 +7,7 @@ CXXFLAGS	:=${CFLAGS}
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}
-LIBS		:=
+LIBS		:=-mkl
 
 #	INTERNAL VARIABLES
 OBJ		:=# .o files
