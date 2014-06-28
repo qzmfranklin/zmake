@@ -1,9 +1,10 @@
-ROOT    :=/Users/qzmfrank/codes/zmake/demo
+ROOT    :=/home/qzmfrank/git/zmake/demo
 d       :=${ROOT}/sort# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/utils/rules.mk
 -include ${ROOT}/sort/rules.mk
 -include ${ROOT}/sort/heapsort/rules.mk
+-include ${ROOT}/sort/mergesort/rules.mk
 -include ${ROOT}/sort/quicksort/rules.mk
 -include ${DEP}
 
@@ -13,5 +14,9 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-cmp_sort.exe: ${d}/cmp_sort.o ${d}/heapsort/heapsort.o ${d}/quicksort/quicksort.o \
-	${ROOT}/utils/utils.o ${ROOT}/utils/Table.o
+cmp_sort.exe: ${d}/cmp_sort.o \
+	${d}/heapsort/heapsort.o \
+	${d}/mergesort/mergesort.o \
+	${d}/quicksort/quicksort.o \
+	${ROOT}/utils/utils.o \
+	${ROOT}/utils/Table.o

@@ -1,11 +1,11 @@
-ROOT    :=/Users/qzmfrank/codes/zmake/demo
+ROOT    :=/home/qzmfrank/git/zmake/demo
 d       :=${ROOT}/sort/heapsort# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/magic3/rules.mk
--include ${ROOT}/mem/latency/rules.mk
--include ${ROOT}/mem/bw/rules.mk
--include ${ROOT}/cpu/rules.mk
--include ${ROOT}/utils/rules.mk
+#-include ${ROOT}/mem/latency/rules.mk
+#-include ${ROOT}/mem/bw/rules.mk
+#-include ${ROOT}/cpu/rules.mk
+#-include ${ROOT}/utils/rules.mk
 -include ${ROOT}/sort/heapsort/rules.mk
 -include ${DEP}
 

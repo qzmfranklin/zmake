@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
-#include <mkl.h>
 #include "sort/heapsort/heapsort.h"
+#include "sort/mergesort/mergesort.h"
 #include "sort/quicksort/quicksort.h"
 #include "utils/Table.h"
 #include "utils/TimeStat.h"
@@ -14,6 +14,7 @@ enum SORT_TYPE {
 	HEAP2=0,
 	HEAP3,
 	HEAP4,
+	MERGE,
 	QUICK,
 	QUICKNR,
 	QSORT
@@ -33,9 +34,9 @@ class cmpsort {
 			assert(status==0);
 			srand(time(0));
 			num=n;
-			data=(int*)mkl_malloc(sizeof(int)*n,64);
+			data=(int*)malloc(sizeof(int)*n);
 			assert(data);
-			bk=(int*)mkl_malloc(sizeof(int)*n,64);
+			bk=(int*)malloc(sizeof(int)*n);
 			assert(bk);
 			for (int i = 0; i < n; i++)
 				bk[i] = rand()%INT_MAX;
@@ -43,8 +44,8 @@ class cmpsort {
 		}
 		void reset() {
 			assert(status==1);
-			mkl_free(data);
-			mkl_free(bk);
+			free(data);
+			free(bk);
 			status=0;
 		}
 
@@ -68,38 +69,43 @@ class cmpsort {
 				for (int i = 0; i < num; i++)
 					data[i]=bk[i]; 
 				switch ((enum SORT_TYPE)type) {
-					case HEAP2:
-						clk.tic();
-						heapsort2(num,data);
-						clk.toc();
-						break;
-					case HEAP3:
-						clk.tic();
-						heapsort3(num,data);
-						clk.toc();
-						break;
-					case HEAP4:
-						clk.tic();
-						heapsort4(num,data);
-						clk.toc();
-						break;
-					case QUICK:
-						clk.tic();
-						quicksort(num,data);
-						clk.toc();
-						break;
-					case QUICKNR:
-						clk.tic();
-						quicksort_nr(num,data);
-						clk.toc();
-						break;
-					case QSORT:
-						clk.tic();
-						qsort(data,num,sizeof(int),compare);
-						clk.toc();
-						break;
-					default:
-						break;
+				case HEAP2:
+					clk.tic();
+					heapsort2(num,data);
+					clk.toc();
+					break;
+				case HEAP3:
+					clk.tic();
+					heapsort3(num,data);
+					clk.toc();
+					break;
+				case HEAP4:
+					clk.tic();
+					heapsort4(num,data);
+					clk.toc();
+					break;
+				case MERGE:
+					clk.tic();
+					mergesort(num,data);
+					clk.toc();
+					break;
+				case QUICK:
+					clk.tic();
+					quicksort(num,data);
+					clk.toc();
+					break;
+				case QUICKNR:
+					clk.tic();
+					quicksort_nr(num,data);
+					clk.toc();
+					break;
+				case QSORT:
+					clk.tic();
+					qsort(data,num,sizeof(int),compare);
+					clk.toc();
+					break;
+				default:
+					break;
 				}
 			}
 			return clk.median();
@@ -109,16 +115,28 @@ class cmpsort {
 		{ return ( *(int*)a - *(int*)b ); }
 };
 
+static int init(int argc, char const* argv[])
+{
+	if (argc<1) {
+		printf("Usage: cmp_sort.exe [num_trials]\n");
+		exit(1);
+	}
+	int res;
+	sscanf(argv[1],"%d",&res);
+	return res;
+}
+
 int main(int argc, char const* argv[])
 {
-	const int m = 6;
+
+	const int m = 7;
 	const int n = 2;
-	const char* rows[m] = {"heap2","heap3","heap4","quick","quick_nr","qsort"};
+	const char* rows[m] = {"heap2","heap3","heap4","merge","quick","quick_nr","qsort"};
 	const char* cols[n] = {"median","nrl'd median"};
 	double data[m*n];
 
-	const int N=10*1000*1000; // 40MB, cannot fit into cache
-	//const int N=100; // 40MB, cannot fit into cache
+	//const int N=10*1000*1000; // 40MB, cannot fit into cache
+	const int N = init(argc,argv);
 	cmpsort t;
 	t.set(N);
 	for(int i=0; i < m; i++) {
@@ -135,8 +153,9 @@ int main(int argc, char const* argv[])
 	table.data(data);
 	char banner[200];
 	sprintf(banner,"array_size = %d\n",N);
-	strcat(banner,"\n\tCompare heapsort and quicksort, time in CPU cycles");
-	strcat(banner,"\n\tnrl'd = normalized, divide by n*lg_2(n)");
+	strcat(banner,"\n\tCompare heapsort, mergesort, and quicksort,");
+	strcat(banner,"\n\tTime is in CPU cycles");
+	strcat(banner,"\n\tnrl'd = normalized, i.e., divided by n*lg_2(n)");
 	table.print(banner);
 
 	//printf("WARNING: Tune the num and the unroll pars in time_vecsin in lecture.\n");
