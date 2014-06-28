@@ -1,6 +1,7 @@
 #	PROJECT-WIDE COMMON COMPILING FLAGS 
 CC		:=g++
-CFLAGS 		:=-O3 -Wshadow -Drestrict=__restrict__ -DNDEBUG
+CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
+	-DNDEBUG
 
 CXX		:=${CC}
 CXXFLAGS	:=${CFLAGS}
