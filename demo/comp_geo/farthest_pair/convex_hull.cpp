@@ -301,7 +301,131 @@ static double convhull_maxdist_pair0(int n, double _Complex *a, int pos[2])
 	return sqrt(d_max);
 }
 
-double convhull_maxdist_pair(int n, double _Complex *a, int pos[2])
+static void print_d2pair(const int n, const double _Complex *restrict a)
 {
-	return convhull_maxdist_pair0(n,a,pos);
+	for (int i = 0; i < n; i++) {
+		//for (int j = 0; j < i; j++)
+			//printf("         ");
+		//for (int j = i+1; j < n; j++)
+		for (int j = 0; j < n; j++)
+			printf("%7.2f  ",norm(a[j]-a[i]));
+		printf("\n");
+	}
+}
+
+
+static inline int round(const int k, const int n)
+{
+	assert(n>0);
+	const int tmp = k%n;
+	return (tmp<0) ? (tmp+n) : (tmp);
+}
+
+// O(n) method
+static double convhull_maxdist_pair1(int n, double _Complex *restrict a, int pos[2])
+{
+	//print_d2pair(n,a);
+
+	double d_max = norm2(a[1]-a[0]);
+	int i=0,j;
+	for (j = 2; /*j < n*/; j++) {
+		const double d_curr = norm2(a[j]-a[i]);
+		if (d_curr>=d_max)
+			d_max = d_curr;
+		else
+			break;
+	}
+	j--;
+	//printf("[%3d,%3d]\n",i,j);
+
+#define I_STAT_MASK (1<<0) // I max'd
+#define J_STAT_MASK (1<<1) // J max'd
+#define I_TURN_MASK (1<<2) // increase/decrease I
+
+	const double d1 = norm2(a[j]-a[1]);
+	const double d2 = norm2(a[j]-a[n-1]);
+	if (d1>d_max) {
+		i     = 1;
+		d_max = d1;
+		while(1) { // i,j increase
+			//printf("[%3d,%3d]\n",i,j);
+			static char flag = I_TURN_MASK;
+			if (flag & (I_STAT_MASK|J_STAT_MASK))
+				break;
+			if (flag & I_TURN_MASK) { // i turn
+				const int    i_next = round(i+1,n);
+				const double d_next = norm2(a[j]-a[i_next]);
+				if (d_next<d_max) {
+					flag  |= I_STAT_MASK;
+					flag  &=~I_TURN_MASK;
+				}
+				else {
+					flag  &=~I_STAT_MASK;
+					i      = i_next;
+					d_max  = d_next;
+				}
+			} else { // j turn
+				const int    j_next = round(j+1,n);
+				const double d_next = norm2(a[j_next]-a[i]);
+				if (d_next<d_max) {
+					flag  |= J_STAT_MASK;
+					flag  |= I_TURN_MASK;
+				} else {
+					flag  &=~J_STAT_MASK;
+					j      = j_next;
+					d_max  = d_next;
+				}
+			}
+		}
+	} else if (d2>d_max) {
+		i     = n-1;
+		d_max = d2;
+		while(1) { // i,j decrease
+			static char flag = I_TURN_MASK;
+
+			//fprintf("stderr,[%3d,%3d] %7.2f flag=%d\n",i,j,sqrt(d_max),flag);
+
+			if (flag&I_STAT_MASK && flag&J_STAT_MASK)
+				break;
+			if (flag & I_TURN_MASK) { // i turn
+				const int    i_next = round(i-1,n);
+				const double d_next = norm2(a[j]-a[i_next]);
+				if (d_next<d_max) {
+					flag  |= I_STAT_MASK;
+					flag  &=~I_TURN_MASK;
+				}
+				else {
+					flag  &=~I_STAT_MASK;
+					i      = i_next;
+					d_max  = d_next;
+				}
+			} else { // j turn
+				const int    j_next = round(j-1,n);
+				const double d_next = norm2(a[j_next]-a[i]);
+				if (d_next<d_max) {
+					flag  |= J_STAT_MASK;
+					flag  |= I_TURN_MASK;
+				} else {
+					flag  &=~J_STAT_MASK;
+					j      = j_next;
+					d_max  = d_next;
+				}
+			}
+		}
+	}
+#undef I_STAT_MASK
+#undef J_STAT_MASK
+#undef I_TURN_MASK
+
+	pos[0] = i;
+	pos[1] = j;
+	return sqrt(d_max);
+}
+
+double convhull_maxdist_pair(int n, double _Complex *restrict a, int pos[2])
+{
+	if (n<30)
+		return convhull_maxdist_pair0(n,a,pos);
+	else
+		return convhull_maxdist_pair1(n,a,pos);
 }

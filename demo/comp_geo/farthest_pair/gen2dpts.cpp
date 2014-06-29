@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <complex.h>
+#include "comp_geo/geo_utils.h"
 
 static struct {
 	double xmin;
@@ -12,6 +14,7 @@ static struct {
 } limits;
 
 static size_t N;
+static double _Complex *data;
 
 static void init(int argc, char const *argv[])
 {

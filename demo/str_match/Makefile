@@ -1,4 +1,4 @@
-ROOT    :=/Users/qzmfrank/codes/zmake/demo
+ROOT    :=/home/qzmfrank/git/zmake/demo
 d       :=${ROOT}/str_match# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/str_match/rules.mk

@@ -1,5 +1,5 @@
 #include <complex.h>
-#include "geo_utils.h"
+#include "comp_geo/geo_utils.h"
 #include "convex_hull.h"
 
 
@@ -12,7 +12,9 @@ int main(int argc, char const* argv[])
 	int pos[2];
 	double dist_max = convhull_maxdist_pair(N,data,pos);
 
-	printf("Found max distance:  | [%3d] - [%3d] | = %7.2f\n",pos[0],pos[1],dist_max);
+	printf("Found max distance:  ");
+	printf("| [%3d] - [%3d] | = %7.2f\n",
+			pos[0],pos[1],dist_max);
 
 	free(data);
 	return 0;

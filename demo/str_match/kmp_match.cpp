@@ -56,10 +56,12 @@ int main(int argc, char const* argv[])
 {
 	const char text[] = "abc dabedababcdabecdef";
 	const char patt[] = "dabe";
+	printf("text = \"%s\"\n",text);
+	printf("patt = \"%s\"\n",patt);
 	int pos[3];
 	int num = strmatch_kmp(sizeof(text)-1,text,
 			sizeof(patt)-1,patt,pos);
 	for (int i = 0; i < num; i++)
-		printf("text[%3d]\n",pos[i]);
+		printf("match #%-3d: text[%3d]\n",i,pos[i]);
 	return 0;
 }

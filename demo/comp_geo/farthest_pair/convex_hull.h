@@ -28,7 +28,7 @@ void graham_scan(size_t *restrict size, double _Complex *restrict *data);
  * Given a convex hull, passed by n and *a, find the farthest pair of points
  * and the farthest distance.
  */
-double convhull_maxdist_pair(int n, double _Complex *a, int pos[2]);
+double convhull_maxdist_pair(int n, double _Complex *restrict a, int pos[2]);
 
 #ifdef __cplusplus
 }
