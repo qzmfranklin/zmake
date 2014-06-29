@@ -1,4 +1,4 @@
-#include "geo_utils.h"
+#include "comp_geo/geo_utils.h"
 #include "convex_hull.h"
 #include <complex.h>
 

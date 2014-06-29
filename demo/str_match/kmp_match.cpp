@@ -54,7 +54,7 @@ static int strmatch_kmp(const int tlen, const char *restrict t,
 
 int main(int argc, char const* argv[])
 {
-	const char text[] = "abc dabedababcdabcdef";
+	const char text[] = "abc dabedababcdabecdef";
 	const char patt[] = "dabe";
 	int pos[3];
 	int num = strmatch_kmp(sizeof(text)-1,text,
