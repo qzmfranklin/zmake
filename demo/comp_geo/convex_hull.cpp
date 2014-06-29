@@ -91,7 +91,7 @@ static void sink3(const int size, double _Complex *restrict a, const int n)
 	//const double arg2 = carg(*c2-z0);
 	//const double arg3 = carg(*c3-z0);
 	
-	// precomputed all args, stored in __args, FIXME
+	// precomputed all args, stored in __args, good!
 	//const double arg0 = __args[n];
 	//const double arg1 = __args[3*n+1];
 	//const double arg2 = __args[3*n+2];
@@ -101,36 +101,36 @@ static void sink3(const int size, double _Complex *restrict a, const int n)
 	else if (3*n+2==size) {
 		double _Complex *pt = a+n;
 		double _Complex *c1 = a+3*n+1;
-		const double arg0 = carg(*pt-z0);
-		const double arg1 = carg(*c1-z0);
 		/*
-		 *const double arg0 = __args[n];
-		 *const double arg1 = __args[3*n+1];
+		 *const double arg0 = carg(*pt-z0);
+		 *const double arg1 = carg(*c1-z0);
 		 */
+		const double arg0 = __args[n];
+		const double arg1 = __args[3*n+1];
 		if (arg1>arg0) {
 			swp(pt,c1);
-			//swp(__args+n,__args+3*n+1);
+			swp(__args+n,__args+3*n+1);
 			sink3(size,a,3*n+1); 
 		}
 	} else if (3*n+3==size) {
 		double _Complex *pt = a+n;
 		double _Complex *c1 = a+3*n+1;
 		double _Complex *c2 = a+3*n+2;
-		const double arg0 = carg(*pt-z0);
-		const double arg1 = carg(*c1-z0);
-		const double arg2 = carg(*c2-z0);
 		/*
-		 *const double arg0 = __args[n];
-		 *const double arg1 = __args[3*n+1];
-		 *const double arg2 = __args[3*n+2];
+		 *const double arg0 = carg(*pt-z0);
+		 *const double arg1 = carg(*c1-z0);
+		 *const double arg2 = carg(*c2-z0);
 		 */
+		const double arg0 = __args[n];
+		const double arg1 = __args[3*n+1];
+		const double arg2 = __args[3*n+2];
 		if (arg1>arg0 && arg1>arg2) {
 			swp(pt,c1);
-			//swp(__args+n,__args+3*n+1);
+			swp(__args+n,__args+3*n+1);
 			sink3(size,a,3*n+1);
 		} else if (arg2>arg0 && arg2>arg1) {
 			swp(pt,c2);
-			//swp(__args+n,__args+3*n+2);
+			swp(__args+n,__args+3*n+2);
 			sink3(size,a,3*n+2);
 		}
 	} else { 
@@ -138,27 +138,27 @@ static void sink3(const int size, double _Complex *restrict a, const int n)
 		double _Complex *c1 = a+3*n+1;
 		double _Complex *c2 = a+3*n+2;
 		double _Complex *c3 = a+3*n+3;
-		const double arg0 = carg(*pt-z0);
-		const double arg1 = carg(*c1-z0);
-		const double arg2 = carg(*c2-z0);
-		const double arg3 = carg(*c3-z0);
 		/*
-		 *const double arg0 = __args[n];
-		 *const double arg1 = __args[3*n+1];
-		 *const double arg2 = __args[3*n+2];
-		 *const double arg3 = __args[3*n+3];
+		 *const double arg0 = carg(*pt-z0);
+		 *const double arg1 = carg(*c1-z0);
+		 *const double arg2 = carg(*c2-z0);
+		 *const double arg3 = carg(*c3-z0);
 		 */
+		const double arg0 = __args[n];
+		const double arg1 = __args[3*n+1];
+		const double arg2 = __args[3*n+2];
+		const double arg3 = __args[3*n+3];
 		if (arg1>arg0 && arg1>arg2 && arg1>arg3) {
 			swp(pt,c1);
-			//swp(__args+n,__args+3*n+1);
+			swp(__args+n,__args+3*n+1);
 			sink3(size,a,3*n+1);
 		} else if (arg2>arg0 && arg2>arg1 && arg2>arg3) {
 			swp(pt,c2);
-			//swp(__args+n,__args+3*n+2);
+			swp(__args+n,__args+3*n+2);
 			sink3(size,a,3*n+2);
 		} else if (arg3>arg0 && arg3>arg1 && arg3>arg2) {
 			swp(pt,c3);
-			//swp(__args+n,__args+3*n+3);
+			swp(__args+n,__args+3*n+3);
 			sink3(size,a,3*n+3);
 		}
 	}
@@ -190,6 +190,7 @@ void heapsort3(const int size, double _Complex *restrict a)
 	do {
 		//fprintf(stderr,"pop\n");
 		swp(a,a+n-1);
+		swp(__args,__args+n-1);
 		sink3(n-1,a,0);
 	} while (--n>0);
 
@@ -203,20 +204,19 @@ static void sort_raw_by_args(const int n, double _Complex *restrict a)
 {
 	assert(status==2);
 
-	/*
-	 *__args = (double*)malloc(sizeof(double)*n);
-	 *fprintf(stderr,"__args = %p\n",__args);
-	 *assert(__args);
-	 *__args[0]=0.0;
-	 *for (int i = 1; i < n; i++) {
-	 *        __args[i] = carg(a[i]-z0);
-	 *        fprintf(stderr,"[%3d] args[i] = %7.2f\n",i,__args[i]);
-	 *}
-	 */
+	__args = (double*)malloc(sizeof(double)*n);
+	assert(__args);
+	__args[0] = 0.0;
+	for (int i = 1; i < n; i++)
+		__args[i] = carg(a[i]-z0);
+	//for (int i = 0; i < n; i++)
+		//fprintf(stderr,"__args[%3d] = %7.2f\n",i,__args[i]);
+	//fprintf(stderr,"\n");
 
-	heapsort3(n-1,a+1);
+	heapsort3(n,a);
 
-	//free(__args);
+	free(__args);
+
 	status=3;
 }
 /**************************************/
