@@ -1,4 +1,4 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/codes/zmake/demo
 d       :=${ROOT}/comp_geo# this directory
 -include ${ROOT}/root.mk
 #-include ${ROOT}/utils/rules.mk

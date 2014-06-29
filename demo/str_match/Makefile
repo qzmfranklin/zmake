@@ -1,8 +1,7 @@
 ROOT    :=/Users/qzmfrank/codes/zmake/demo
-d       :=${ROOT}/sort/mergesort# this directory
+d       :=${ROOT}/str_match# this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/sort/mergesort/rules.mk
-#-include ${ROOT}/utils/rules.mk
+-include ${ROOT}/str_match/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean
@@ -12,4 +11,4 @@ clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 # Sample linking rules for in-source build:
-test_mergesort.exe: ${d}/mergesort.o ${d}/test_mergesort.o
+kmp_match.exe: ${d}/kmp_match.o
