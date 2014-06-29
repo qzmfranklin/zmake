@@ -2,7 +2,8 @@
 DIR00008:=${ROOT}/comp_geo
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR00008}C:=
-${DIR00008}CPP:=convex_hull.cpp gen2dpts.cpp graham_scan.cpp 
+${DIR00008}CPP:=convex_hull.cpp gen2dpts.cpp graham_scan.cpp geo_utils.cpp \
+	test_convex_hull.cpp
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
 ${DIR00008}CFLAGS:=${CFLAGS}
 ${DIR00008}CXXFLAGS:=${CXXFLAGS}

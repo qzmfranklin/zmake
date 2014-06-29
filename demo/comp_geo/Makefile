@@ -14,4 +14,6 @@ clean:
 # Sample linking rules for in-source build:
 gen2dpts.exe: ${d}/gen2dpts.o
 
-graham_scan.exe: ${d}/graham_scan.o ${d}/convex_hull.o
+graham_scan.exe: ${d}/graham_scan.o ${d}/convex_hull.o ${d}/geo_utils.o
+
+test_convex_hull.exe: ${d}/test_convex_hull.o ${d}/convex_hull.o ${d}/geo_utils.o

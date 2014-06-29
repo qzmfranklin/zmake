@@ -1,11 +1,7 @@
 #ifndef _CONVEX_HULL_H_
 #define _CONVEX_HULL_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
-#include <math.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,6 +23,12 @@ extern "C" {
  * 	See graham_scan.cpp
  */
 void graham_scan(size_t *restrict size, double _Complex *restrict *data);
+
+/*
+ * Given a convex hull, passed by n and *a, find the farthest pair of points
+ * and the farthest distance.
+ */
+double convhull_maxdist_pair(int n, double _Complex *a, int pos[2]);
 
 #ifdef __cplusplus
 }
