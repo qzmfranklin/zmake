@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <complex.h>
-#include <math.h>
+#include "convex_hull.h"
 
 static void print_array(const int n, const double _Complex *restrict a)
 {
@@ -40,7 +36,7 @@ static void read_ascii(FILE *restrict fd, size_t *restrict n,
 }
 
 
-static double _Complex z0;
+static double _Complex z0; // defined in find_min_y()
 static void find_min_y(const int n, double _Complex *restrict a)
 {
 	assert(status==1);
@@ -73,53 +69,96 @@ static void swp(double _Complex *a, double _Complex *b)
 	double _Complex c = *a;
 	*a = *b;
 	*b = c;
-	return;
 }
+static void swp(double *a, double *b)
+{
+	double c = *a;
+	*a = *b;
+	*b = c;
+}
+static double *__args;
 static void sink3(const int size, double _Complex *restrict a, const int n)
 {
 	//fprintf(stderr,"sink3\n");
-	double _Complex *pt = a+n;
-	double _Complex *c1 = a+3*n+1;
-	double _Complex *c2 = a+3*n+2;
-	double _Complex *c3 = a+3*n+3;
+	//double _Complex *pt = a+n;
+	//double _Complex *c1 = a+3*n+1;
+	//double _Complex *c2 = a+3*n+2;
+	//double _Complex *c3 = a+3*n+3;
+	
 	// have to compute args every time, less than optimal...
 	//const double arg0 = carg(*pt-z0);
 	//const double arg1 = carg(*c1-z0);
 	//const double arg2 = carg(*c2-z0);
 	//const double arg3 = carg(*c3-z0);
+	
+	// precomputed all args, stored in __args, FIXME
+	//const double arg0 = __args[n];
+	//const double arg1 = __args[3*n+1];
+	//const double arg2 = __args[3*n+2];
+	//const double arg3 = __args[3*n+3];
 	if (3*n+1>=size)
 		return;
 	else if (3*n+2==size) {
+		double _Complex *pt = a+n;
+		double _Complex *c1 = a+3*n+1;
 		const double arg0 = carg(*pt-z0);
 		const double arg1 = carg(*c1-z0);
+		/*
+		 *const double arg0 = __args[n];
+		 *const double arg1 = __args[3*n+1];
+		 */
 		if (arg1>arg0) {
 			swp(pt,c1);
+			//swp(__args+n,__args+3*n+1);
 			sink3(size,a,3*n+1); 
 		}
 	} else if (3*n+3==size) {
+		double _Complex *pt = a+n;
+		double _Complex *c1 = a+3*n+1;
+		double _Complex *c2 = a+3*n+2;
 		const double arg0 = carg(*pt-z0);
 		const double arg1 = carg(*c1-z0);
 		const double arg2 = carg(*c2-z0);
+		/*
+		 *const double arg0 = __args[n];
+		 *const double arg1 = __args[3*n+1];
+		 *const double arg2 = __args[3*n+2];
+		 */
 		if (arg1>arg0 && arg1>arg2) {
 			swp(pt,c1);
+			//swp(__args+n,__args+3*n+1);
 			sink3(size,a,3*n+1);
 		} else if (arg2>arg0 && arg2>arg1) {
 			swp(pt,c2);
+			//swp(__args+n,__args+3*n+2);
 			sink3(size,a,3*n+2);
 		}
 	} else { 
+		double _Complex *pt = a+n;
+		double _Complex *c1 = a+3*n+1;
+		double _Complex *c2 = a+3*n+2;
+		double _Complex *c3 = a+3*n+3;
 		const double arg0 = carg(*pt-z0);
 		const double arg1 = carg(*c1-z0);
 		const double arg2 = carg(*c2-z0);
 		const double arg3 = carg(*c3-z0);
+		/*
+		 *const double arg0 = __args[n];
+		 *const double arg1 = __args[3*n+1];
+		 *const double arg2 = __args[3*n+2];
+		 *const double arg3 = __args[3*n+3];
+		 */
 		if (arg1>arg0 && arg1>arg2 && arg1>arg3) {
 			swp(pt,c1);
+			//swp(__args+n,__args+3*n+1);
 			sink3(size,a,3*n+1);
 		} else if (arg2>arg0 && arg2>arg1 && arg2>arg3) {
 			swp(pt,c2);
+			//swp(__args+n,__args+3*n+2);
 			sink3(size,a,3*n+2);
 		} else if (arg3>arg0 && arg3>arg1 && arg3>arg2) {
 			swp(pt,c3);
+			//swp(__args+n,__args+3*n+3);
 			sink3(size,a,3*n+3);
 		}
 	}
@@ -163,7 +202,21 @@ void heapsort3(const int size, double _Complex *restrict a)
 static void sort_raw_by_args(const int n, double _Complex *restrict a)
 {
 	assert(status==2);
-	heapsort3(n,a);
+
+	/*
+	 *__args = (double*)malloc(sizeof(double)*n);
+	 *fprintf(stderr,"__args = %p\n",__args);
+	 *assert(__args);
+	 *__args[0]=0.0;
+	 *for (int i = 1; i < n; i++) {
+	 *        __args[i] = carg(a[i]-z0);
+	 *        fprintf(stderr,"[%3d] args[i] = %7.2f\n",i,__args[i]);
+	 *}
+	 */
+
+	heapsort3(n-1,a+1);
+
+	//free(__args);
 	status=3;
 }
 /**************************************/
@@ -221,7 +274,7 @@ static inline double det(const double _Complex *restrict a,
 
 // in-place, use original array as the stack
 // Ref: Cormen 3rd P1031
-static void graham_scan(size_t *n, double _Complex *restrict *a)
+static void graham_scan0(size_t *n, double _Complex *restrict *a)
 {
 	assert(status==4);
 	if (*n<4) return;
@@ -248,10 +301,10 @@ static void graham_scan(size_t *n, double _Complex *restrict *a)
 /**************************************/
 static void output_binary(FILE *fd, const size_t n, const double _Complex *restrict a)
 {
-	assert(status==5);
+	//assert(status==5);
 	fwrite(&n,sizeof(size_t),1,fd);
 	fwrite(a,sizeof(double _Complex),n,fd);
-	status=6;
+	//status=6;
 }
 
 static void output_ascii(FILE *fd, const size_t n, const double _Complex *restrict a)
@@ -260,37 +313,53 @@ static void output_ascii(FILE *fd, const size_t n, const double _Complex *restri
 	fprintf(fd,"%lu\n",n);
 	for (int i = 0; i < n; i++)
 		fprintf(fd,"%23.16E %23.16E\n",creal(a[i]),cimag(a[i]));
-	status=6;
+	//status=6;
 }
 
-int main(int argc, char const* argv[])
+void graham_scan(size_t *restrict size, double _Complex *restrict *data0)
 {
-	srand(10);
+	size_t N = *size;
+	double _Complex *data = *data0;
 
-	size_t N;
-	double _Complex *data;
-
-	//read_binary(stdin,&N,&data);
-	read_ascii(stdin,&N,&data);
-	//print_array(N,data);
-	//fprintf(stderr,"read OK!\n");
-
+	status=1;
 	find_min_y(N,data);
-	//fprintf(stderr,"find_min_y OK!\n");
 	sort_raw_by_args(N,data);
-	//fprintf(stderr,"sort OK!\n");
 	delete_colinear_args(&N,&data);
-	//print_array(N,data);
-	//fprintf(stderr,"delete colinear OK!\n");
 
-	graham_scan(&N,&data);
-	//print_array(N,data);
-	//fprintf(stderr,"Graham scan OK!\n");
-	
-	//output_binary(stdout,N,data);
-	output_ascii(stdout,N,data);
+	graham_scan0(&N,&data);
 
-	free(data);
-
-	return 0;
+	*size  = N;
+	*data0 = data;
 }
+
+/*
+ *int main(int argc, char const* argv[])
+ *{
+ *        size_t N;
+ *        double _Complex *data;
+ *
+ *        //read_binary(stdin,&N,&data);
+ *        read_ascii(stdin,&N,&data);
+ *        //print_array(N,data);
+ *        //fprintf(stderr,"read OK!\n");
+ *
+ *        find_min_y(N,data);
+ *        //fprintf(stderr,"find_min_y OK!\n");
+ *        sort_raw_by_args(N,data);
+ *        //fprintf(stderr,"sort OK!\n");
+ *        delete_colinear_args(&N,&data);
+ *        //print_array(N,data);
+ *        //fprintf(stderr,"delete colinear OK!\n");
+ *
+ *        graham_scan0(&N,&data);
+ *        //print_array(N,data);
+ *        //fprintf(stderr,"Graham scan OK!\n");
+ *        
+ *        //output_binary(stdout,N,data);
+ *        output_ascii(stdout,N,data);
+ *
+ *        free(data);
+ *
+ *        return 0;
+ *}
+ */
