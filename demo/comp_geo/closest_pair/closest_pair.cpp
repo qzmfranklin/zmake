@@ -5,22 +5,33 @@
 
 
 /*
- * recommended usage:
- * 	read_ascii(fd,&N,&data);
+ * Brute force O(n^2) method.
+ * Returns the mininal distance. **pos points to two double _Complex addresses
  */
-//qsort(data,num,sizeof(int),compare);
-
-static int cmpx (const void * a, const void * b) 
-{ 
-	return ( creal(*(double _Complex*)a) - creal(*(double _Complex*)b) ); 
+static double brute_force2(const int n, double _Complex *a, double _Complex **pos)
+{
+	assert(n>1);
+	double d_min = DBL_MAX;
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < i; j++) {
+			const double d_curr = norm2(a[j]-a[i]);
+			if (d_curr<d_min) {
+				d_min  = d_curr;
+				pos[0] = a+i;
+				pos[1] = a+j;
+			}
+		}
+	return d_min;
 }
-static int cmpy (const void * a, const void * b) 
-{ 
-	return ( cimag(*(double _Complex*)a) - cimag(*(double _Complex*)b) ); 
+
+double brute_force(const int n, double _Complex *a, double _Complex **pos)
+{
+	return sqrt(brute_force2(n,a,pos));
 }
 
 /*
- * Implementation of the pseudocode from Wikipedia
+ * O(nlgn) method: implementing the pseudocode from Wikipedia:
+ *
  * closestPair of (xP, yP)
  * where xP is P(1) .. P(N) sorted by x coordinate, and
  *       yP is P(1) .. P(N) sorted by y coordinate (ascending order)
@@ -52,26 +63,34 @@ static int cmpy (const void * a, const void * b)
  * 	  endfor
  * 	  return closest, closestPair
  * 	endif
+ *
+ * The above method is recursive. Let's do a non-recursive, i.e., iterative
+ * version here. Also, try not to allocate memory as long as we do not have to.
  */
 
-/*
- * Brute force O(n^2) method.
- * Returns the mininal distance. **pos points to two double _Complex addresses
- */
-static double brute_force(const int n, double _Complex *a, double _Complex **pos)
+//qsort(data,num,sizeof(int),compare);
+static int cmpx (const void * a, const void * b) 
+{ 
+	return ( creal(*(double _Complex*)a) - creal(*(double _Complex*)b) ); 
+}
+static int cmpy (const void * a, const void * b) 
+{ 
+	return ( cimag(*(double _Complex*)a) - cimag(*(double _Complex*)b) ); 
+}
+
+static const int B=6; // minimal blocksize
+static double nlgn_method(const int n, double _Complex *a, double _Complex**pos)
 {
-	assert(n>1);
-	double d_min = DBL_MAX;
-	for (int i = 0; i < n; i++)
-		for (int j = 0; j < i; j++) {
-			const double d_curr = norm2(a[j]-a[i]);
-			if (d_curr<d_min) {
-				d_min  = d_curr;
-				pos[0] = a+i;
-				pos[1] = a+j;
-			}
-		}
-	return d_min;
+	double _Complex *X=(double _Complex*)malloc(sizeof(double _Complex)*n);
+	double _Complex *Y=(double _Complex*)malloc(sizeof(double _Complex)*n);
+	assert(X);
+	assert(Y);
+	memcpy(X,a,sizeof(double _Complex)*n);
+	memcpy(Y,a,sizeof(double _Complex)*n);
+	qsort(X,n,sizeof(double _Complex),cmpx);
+	qsort(Y,n,sizeof(double _Complex),cmpy);
+
+	const int num_blk = (n%B==0)?(n%B):(n%B+1);
 }
 
 int main(int argc, char const* argv[])
