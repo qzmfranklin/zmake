@@ -223,7 +223,7 @@ static void delete_colinear_args(size_t *n, double _Complex *restrict *a)
 	free(*a);
 	*a = a_new;
 	*n = n_new;
-	status==4;
+	status=4;
 }
 
 /**************************************/
