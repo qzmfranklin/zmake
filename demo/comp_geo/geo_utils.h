@@ -7,6 +7,16 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+ * Apple changed the default <complex.h> to C++ complex template class. Redefine
+ * the most useful ones to maintain C style codes. Bitwise compatible.
+ */
+#ifdef __clang__
+#define creal(c) __real__(c)
+#define cimag(c) __imag__(c)
+#define carg(c) atan2(__imag__(c),__real__(c))
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,19 +31,9 @@ void output_binary(FILE *fd, const size_t n, const double _Complex *restrict a);
 
 void output_ascii(FILE *fd, const size_t n, const double _Complex *restrict a);
 
-/*
- * Apple changed the default <complex.h>, find a way around
- */
-#ifdef __clang__
-#define creal(c) __real__(c)
-#define cimag(c) __imag__(c)
-#define carg(c) atan2(__imag__(c),__real__(c))
-#endif
-
 static inline double norm2(const double _Complex c)
 {
 	return creal(c)*creal(c) + cimag(c)*cimag(c);
-	//return __real__(c)*__real__(c) + __imag__(c)*__imag__(c);
 }
 
 static inline double norm(const double _Complex c)
