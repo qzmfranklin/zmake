@@ -1,4 +1,4 @@
-ROOT    :=/Users/qzmfrank/codes/zmake/demo
+ROOT    :=/home/qzmfrank/git/zmake/demo
 d       :=${ROOT}/sort/heapsort# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/magic3/rules.mk

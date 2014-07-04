@@ -2,7 +2,7 @@
 DIR00009:=${ROOT}/comp_geo/farthest_pair
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR00009}C:=
-${DIR00009}CPP:=convex_hull.cpp gen2dpts.cpp test_convex_hull.cpp graham_scan.cpp 
+${DIR00009}CPP:=convex_hull.cpp test_convex_hull.cpp graham_scan.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
 ${DIR00009}CFLAGS:=${CFLAGS}
 ${DIR00009}CXXFLAGS:=${CXXFLAGS}
