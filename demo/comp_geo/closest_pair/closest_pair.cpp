@@ -9,25 +9,33 @@
 
 /*
  * Brute force O(n^2) method.
- * Returns the mininal distance. **pos points to two double _Complex addresses
+ * Returns the mininal distance _SQAURED_. 
+ * **pos points to two double _Complex addresses.
  */
-static double brute_force2(const int n, double _Complex *a, double _Complex **pos)
+static double brute_force2(const int n, 
+		double _Complex *restrict a,
+		double _Complex *restrict pos)
 {
 	assert(n>1);
 	double d_min = DBL_MAX;
+	double _Complex pts[2];
 	for (int i = 0; i < n; i++)
 		for (int j = 0; j < i; j++) {
 			const double d_curr = norm2(a[j]-a[i]);
 			if (d_curr<d_min) {
 				d_min  = d_curr;
-				pos[0] = a+i;
-				pos[1] = a+j;
+				pts[0] = a[i];
+				pts[1] = a[j];
 			}
 		}
+	pos[0] = pts[0];
+	pos[1] = pts[1];
 	return d_min;
 }
 
-static double brute_force(const int n, double _Complex *a, double _Complex **pos)
+static double brute_force(const int n, 
+		double _Complex *restrict a,
+		double _Complex *restrict pos)
 {
 	return sqrt(brute_force2(n,a,pos));
 }
@@ -43,55 +51,46 @@ static int cmpy (const void * a, const void * b)
 	return ( cimag(*(double _Complex*)a) - cimag(*(double _Complex*)b) ); 
 }
 
-/*
- * Runtime extra memory: 32*n bytes
- */
-static const int B=6; // blocksize
-static double nlgn_method2(const int n, double _Complex *a, double _Complex**pos)
+static void merge(double *restrict d_min, double _Complex *restrict pair_min,
+		const double _Complex *restrict a, const int n1, const int n2,
+		int *restrict work_size, double _Complex *restrict *work)
 {
-	double _Complex *X=(double _Complex*)malloc(sizeof(double _Complex)*n);
-	double _Complex *Y=(double _Complex*)malloc(sizeof(double _Complex)*n);
-	assert(X);
-	assert(Y);
-	memcpy(X,a,sizeof(double _Complex)*n);
-	memcpy(Y,a,sizeof(double _Complex)*n);
-	qsort(X,n,sizeof(double _Complex),cmpx);
-	qsort(Y,n,sizeof(double _Complex),cmpy);
+	const double x0 = 0.5*( a[n1-1] + a[n1] );
+	const int     n = n1 + n2;
 
-	int num_blk = (n%B==0)?(n/B):(n/B+1);
-
-	int *blk_size = (int*)malloc(sizeof(int)*num_blk);
-	assert(blk_size);
-	for (int i = 0; i < num_blk-1; i++)
-		blk_size[i] = B;
-	blk_size[num_blk-1] = n - num_blk*B;
-
-	double *dmin_list=(double*)malloc(sizeof(double)*num_blk);
-	assert(dmin_list);
-
-	double _Complex **pair_list=(double _Complex**)malloc(sizeof(void*)*num_blk*2);
-	assert(pair_list);
-	memset(pair_list,0,sizeof(void*)*num_blk*2);
-
-
-	for (int i = 0; i < num_blk-1; i++)
-		dmin_list[i] = brute_force2(B,X+i*B,pair_list+2*i);
-	dmin_list[num_blk-1] = brute_force2(blk_size[num_blk-1],
-			X+(num_blk-1)*B,pair_list+2*(num_blk-1));
-
-	while(num_blk>1) {
-		static int k=0;
-		int j=0;
-		while (j<num_blk-1) {
-			// merge j and j+1 to k
-			// j += 2;
-			// k++
-		}
-		num_blk -= j/2;
+	// Determine y_size, realloc to enlarge *work if needed
+	int start=-1;
+	while ( creal(a[++start]) < x0-*d_min );
+	int end=start-1;
+	while ( ++end<n && creal(a[end]) <= x0+*d_min );
+	const int y_size = end - start;
+	if (*work_size<y_size) {
+		*work_size = y_size;
+		free(*work);
+		*work = (double _Complex*)
+			malloc(sizeof(double _Complex)*y_size);
 	}
+
+	double _Complex *y = *work;
+	for (int i = 0; i < y_size; i++)
+		y[i] = a[i+start];
+	qsort(y,y_size,sizeof(double _Complex),cmpy);
+
+	for (int i = 0; i < y_size; i++)
+		for (int j = i; j < i+5; j++) {
+			const double d_curr = norm2(a[j]-a[i]);
+			if (d_curr<*d_min) {
+				*d_min = d_curr;
+				pair_min[0] = a[i];
+				pair_min[1] = a[j];
+			}
+		}
 }
+
 /*
- * O(nlgn) method: implementing the pseudocode from Wikipedia:
+ * O(nlgn) method: *a is sorted in-place. Extra memory >= 3*16*sqrt(n) bytes
+ *
+ * pseudocode from Wikipedia:
  *
  * closestPair of (xP, yP)
  * where xP is P(1) .. P(N) sorted by x coordinate, and
@@ -128,6 +127,62 @@ static double nlgn_method2(const int n, double _Complex *a, double _Complex**pos
  * The above method is recursive. Let's do a non-recursive, i.e., iterative
  * version here. Also, try not to allocate memory as long as we do not have to.
  */
+static double nlgn_method2(const int n, 
+		double _Complex *restrict a,
+		double _Complex *restrict pos)
+{
+	qsort(a,n,sizeof(double _Complex),cmpx);
+
+	const int B=6;
+	int num_blk = (n%B==0)?(n/B):(n/B+1);
+
+	int *blk_size = (int*)malloc(sizeof(int)*num_blk);
+	assert(blk_size);
+	for (int i = 0; i < num_blk-1; i++)
+		blk_size[i] = B;
+	blk_size[num_blk-1] = n - num_blk*B;
+
+	double d_min = DBL_MAX;
+	double _Complex pair_min[2];
+	for (int i = 0; i < num_blk; i++) {
+		double _Complex pair_curr[2];
+		const double d_curr = brute_force2(
+				blk_size[i],a+i*B,pair_curr);
+		if (d_curr<d_min) {
+			d_min = d_curr;
+			pair_min[0] = pair_curr[0];
+			pair_min[1] = pair_curr[1];
+		}
+	}
+
+	// workspace
+	int work_size = 2*sqrt(n);
+	double _Complex *work = (double _Complex*)
+		malloc(sizeof(double _Complex)*work_size);
+
+	while(num_blk>1) {
+		int j=0;
+		while (j<num_blk-1) {
+			// merge j and j+1 to k
+			static int offset=0;
+			static int k=0;
+			merge(  &d_min,pair_min,
+				a+offset,blk_size[j],blk_size[j+1],
+				&work_size,&work);
+			blk_size[k] = blk_size[j] + blk_size[j+1];
+			offset += blk_size[k];
+			k++;
+			j += 2;
+		}
+		num_blk -= j/2;
+	}
+
+	free(blk_size);
+	free(work);
+
+	return d_min;
+}
+
 
 int main(int argc, char const* argv[])
 {
@@ -135,9 +190,12 @@ int main(int argc, char const* argv[])
 	double _Complex *data;
 	read_ascii(stdin,&N,&data);
 
-	double _Complex *pos[2];
+	double _Complex pos[2];
 	double dmin = nlgn_method2(N,data,pos);
-
 	free(data);
+
+	print_array(2,pos);
+	printf("d_min = %7.2f\n",dmin);
+
 	return 0;
 }

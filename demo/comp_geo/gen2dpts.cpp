@@ -4,7 +4,7 @@
 #include <math.h>
 #include <string.h>
 #include <complex.h>
-#include "comp_geo/geo_utils.h"
+#include "geo_utils.h"
 
 static struct {
 	double xmin;

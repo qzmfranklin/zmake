@@ -4,7 +4,7 @@ void print_array(const int n, const double _Complex *restrict a)
 {
 	for (int i = 0; i < n; i++)
 		printf("[%5d] %7.3f %23.16E %23.16E \n",i,
-				creal(a[i]),cimag(a[i]),carg(a[i]));
+				carg(a[i]),creal(a[i]),cimag(a[i]));
 }
 
 void read_binary(FILE *restrict fd, size_t *restrict n, double _Complex *restrict *a)
