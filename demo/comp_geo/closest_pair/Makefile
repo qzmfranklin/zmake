@@ -11,4 +11,5 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-closest_pair.exe: ${d}/closest_pair.o ${ROOT}/comp_geo/geo_utils.o
+test_closest_pair.exe: ${d}/test_closest_pair.o  ${d}/closest_pair.o \
+	${ROOT}/comp_geo/geo_utils.o
