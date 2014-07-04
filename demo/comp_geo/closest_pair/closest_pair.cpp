@@ -58,7 +58,13 @@ static double nlgn_method2(const int n, double _Complex *a, double _Complex**pos
 	qsort(X,n,sizeof(double _Complex),cmpx);
 	qsort(Y,n,sizeof(double _Complex),cmpy);
 
-	const int num_blk = (n%B==0)?(n/B):(n/B+1);
+	int num_blk = (n%B==0)?(n/B):(n/B+1);
+
+	int *blk_size = (int*)malloc(sizeof(int)*num_blk);
+	assert(blk_size);
+	for (int i = 0; i < num_blk-1; i++)
+		blk_size[i] = B;
+	blk_size[num_blk-1] = n - num_blk*B;
 
 	double *dmin_list=(double*)malloc(sizeof(double)*num_blk);
 	assert(dmin_list);
@@ -67,16 +73,22 @@ static double nlgn_method2(const int n, double _Complex *a, double _Complex**pos
 	assert(pair_list);
 	memset(pair_list,0,sizeof(void*)*num_blk*2);
 
-	int *blk_size = (int*)malloc(sizeof(int)*num_blk);
-	assert(blk_size);
-	for (int i = 0; i < num_blk-1; i++)
-		blk_size[i] = B;
-	blk_size[num_blk-1] = n - num_blk*B;
 
 	for (int i = 0; i < num_blk-1; i++)
 		dmin_list[i] = brute_force2(B,X+i*B,pair_list+2*i);
 	dmin_list[num_blk-1] = brute_force2(blk_size[num_blk-1],
 			X+(num_blk-1)*B,pair_list+2*(num_blk-1));
+
+	while(num_blk>1) {
+		static int k=0;
+		int j=0;
+		while (j<num_blk-1) {
+			// merge j and j+1 to k
+			// j += 2;
+			// k++
+		}
+		num_blk -= j/2;
+	}
 }
 /*
  * O(nlgn) method: implementing the pseudocode from Wikipedia:
