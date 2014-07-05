@@ -8,13 +8,7 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
-#ifndef VERBOSE
-#define VERBOSE 0 // debug use
-#endif
-
-#if VERBOSE==0
 #define fprintf(stderr,...)
-#endif
 
 /*
  * Brute force O(n^2) method.
@@ -42,13 +36,10 @@ static double brute_force2(const int n,
 	return d_min;
 }
 
-double closest_pair0(const int n, 
-		const double _Complex *restrict a,
-		double _Complex *restrict pos)
+double closest_pair0(const int n, const void *restrict a, void *restrict pos)
 {
-	return sqrt(brute_force2(n,a,pos));
+	return sqrt(brute_force2(n,(double _Complex*)a,(double _Complex*)pos));
 }
-
 
 //qsort(data,num,sizeof(int),compare);
 static int cmpx (const void * a, const void * b) 
@@ -84,17 +75,25 @@ static void merge(double *restrict d_min, double _Complex *restrict pair_min,
 {
 	fprintf(stderr,"\t\tmerge\n");
 	const double x0 = 0.5*( a[n1-1] + a[n1] );
+	const double x1 = x0 - sqrt(*d_min);
+	const double x2 = x0 + sqrt(*d_min);
 	const int     n = n1 + n2;
 
 	// Determine y_size, realloc to enlarge *work if needed
-	int start=-1;
-	while ( creal(a[++start]) < x0-sqrt(*d_min) );
-	int end=start-1;
-	while ( ++end<n && creal(a[end]) <= x0+sqrt(*d_min) );
-	const int y_size = end - start;
-	//print_array(y_size,y);
+	int start=n1;
+	while (--start>=0)
+		if ( creal(a[start]) < x1 ) break;
+	start++;
+	int end  =n2;
+	while (++end<n)
+		if ( creal(a[end  ]) > x2 ) break;
+	end--;
+	const int y_size = end - start + 1;
+
 	fprintf(stderr,"\t\tx1  x2 = %.2f     %.2f\n",x0-sqrt(*d_min),x0+sqrt(*d_min));
 	fprintf(stderr,"\t\ty_size = %d\n",y_size);
+
+	if (y_size<2) return;
 	if (*work_size<y_size) {
 		*work_size = y_size;
 		free(*work);
@@ -103,11 +102,8 @@ static void merge(double *restrict d_min, double _Complex *restrict pair_min,
 	}
 
 	double _Complex *y = *work;
-	for (int i = 0; i < y_size; i++)
-		y[i] = a[i+start];
-	//print_array(y_size,y);
+	memcpy(y,a+start,sizeof(double _Complex)*y_size);
 	qsort(y,y_size,sizeof(double _Complex),cmpy);
-	//print_array(y_size,y);
 
 	for (int i = 0; i < y_size; i++)
 		for (int j = i+1; j < MIN(i+5,y_size); j++) {
@@ -118,6 +114,7 @@ static void merge(double *restrict d_min, double _Complex *restrict pair_min,
 				pair_min[1] = y[j];
 			}
 		}
+	fprintf(stderr,"\t\treached the end\n");
 }
 
 /*
@@ -201,11 +198,10 @@ static double nlgn_method(const int n,
 
 	// merge iteratively
 	while(num_blk>1) {
-		int j=0, offset=0;
+		int j=0, k=0, offset=0;
 		fprintf(stderr,"num_blk = %d\n",num_blk);
 		while (j<num_blk-1) {
 			// merge j and j+1 to k
-			static int k=0;
 			fprintf(stderr,"\toffset        = %d\n",offset);
 			fprintf(stderr,"\tblk_size[%3d] = %d\n",j,blk_size[j]);
 			fprintf(stderr,"\tblk_size[%3d] = %d\n",j+1,blk_size[j+1]);
@@ -235,9 +231,7 @@ static double nlgn_method(const int n,
 }
 
 // wrapper
-double closest_pair(const int n, 
-		double _Complex *restrict a,
-		double _Complex *restrict pos)
+double closest_pair(const int n, void *restrict a, void *restrict pos)
 {
-	return nlgn_method(n,a,pos);
+	return nlgn_method(n,(double _Complex*)a,(double _Complex*)pos);
 }

@@ -22,16 +22,25 @@
 extern "C" {
 #endif
 
-void print_array(const int n, const double _Complex *restrict a);
+/*
+ * For the following 5 functions, pointers of type void* are assumed to be 
+ * (double _Complex*), with length of 16*n bytes.
+ */
 
-void read_binary(FILE *restrict fd, size_t *restrict n, double _Complex *restrict *a);
+void print_array(const int n, const void *restrict a0);
 
-void read_ascii(FILE *restrict fd, size_t *restrict n, double _Complex *restrict *a);
+void read_binary(FILE *restrict fd, size_t *restrict n, void *restrict *a0);
 
-void output_binary(FILE *fd, const size_t n, const double _Complex *restrict a);
+void read_ascii(FILE *restrict fd, size_t *restrict n, void *restrict *a);
 
-void output_ascii(FILE *fd, const size_t n, const double _Complex *restrict a);
+void output_binary(FILE *fd, const size_t n, const void *restrict a);
 
+void output_ascii(FILE *fd, const size_t n, const void *restrict a0);
+
+
+/*
+ * Utility functions
+ */
 static inline double norm2(const double _Complex c)
 {
 	return creal(c)*creal(c) + cimag(c)*cimag(c);

@@ -2,7 +2,7 @@
 DIR00005:=${ROOT}/comp_geo/closest_pair
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR00005}C:=
-${DIR00005}CPP:=closest_pair.cpp test_closest_pair.cpp
+${DIR00005}CPP:=closest_pair.cpp test_closest_pair.cpp time_closest_pair.cpp
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
 ${DIR00005}CFLAGS:=${CFLAGS}
 ${DIR00005}CXXFLAGS:=${CXXFLAGS}
