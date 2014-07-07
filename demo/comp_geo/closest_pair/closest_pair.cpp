@@ -118,7 +118,7 @@ static void merge(double *restrict d_min, double _Complex *restrict pair_min,
 }
 
 /*
- * O(nlgn) method: *a is sorted in-place. Extra memory >= 3*16*sqrt(n) bytes
+ * O(nlgn) method: *a is sorted in-place. Extra memory = 16*sqrt(n)+O(1) bytes
  *
  * pseudocode from Wikipedia:
  *
