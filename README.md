@@ -4,6 +4,8 @@ A new method of writing Makefiles.
 
 # A Brief History of Makefiles
 
+The reader is assumed to be familiar with targets, prerequisites, recipes, dependencies, Unix shell commands, and compiler options.
+
 ## Sample Project
 
 There is a `demo/` directory in this repo. The source tree is:
@@ -18,11 +20,11 @@ demo/
 │   │   ├── heapsort.h
 │   │   ├── test_heapsort.cpp
 │   │   └── test_heapsort.exe
-│   ├── quicksort/
-│   │   ├── quicksort.cpp
-│   │   ├── quicksort.h
-│   │   ├── test_quicksort.cpp
-│   │   └── test_quicksort.exe
+│   └── quicksort/
+│       ├── quicksort.cpp
+│       ├── quicksort.h
+│       ├── test_quicksort.cpp
+│       └── test_quicksort.exe
 └── utils/
     ├── StatVector.h
     ├── Table.cpp
@@ -37,7 +39,6 @@ demo/
     ├── TimeStat.h
     ├── utils.cpp
     └── utils.h
-
 ```
 
 The .cpp files are the C++ source files.
@@ -46,19 +47,31 @@ The .h files are the C/C++ header files.
 
 The .exe files are the executables *to build*.
 
-A questions arises naturally: how to build the executables?
+## The Necessity of a Build System
 
-## The make Program
+To build the .exe files, first, each .c/.cpp file is compiled with `-c` option into .o file (object file). Then, a number of .o files are linked into .exe files.
 
-The standard way of building executables from a source tree like this is to use the make program. The make program takes a file, by default called Makefile, from the commandline.
+During the first stage, or the compiling phase, each .o file only depends on one .c/.cpp file, but may include, i.e., depend on many .h files. During the second stage, or the linking phase, each .exe file can depend on many .o files.
 
-The Makefile provides information on the dependencies in the form of `target: prerequisite(s)`. There is usually also a `recipe` associated with each target. If the target is outdated, that is, older than any of its prerequisites, the make program will invoke the recipe associated with the target in an attempt to rebuild the target.
+During the compiling phase, we call the .o files the **targets**, and the .c/.cpp/.h files the **prerequisites**. During the linking phase, we call the .exe files the targets, and the .o files the prerequisites. A target can **depend** on one or more prerequisites, meaning that if at least one of the prerequisites is updated (newer than the target), the target needs to be updated.
 
-The dependencies in a project will form a *directed acyclic graph* (DAG). The make program parses the DAG, determines which recipes to invoke, and invokes the recipes in a proper order.
+The dependencies of a given source tree can be formally expressed as a **directed acyclic graph (DAG)**. Imaginably, we the project grows large, a **build system** that can automatically update targets by inspecting the DAG is desirable.
 
-The reader is assumed to be familiar with tagets, prerequisites, recipes, dependencies, Unix shell commands, and compiler options.
+## The make Program and the Makefile
 
-## Several Important Methods
+The standard tool for constructing a build system is the GNU make program. The make program reads the DAG from a file called the Makefile and use the DAG to update the targets that the user specified through the command line argument.
+
+
+In the Makefile's syntax, dependencies between targets and prerequisites are expressed in the following way:
+
+    target: prerequisite1 prerequisite2 ...
+        recipe
+
+The 'recipe' on the second line is 8-space tabbed (the make program has been very stubborn on insisting 8-space tab). It is the command that is to be invoked when the target is outdated. More specifically, if the make program detects that any of the prerequisites is modified after the last modified date of the target, the make program invokes the 'recipe' in an attempt to update the target.
+
+Of course, if the DAG is complicated, the order in which different recipes are invoked can be vital. And parallel make, which attempts to invoke more than one recipes at the same time, while being highly desirable because of its efficiency, is hard to achieve without the make program.
+
+## Brief Summary of Known Methods of Writing Makefiles
 
 In principle, one can list dependencies by hand in a *monolithic* Makefile. In practice, nobody cares to do that because
 
@@ -66,7 +79,7 @@ In principle, one can list dependencies by hand in a *monolithic* Makefile. In p
 
 Pattern rules such as `.o .c` and `%.o : %.c` can save some work. But such pattern rules do not permit ***directory-specific*** compiling and linking options, which are the keys to achieving ***directory level modularity***.
 
-The method of *recursive make* can easily achieve the directory level modularity. But, as Peter Miller pointed out in his famous [*Recursive make considered harmful*](http://aegis.sourceforge.net/auug97.pdf), recursive make breaks the completeness of the DAG. This has several consequencies:
+The method of *recursive make* can easily achieve the directory level modularity. But, as Peter Miller pointed out in his famous [*Recursive make considered harmful*](http://aegis.sourceforge.net/auug97.pdf), recursive make breaks the completeness of the DAG. This has several consequences:
 
 * The incompleteness of the DAG means that the make program will usually build too little.
 
@@ -74,16 +87,16 @@ The method of *recursive make* can easily achieve the directory level modularity
 
 * Parallel make using the `make -j` becomes very tricky, if at all possible.
 
-Peter Miller concluded that 
+Peter Miller concluded that
 > the right way of writing Makefiles was to write a single Makefile the could build the entire project.
 
-Peter Miller proposed an *alternative single Makefile solution* (section 7 'Big Picture' in his paper). His solution had a file called `modules.mk` in each subdirectory to store directory specific information, and had the Makefile in the root directory include all the `modules.mk` files. However, his solution did not fully support directory level modularity because it passed compiling options using a global variable. 
+Peter Miller proposed an *alternative single Makefile solution* (section 7 'Big Picture' in his paper). His solution had a file called `modules.mk` in each subdirectory to store directory specific information, and had the Makefile in the root directory include all the `modules.mk` files. However, his solution did not fully support directory level modularity because it passed compiling options using a global variable.
 
 Emile van Bergen, was aware of these, and proposed a [new solution](http://evbergen.home.xs4all.nl/nonrecursive-make.html).
 
 Similar to Peter's approach, Emile's solution was to write `Rules.mk` files for each subdirectory and have the Makefile in the root directory inlcude all the `Rules.mk` in the right order.
 
-Emile's solution used stacks and stack pointers to keep track of paths. As the make program enters a `Rules.mk` (assuming `Rules.mk` is in a subdirectory called `subdir`), the parent directory of `subdir` is pushed into a stack and the stack pointer shifts to `subdir`. As the make program leaves `subdir`, the parent directory is poped from the stack and the stack pointer shifts back to the parent directory.
+Emile's solution used stacks and stack pointers to keep track of paths. As the make program enters a `Rules.mk` (assuming `Rules.mk` is in a subdirectory called `subdir`), the parent directory of `subdir` is pushed into a stack and the stack pointer shifts to `subdir`. As the make program leaves `subdir`, the parent directory is popped from the stack and the stack pointer shifts back to the parent directory.
 
 The advantages of Emile's solution are:
 
@@ -96,28 +109,28 @@ The disadvantages of Emile's solutions are:
 * Recipes for each target sounds great. But in most situations it is an overkill and means that the programmers still have to list recipes by hand.
 
 
-# Yet Another Method of Writing Makefiles
+# A New Method of Writing Makefiles
 
 ## Introduction to Modules
-The above discussion on the history of Makefiles lead us to think of a method of writing a single Makefile that supports ***directory-specific pattern rules***.
+The above discussion how to write Makefiles lead us to develop **a new method of writing a single Makefile that supports directory-specific pattern rules**.
 
-Similar to Peter's and Emile's methods, my solution has a `rules.mk` file in each subdirectory. Take a look at `demo/sort/quicksort/rules.mk` as an example:
+Similar to Peter's and Emile's methods, my method has a `rules.mk` file in each subdirectory. Take a look at `demo/sort/quicksort/rules.mk` as an example:
 
 ```
 #  THIS DIRECTORY
 DIR00006:=${ROOT}/sort/quicksort
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR00006}C:=
-${DIR00006}CPP:=quicksort.cpp test_quicksort.cpp 
+${DIR00006}CPP:=quicksort.cpp test_quicksort.cpp
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
 ${DIR00006}CFLAGS:=${CFLAGS}
 ${DIR00006}CXXFLAGS:=${CXXFLAGS}
 ${DIR00006}INCS:=${INCS}
 ${DIR00006}LIBS:=${LIBS}
 
-DEP+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.d} ${${DIR00006}C:%.c=${DIR00006}/%.d} 
-OBJ+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.o} ${${DIR00006}C:%.c=${DIR00006}/%.o} 
-ASM+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.s} ${${DIR00006}C:%.c=${DIR00006}/%.s} 
+DEP+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.d} ${${DIR00006}C:%.c=${DIR00006}/%.d}
+OBJ+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.o} ${${DIR00006}C:%.c=${DIR00006}/%.o}
+ASM+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.s} ${${DIR00006}C:%.c=${DIR00006}/%.s}
 
 ${DIR00006}/%.o: ${DIR00006}/%.c
 	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00006}CFLAGS} ${${DIR00006}INCS}
@@ -165,7 +178,7 @@ Because `${${DIXXXXX}CXXFLAGS}` and `${${DIRXXXXX}INCS}` are unique to each subd
 
 The `demo/root.mk` mentioned before is:
 ```
-#	PROJECT-WIDE COMMON COMPILING FLAGS 
+#	PROJECT-WIDE COMMON COMPILING FLAGS
 CC		:=g++
 CFLAGS 		:=-O3 -Wall -Drestrict=__restrict__
 
@@ -181,7 +194,7 @@ OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
-ASMFLAGS	:=-S# source code commented assembly code 
+ASMFLAGS	:=-S# source code commented assembly code
 .SUFFIXES:
 ```
 
@@ -226,26 +239,29 @@ First tell the Makefile the path of the source tree (`ROOT`) and the current sub
 
 
 # The zmake Script
-The `zmake` script can generate `root.mk`, `rules.mk` files, and `Makefile`s.
+The `zmake` script the process of generating a valid build system using the above-mentioned method.
 
-**NOTE**: The out-of-source build function is removed from the the `zmake` script. The old `zmake` that supports out-of-source build is renamed to `zmake2`.
-
-**WARNING/TODO**: This part is slightly outdated. Will update soon!
+**NOTE**: The out-of-source build function is removed from the the `zmake` script. The old `zmake` that supported out-of-source build was renamed to `zmake2`. It is now obsolete. Please do not use it.
 
 ## List of Requirement
 * POSIX OS.
-* Only support C/C++ projects.
-* A working python3 interpreter.
+* Only support C/C++ projects (yet).
+* A working python3 interpreter. Although you can make the script work with python2 by changing the print() statements.
 
-## How to get help from the command line?
+## Get help/documentation
+
+The directory `demo/` in this git repo has a lot of useful information.
+
+Or, you can get help from the command line.
+
 Make sure that the `zmake` script is included in `$PATH`, type
 
 	zmake -h
-	
+
 Then you should see:
 
 ```
-usage: zmake [-h] [-f | -s | -d] [-r | -R] [-g] [-o TARGET] [dir]
+usage: zmake [-h] [-f | -s | -d] [-r | -R] [-g | --renew] [dir]
 
 Generating module files for constructing a single Makefile
 
@@ -259,128 +275,103 @@ optional arguments:
   -d, --delete     recursively delete all .mk files in [dir] (False)
   -r, --root-only  generate [dir]/root.mk (False)
   -R, --recursive  recursively generate rules.mk's (False)
-
-Makefile:
   -g, --makefile   generate a Makefile (False)
-  -o TARGET        output the Makefile to TARGET (Makefile)
+  --renew          renew ${ROOT} in all Makefiles (False)
 ```
-
 
 ## Generate root.mk
 In a terminal, `cd` into the root directory of `zmake`. Type
 
-	zmake demo -r
+    cd demo
+    zmake -r
 
 You will see the following message:
 
-	generated demo/root.mk
+    generated ./root.mk
 
-The positional argument `demo` is the root directory of all the source files. The flag `-r/--root-only` tells `zmake` to only generate `root.mk` in the `demo/` directory.
+The flag `-r/--root-only` tells `zmake` to only generate `root.mk`.
 
-If you do not want to type the word `demo` in the terminal, you can try
+If `./root.mk` already exists, you will be prompted an overwrite notice:
 
-	cd demo
-	zmake -r
+    demo/root.mk already exists, overwrite (y/n/q)?
 
-If `demo/root.mk` already exists, you will be prompted an overwrite notice:
-
-	demo/root.mk already exists, overwrite (y/n/q)?
-	
 You may try either of y=yes, n=no, q=quit and it is *not* case sensitive.
 
-If you type "y", the existing `root.mk` will be overwritten. If you type "n", `zmake` will skip the generation of `root.mk` and go on to its next target, if any. If you type "q", `zmake` will quit immediately.
+If you type 'y', the existing `root.mk` will be overwritten. If you type 'n, `zmake` will skip the generation of `root.mk` and go on to its next target, if any. If you type "q", `zmake` will quit immediately.
 
-## Generate `rules.mk` recursively
+**NOTE**: Right now, typing anything but y/n/q will lead to abortion of program. But it does not harm. May take care of this issue later.
+
+## Generate all the `rules.mk` files with one command
 **After** the `root.mk` is generated, we can go on to generate the `rules.mk` files by typing (still inthe root directory of `zmake`)
 
-	zmake demo -R
-	
+    zmake -R -s
+
 You will see something similar to the following message:
 
-	generated /Users/qzmfrank/codes/zmake/demo/heapsort/rules.mk
-	generated /Users/qzmfrank/codes/zmake/demo/utils/rules.mk
-	
+    generated /Users/qzmfrank/codes/zmake/demo/heapsort/rules.mk
+    generated /Users/qzmfrank/codes/zmake/demo/utils/rules.mk
+    ...(not listed)
+
 with "/Users/qzmfrank/codes/zmake" being replaced by the root directory of zmake on your own computer.
 
-The option `-R/--recursive` instructs the `zmake` script to 
+The option `-R/--recursive` instructs the `zmake` script to
 
 1. Search for `root.mk` in `demo/`. If there is no `root.mk` in `demo/`, search for `root.mk` in `demo/..`, and go on like so, until it reaches the `/` directory or the depth of search exceeds 99. If `root.mk` is not found, `zmake` prints `root.mk not found` and then exits with code 1. If `root.mk` is first found in directory `dir`, go to step 2.
 
 2. Recursively scan `dir`, create `rules.mk` for each subdirectory in `dir` that has at least one `.c` file or `.cpp` file.
 
-If some `rules.mk` already exists, then you will be prompted the overwrite notice a lot (same as the overwrite notice in `root.mk`). Sometimes that may be a little bit annoying. Depending on your need, you may either use
+If some `rules.mk` files already exists, then you will be prompted the overwrite notice a lot (same as the overwrite notice in `root.mk`). Sometimes that may be a little bit annoying. Depending on your need, you may either use
 
-	zmake demo -R --force
-	
+    zmake demo -R --force
+
 to force overwrite, or
 
-	zmake demo -R --skip
-	
+    zmake demo -R --skip
+
 to skip creating any existing files.
 
-
-**NOTE**: The `-f/--force` and `-s/--skip` options apply to `-r/--root-only`, `-b/--branch-only`, `-R/--recursive`, and `-g/--makefile`.
-
 ## Generate only one rules.mk
-Sometimes it might be desirable to generate the `rules.mk` for a single subdirectory. The `zmake` script can do this too.
+Sometimes it might be desirable to generate the `rules.mk` for a single subdirectory. The `zmake` script cannot do this yet. Explanation is available. In short, that is because the make program has undefined behavior when you reused a variable name to define pattern rules.
 
-In terminal, in the root directory of `zmake`, type
+If you just want to create one `rules.mk` file, use the `-s/--skip` flag:
 
-	rm demo/utils/rules.mk
-	zmake -b demo/utils
-	
-You will see
-
-	generated demo/utils/rules.mk
-	
-This time, the `-b/--branch-only` options instructs the `zmake` script to only generate one `rules.mk` file.
+    zmake <dir> -R -s
 
 ## Delete `.mk` files
 
-The option `-d/--delete` instructs the `zmake` script to 
+Deleting all the `.mk` files can be nasty if you have lots of directories. You can use
 
-1. Search for `root.mk` in `demo/`. If there is no `root.mk` in `demo/`, search for `root.mk` in `demo/..`, and go on like so, until it reaches the `/` directory or the depth of search exceeds 99. If `root.mk` is not found, `zmake` prints `root.mk not found` and then exits with code 1. If `root.mk` is first found in directory `dir`, go to step 2.
+    zmake -d
 
-2. Recursively scan `dir`, delete all `root.mk` and `rules.mk` files.
+to do this job.
 
-For example, if you type
+### Generate `Makefile`s (in-source)
+Manually putting up a `Makefile` from all the `.mk` is a labor intensive job. Let let the computer do it.
 
-	zmake -d demo
+**After** `root.mk` and necessary `rules.mk` are generated, in `demo/`, type
 
-You will see
-	
-	deleted demo/root.mk
-	deleted demo/heapsort/rules.mk
-	deleted demo/utils/rules.mk
+    cd sort
+    zmake -g
 
-
-### Generate in-source build `Makefile`s
-Manually putting up a `Makefile` from all the `.mk` is a labor intensive job, at which computers excel. So let the computer do it.
-
-The `zmake` script can generate `Makefile`s that uses either in-source build mode and out-of-source build mode. The default is in-source build. We will go over generating `Makefile`s that uses out-of-source build mode later.
-
-**After** `root.mk` and neccessary `rules.mk` are generated, in the root directory of `zmake`, type
-
-	zmake -g demo -o demo/heapsort/Makefile
-
-You will see
-
-	generated demo/heapsort/Makefile
-
-
-The `-g/--makefile` option instructs the `zmake` script to first find `root.mk` and then generate a `Makefile`. The `-o TARGET` option redirects the `Makefile` to `TARGET`. The default value of `TARGET` is `./Makefile`.
+The `-g/--makefile` option instructs the `zmake` script to first find `root.mk` and then generate a `Makefile`.
 
 Open the `demo/heapsort/Makefile` with your favorite editor, add
 ```
 cmp_sort.exe: ${d}/cmp_sort.o ${d}/heapsort/heapsort.o ${d}/quicksort/quicksort.o \
     ${ROOT}/utils/utils.o ${ROOT}/utils/Table.o
 ```
-at the end of the Makefile. Save, back to terminal, type
-```
-cd demo/sort
-make cmp_sort.exe
-```
+at the end of the Makefile. Save, back to terminal (in `demo/sort/`), type
 
-If everything goes right, you can run the `cmp_sort.exe` to compare different sorting algorithms. It may take a while to run.
+    make cmp_sort.exe
+    ./cmp_sort.exe
 
-**NOTE**: The `-f/--force` and `-s/--skip` options work with `-g/--makefile` too.
+**NOTE**: The Maverick (OSX 10.9) stdlib has mergsort declared in `/usr/include/stdlib.h`. Build will fail. But on Ubuntu 14.04 everything works well. Will fix this, later...
+
+**NOTE**: Mac users may try (from the `demo/` directory)
+
+    cd comp_geo/closest_pair
+    make test_closest_pair.exe time_closest_pair.exe
+    ./test_closest_pair.exe
+    ./time_closest_pair.exe
+
+The `test_closest_pair.exe` finds the closest pair of points among a lot of randomly genrated 2D points. The `time_closest_pair.exe` measures the speed of the implementation in terms of CPU cycles. The result confirms the scaling is nlgn, as expected.
