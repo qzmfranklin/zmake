@@ -97,9 +97,9 @@ int main(int argc, char const* argv[])
 	printf("reg = \"%s\"\n",reg);
 
 	if (match_regex(strlen,str,reglen,reg))
-		printf("match\n");
+		printf("\tmatch\n");
 	else
-		printf("no match\n");
+		printf("\tno match\n");
 
 	return 0;
 }

@@ -364,14 +364,3 @@ at the end of the Makefile. Save, back to terminal (in `demo/sort/`), type
 
     make cmp_sort.exe
     ./cmp_sort.exe
-
-**NOTE**: The Maverick (OSX 10.9) stdlib has mergsort declared in `/usr/include/stdlib.h`. Build will fail. But on Ubuntu 14.04 everything works well. Will fix this, later...
-
-**NOTE**: Mac users may try (from the `demo/` directory)
-
-    cd comp_geo/closest_pair
-    make test_closest_pair.exe time_closest_pair.exe
-    ./test_closest_pair.exe
-    ./time_closest_pair.exe
-
-The `test_closest_pair.exe` finds the closest pair of points among a lot of randomly genrated 2D points. The `time_closest_pair.exe` measures the speed of the implementation in terms of CPU cycles. The result confirms the scaling is nlgn, as expected.
