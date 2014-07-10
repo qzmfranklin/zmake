@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <time.h>
 #include "sort/heapsort/heapsort.h"
-#include "sort/mergesort/mergesort.h"
+//#include "sort/mergesort/mergesort.h"
 #include "sort/quicksort/quicksort.h"
 #include "utils/Table.h"
 #include "utils/TimeStat.h"
@@ -14,7 +14,7 @@ enum SORT_TYPE {
 	HEAP2=0,
 	HEAP3,
 	HEAP4,
-	MERGE,
+	//MERGE,
 	QUICK,
 	QUICKNR,
 	QSORT
@@ -84,11 +84,11 @@ class cmpsort {
 					heapsort4(num,data);
 					clk.toc();
 					break;
-				case MERGE:
-					clk.tic();
-					mergesort(num,data);
-					clk.toc();
-					break;
+				//case MERGE:
+					//clk.tic();
+					//mergesort(num,data);
+					//clk.toc();
+					//break;
 				case QUICK:
 					clk.tic();
 					quicksort(num,data);
@@ -115,32 +115,25 @@ class cmpsort {
 		{ return ( *(int*)a - *(int*)b ); }
 };
 
-static int init(int argc, char const* argv[])
+int main(int argc, char const* argv[])
 {
 	if (argc<1) {
 		printf("Usage: cmp_sort.exe [num_trials]\n");
 		exit(1);
 	}
-	int res;
-	sscanf(argv[1],"%d",&res);
-	return res;
-}
+	int N;
+	sscanf(argv[1],"%d",&N);
 
-int main(int argc, char const* argv[])
-{
-
-	const int m = 7;
+	const int m = 6;
 	const int n = 2;
-	const char* rows[m] = {"heap2","heap3","heap4","merge","quick","quick_nr","qsort"};
+	const char* rows[m] = {"heap2","heap3","heap4","quick","quick_nr","qsort"};
 	const char* cols[n] = {"median","nrl'd median"};
 	double data[m*n];
 
-	//const int N=10*1000*1000; // 40MB, cannot fit into cache
-	const int N = init(argc,argv);
 	cmpsort t;
 	t.set(N);
 	for(int i=0; i < m; i++) {
-		printf("%d\n",i);
+		//printf("%d\n",i);
 		data[i*n+0] = t.test(i,30);
 		data[i*n+1] = data[i*n+0]/t.nlogn();
 		//t.print_data();
@@ -153,7 +146,7 @@ int main(int argc, char const* argv[])
 	table.data(data);
 	char banner[200];
 	sprintf(banner,"array_size = %d\n",N);
-	strcat(banner,"\n\tCompare heapsort, mergesort, and quicksort,");
+	strcat(banner,"\n\tCompare heapsort and quicksort,");
 	strcat(banner,"\n\tTime is in CPU cycles");
 	strcat(banner,"\n\tnrl'd = normalized, i.e., divided by n*lg_2(n)");
 	table.print(banner);
