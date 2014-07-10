@@ -1,28 +1,28 @@
 #  THIS DIRECTORY
-DIR00008:=${ROOT}/comp_geo
+DIR00003:=${ROOT}/comp_geo
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00008}C:=
-${DIR00008}CPP:=geo_utils.cpp gen2dpts.cpp
+${DIR00003}C:=
+${DIR00003}CPP:=gen2dpts.cpp geo_utils.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00008}CFLAGS:=${CFLAGS}
-${DIR00008}CXXFLAGS:=${CXXFLAGS}
-${DIR00008}INCS:=${INCS}
-${DIR00008}LIBS:=${LIBS}
+${DIR00003}CFLAGS:=${CFLAGS}
+${DIR00003}CXXFLAGS:=${CXXFLAGS}
+${DIR00003}INCS:=${INCS}
+${DIR00003}LIBS:=${LIBS}
 
-DEP+=${${DIR00008}CPP:%.cpp=${DIR00008}/%.d} ${${DIR00008}C:%.c=${DIR00008}/%.d} 
-OBJ+=${${DIR00008}CPP:%.cpp=${DIR00008}/%.o} ${${DIR00008}C:%.c=${DIR00008}/%.o} 
-ASM+=${${DIR00008}CPP:%.cpp=${DIR00008}/%.s} ${${DIR00008}C:%.c=${DIR00008}/%.s} 
+DEP+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.d} ${${DIR00003}C:%.c=${DIR00003}/%.d} 
+OBJ+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.o} ${${DIR00003}C:%.c=${DIR00003}/%.o} 
+ASM+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.s} ${${DIR00003}C:%.c=${DIR00003}/%.s} 
 
-${DIR00008}/%.o: ${DIR00008}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00008}CFLAGS} ${${DIR00008}INCS}
-${DIR00008}/%.s: ${DIR00008}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00008}CFLAGS} ${${DIR00008}INCS}
+${DIR00003}/%.o: ${DIR00003}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
+${DIR00003}/%.s: ${DIR00003}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
 
-${DIR00008}/%.o: ${DIR00008}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00008}CXXFLAGS} ${${DIR00008}INCS}
-${DIR00008}/%.s: ${DIR00008}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00008}CXXFLAGS} ${${DIR00008}INCS}
+${DIR00003}/%.o: ${DIR00003}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
+${DIR00003}/%.s: ${DIR00003}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00008}/%.o
-	${CXX} -o $@ $^ ${${DIR00008}LIBS}
+%.exe: ${DIR00003}/%.o
+	${CXX} -o $@ $^ ${${DIR00003}LIBS}

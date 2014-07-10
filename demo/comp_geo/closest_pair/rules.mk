@@ -1,28 +1,28 @@
 #  THIS DIRECTORY
-DIR00005:=${ROOT}/comp_geo/closest_pair
+DIR00004:=${ROOT}/comp_geo/closest_pair
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00005}C:=
-${DIR00005}CPP:=closest_pair.cpp test_closest_pair.cpp time_closest_pair.cpp
+${DIR00004}C:=
+${DIR00004}CPP:=closest_pair.cpp test_closest_pair.cpp time_closest_pair.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00005}CFLAGS:=${CFLAGS}
-${DIR00005}CXXFLAGS:=${CXXFLAGS}
-${DIR00005}INCS:=${INCS}
-${DIR00005}LIBS:=${LIBS}
+${DIR00004}CFLAGS:=${CFLAGS}
+${DIR00004}CXXFLAGS:=${CXXFLAGS}
+${DIR00004}INCS:=${INCS}
+${DIR00004}LIBS:=${LIBS}
 
-DEP+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.d} ${${DIR00005}C:%.c=${DIR00005}/%.d} 
-OBJ+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.o} ${${DIR00005}C:%.c=${DIR00005}/%.o} 
-ASM+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.s} ${${DIR00005}C:%.c=${DIR00005}/%.s} 
+DEP+=${${DIR00004}CPP:%.cpp=${DIR00004}/%.d} ${${DIR00004}C:%.c=${DIR00004}/%.d} 
+OBJ+=${${DIR00004}CPP:%.cpp=${DIR00004}/%.o} ${${DIR00004}C:%.c=${DIR00004}/%.o} 
+ASM+=${${DIR00004}CPP:%.cpp=${DIR00004}/%.s} ${${DIR00004}C:%.c=${DIR00004}/%.s} 
 
-${DIR00005}/%.o: ${DIR00005}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00005}CFLAGS} ${${DIR00005}INCS}
-${DIR00005}/%.s: ${DIR00005}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00005}CFLAGS} ${${DIR00005}INCS}
+${DIR00004}/%.o: ${DIR00004}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00004}CFLAGS} ${${DIR00004}INCS}
+${DIR00004}/%.s: ${DIR00004}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00004}CFLAGS} ${${DIR00004}INCS}
 
-${DIR00005}/%.o: ${DIR00005}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00005}CXXFLAGS} ${${DIR00005}INCS}
-${DIR00005}/%.s: ${DIR00005}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00005}CXXFLAGS} ${${DIR00005}INCS}
+${DIR00004}/%.o: ${DIR00004}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00004}CXXFLAGS} ${${DIR00004}INCS}
+${DIR00004}/%.s: ${DIR00004}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00004}CXXFLAGS} ${${DIR00004}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00005}/%.o
-	${CXX} -o $@ $^ ${${DIR00005}LIBS}
+%.exe: ${DIR00004}/%.o
+	${CXX} -o $@ $^ ${${DIR00004}LIBS}

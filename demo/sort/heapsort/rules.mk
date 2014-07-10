@@ -1,28 +1,28 @@
 #  THIS DIRECTORY
-DIR00005:=${ROOT}/sort/heapsort
+DIR00007:=${ROOT}/sort/heapsort
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00005}C:=
-${DIR00005}CPP:=heapsort.cpp test_heapsort.cpp 
+${DIR00007}C:=
+${DIR00007}CPP:=heapsort.cpp test_heapsort.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00005}CFLAGS:=${CFLAGS}
-${DIR00005}CXXFLAGS:=${CXXFLAGS} -DNDEBUG
-${DIR00005}INCS:=${INCS}
-${DIR00005}LIBS:=${LIBS}
+${DIR00007}CFLAGS:=${CFLAGS}
+${DIR00007}CXXFLAGS:=${CXXFLAGS}
+${DIR00007}INCS:=${INCS}
+${DIR00007}LIBS:=${LIBS}
 
-DEP+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.d} ${${DIR00005}C:%.c=${DIR00005}/%.d} 
-OBJ+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.o} ${${DIR00005}C:%.c=${DIR00005}/%.o} 
-ASM+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.s} ${${DIR00005}C:%.c=${DIR00005}/%.s} 
+DEP+=${${DIR00007}CPP:%.cpp=${DIR00007}/%.d} ${${DIR00007}C:%.c=${DIR00007}/%.d} 
+OBJ+=${${DIR00007}CPP:%.cpp=${DIR00007}/%.o} ${${DIR00007}C:%.c=${DIR00007}/%.o} 
+ASM+=${${DIR00007}CPP:%.cpp=${DIR00007}/%.s} ${${DIR00007}C:%.c=${DIR00007}/%.s} 
 
-${DIR00005}/%.o: ${DIR00005}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00005}CFLAGS} ${${DIR00005}INCS}
-${DIR00005}/%.s: ${DIR00005}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00005}CFLAGS} ${${DIR00005}INCS}
+${DIR00007}/%.o: ${DIR00007}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00007}CFLAGS} ${${DIR00007}INCS}
+${DIR00007}/%.s: ${DIR00007}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00007}CFLAGS} ${${DIR00007}INCS}
 
-${DIR00005}/%.o: ${DIR00005}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00005}CXXFLAGS} ${${DIR00005}INCS}
-${DIR00005}/%.s: ${DIR00005}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00005}CXXFLAGS} ${${DIR00005}INCS}
+${DIR00007}/%.o: ${DIR00007}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00007}CXXFLAGS} ${${DIR00007}INCS}
+${DIR00007}/%.s: ${DIR00007}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00007}CXXFLAGS} ${${DIR00007}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00005}/%.o
-	${CXX} -o $@ $^ ${${DIR00005}LIBS}
+%.exe: ${DIR00007}/%.o
+	${CXX} -o $@ $^ ${${DIR00007}LIBS}

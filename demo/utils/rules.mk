@@ -1,28 +1,28 @@
 #  THIS DIRECTORY
-DIR00003:=${ROOT}/utils
+DIR00013:=${ROOT}/utils
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00003}C:=
-${DIR00003}CPP:=test_timestat.cpp test_table.cpp test_stat.cpp utils.cpp Table.cpp 
+${DIR00013}C:=
+${DIR00013}CPP:=Table.cpp test_stat.cpp test_table.cpp test_timestat.cpp utils.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00003}CFLAGS:=${CFLAGS}
-${DIR00003}CXXFLAGS:=${CXXFLAGS}
-${DIR00003}INCS:=${INCS}
-${DIR00003}LIBS:=${LIBS}
+${DIR00013}CFLAGS:=${CFLAGS}
+${DIR00013}CXXFLAGS:=${CXXFLAGS}
+${DIR00013}INCS:=${INCS}
+${DIR00013}LIBS:=${LIBS}
 
-DEP+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.d} ${${DIR00003}C:%.c=${DIR00003}/%.d} 
-OBJ+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.o} ${${DIR00003}C:%.c=${DIR00003}/%.o} 
-ASM+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.s} ${${DIR00003}C:%.c=${DIR00003}/%.s} 
+DEP+=${${DIR00013}CPP:%.cpp=${DIR00013}/%.d} ${${DIR00013}C:%.c=${DIR00013}/%.d} 
+OBJ+=${${DIR00013}CPP:%.cpp=${DIR00013}/%.o} ${${DIR00013}C:%.c=${DIR00013}/%.o} 
+ASM+=${${DIR00013}CPP:%.cpp=${DIR00013}/%.s} ${${DIR00013}C:%.c=${DIR00013}/%.s} 
 
-${DIR00003}/%.o: ${DIR00003}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
-${DIR00003}/%.s: ${DIR00003}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
+${DIR00013}/%.o: ${DIR00013}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00013}CFLAGS} ${${DIR00013}INCS}
+${DIR00013}/%.s: ${DIR00013}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00013}CFLAGS} ${${DIR00013}INCS}
 
-${DIR00003}/%.o: ${DIR00003}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
-${DIR00003}/%.s: ${DIR00003}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
+${DIR00013}/%.o: ${DIR00013}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00013}CXXFLAGS} ${${DIR00013}INCS}
+${DIR00013}/%.s: ${DIR00013}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00013}CXXFLAGS} ${${DIR00013}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00003}/%.o
-	${CXX} -o $@ $^ ${${DIR00003}LIBS}
+%.exe: ${DIR00013}/%.o
+	${CXX} -o $@ $^ ${${DIR00013}LIBS}

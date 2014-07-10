@@ -1,28 +1,28 @@
 #  THIS DIRECTORY
-DIR00009:=${ROOT}/comp_geo/farthest_pair
+DIR00005:=${ROOT}/comp_geo/farthest_pair
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00009}C:=
-${DIR00009}CPP:=convex_hull.cpp test_convex_hull.cpp graham_scan.cpp 
+${DIR00005}C:=
+${DIR00005}CPP:=convex_hull.cpp graham_scan.cpp test_convex_hull.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00009}CFLAGS:=${CFLAGS}
-${DIR00009}CXXFLAGS:=${CXXFLAGS}
-${DIR00009}INCS:=${INCS}
-${DIR00009}LIBS:=${LIBS}
+${DIR00005}CFLAGS:=${CFLAGS}
+${DIR00005}CXXFLAGS:=${CXXFLAGS}
+${DIR00005}INCS:=${INCS}
+${DIR00005}LIBS:=${LIBS}
 
-DEP+=${${DIR00009}CPP:%.cpp=${DIR00009}/%.d} ${${DIR00009}C:%.c=${DIR00009}/%.d} 
-OBJ+=${${DIR00009}CPP:%.cpp=${DIR00009}/%.o} ${${DIR00009}C:%.c=${DIR00009}/%.o} 
-ASM+=${${DIR00009}CPP:%.cpp=${DIR00009}/%.s} ${${DIR00009}C:%.c=${DIR00009}/%.s} 
+DEP+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.d} ${${DIR00005}C:%.c=${DIR00005}/%.d} 
+OBJ+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.o} ${${DIR00005}C:%.c=${DIR00005}/%.o} 
+ASM+=${${DIR00005}CPP:%.cpp=${DIR00005}/%.s} ${${DIR00005}C:%.c=${DIR00005}/%.s} 
 
-${DIR00009}/%.o: ${DIR00009}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00009}CFLAGS} ${${DIR00009}INCS}
-${DIR00009}/%.s: ${DIR00009}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00009}CFLAGS} ${${DIR00009}INCS}
+${DIR00005}/%.o: ${DIR00005}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00005}CFLAGS} ${${DIR00005}INCS}
+${DIR00005}/%.s: ${DIR00005}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00005}CFLAGS} ${${DIR00005}INCS}
 
-${DIR00009}/%.o: ${DIR00009}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00009}CXXFLAGS} ${${DIR00009}INCS}
-${DIR00009}/%.s: ${DIR00009}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00009}CXXFLAGS} ${${DIR00009}INCS}
+${DIR00005}/%.o: ${DIR00005}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00005}CXXFLAGS} ${${DIR00005}INCS}
+${DIR00005}/%.s: ${DIR00005}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00005}CXXFLAGS} ${${DIR00005}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00009}/%.o
-	${CXX} -o $@ $^ ${${DIR00009}LIBS}
+%.exe: ${DIR00005}/%.o
+	${CXX} -o $@ $^ ${${DIR00005}LIBS}
