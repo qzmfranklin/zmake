@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import hashlib
 import shutil
 import os
 import glob
@@ -20,10 +21,12 @@ group_general.add_argument('-f','--force',action='store_true',default=False,
                    help='force overwriting existing files (%(default)s)')
 group_general.add_argument('-s','--skip',action='store_true',default=False,
                    help='skip any existing file (%(default)s)')
-group_general.add_argument('-d','--delete',action='store_true',default=False,
-                   help='recursively delete all .mk files in [dir] (%(default)s)') 
 
 group_mk=parser.add_mutually_exclusive_group()
+group_mk.add_argument('-d','--delete',action='store_true',default=False,
+                 help='recursively delete all .mk files in [dir] (%(default)s)') 
+group_mk.add_argument('-b','--branch-only',action='store_true',default=False,
+                 help='generate rules.mk for a single directory (%(default)s)') 
 group_mk.add_argument('-r','--root-only',action='store_true',default=False,
                  help='generate [dir]/root.mk (%(default)s)')
 group_mk.add_argument('-R','--recursive',action='store_true',default=False,
@@ -206,39 +209,46 @@ def gen_root(root,text):
 
 #gen_root(args.root,rootmk)
 
-def gen_branch(dir_num,dir,path,text,files):
+def gen_branch(root,path,text,files):
     """generate rules.mk"""
     c_src=fnmatch.filter(files,'*.c')
     cpp_src=fnmatch.filter(files,'*.cpp')
-    if len(c_src)+len(cpp_src)>0:
-        fname=os.path.join(path,'rules.mk') 
-        tmp=text.replace('#RELATIVE_PATH_FROM_ROOT#',
-                        path.replace(os.path.normpath(dir),''))
-        tmp=tmp.replace('DIR_RANDOM_NUM','DIR'+str(dir_num).zfill(5))
-        c_str=' '.join(c_src)
-        tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
-        cpp_str=' '.join(cpp_src)
-        tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
-        strfile2(fname,tmp)
+    if len(c_src)+len(cpp_src)<=0: return
+
+    fname=os.path.join(path,'rules.mk') 
+    relative_path=path.replace(os.path.normpath(root),'')
+    hashstr=hashlib.md5(relative_path.encode('utf-8')).hexdigest()
+    #print(hashstr)
+    tmp=text.replace('#RELATIVE_PATH_FROM_ROOT#',relative_path)
+    tmp=tmp.replace('DIR_RANDOM_NUM','DIR'+hashstr)
+    c_str=' '.join(c_src)
+    tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
+    cpp_str=' '.join(cpp_src)
+    tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
+    strfile2(fname,tmp)
+
+def gen_branch_only(dir,text):
+    """--branch-only"""
+    dir=os.path.abspath(dir)
+    dir=os.path.normpath(dir)
+    root=find_root(dir)
+    files=os.listdir(dir)
+    gen_branch(root,dir,text,files)
 
 def rwalk(dir,texts):
     """recursively rules.mk's"""
     root=find_root(dir)
-    dir_num=1;
     for path,dirs,files in os.walk(root):
-        dir_num = dir_num + 1
-        gen_branch(dir_num,root,path,texts['branch'],files)
+        gen_branch(root,path,texts['branch'],files)
 
 #rwalk(args.dir,texts)
 
 def rwalk_skip(dir,texts):
     """recursively generate rules.mk's, skip any existing file"""
     root=find_root(dir)
-    dir_num=1;
     for path,dirs,files in os.walk(root): 
-        dir_num = dir_num + 1
         if os.path.isfile(os.path.join(path,'rules.mk'))==False:
-            gen_branch(dir_num,root,path,texts['branch'],files)
+            gen_branch(root,path,texts['branch'],files)
     return True
 
 
@@ -321,12 +331,23 @@ def renew_makefiles(dir,target):
 if args.delete:
     delete_all(args.dir)
     exit(0)
+
+if args.branch_only:
+    gen_branch_only(args.dir,texts['branch'])
+    exit(0)
+
 if args.root_only:
     gen_root(args.dir,texts['root'])
+    exit(0)
+
 if args.recursive:
-    rwalk(args.dir,texts) 
+    rwalk(args.dir,texts)
+    exit(0)
+
 if args.makefile:
-    #gen_makefile(args.dir,args.target,texts['makefile'])
     gen_makefile(args.dir,'Makefile',texts['makefile'])
+    exit(0)
+
 if args.renew:
     renew_makefiles(args.dir,'Makefile')
+    exit(0)

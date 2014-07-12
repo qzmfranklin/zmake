@@ -246,7 +246,17 @@ The `zmake` script the process of generating a valid build system using the abov
 ## List of Requirement
 * POSIX OS.
 * Only support C/C++ projects (yet).
-* A working python3 interpreter. Although you can make the script work with python2 by changing the print() statements.
+* A working python3 interpreter.
+* The following python3 modules:
+```
+import hashlib
+import shutil
+import os
+import glob
+import fnmatch
+import sys
+import argparse
+```
 
 ## Get help/documentation
 
@@ -261,22 +271,23 @@ Make sure that the `zmake` script is included in `$PATH`, type
 Then you should see:
 
 ```
-usage: zmake [-h] [-f | -s | -d] [-r | -R] [-g | --renew] [dir]
+usage: zmake [-h] [-f | -s] [-d | -b | -r | -R] [-g | --renew] [dir]
 
 Generating module files for constructing a single Makefile
 
 positional arguments:
-  dir              directory of source files (.)
+  dir                directory of source files (.)
 
 optional arguments:
-  -h, --help       show this help message and exit
-  -f, --force      force overwriting existing files (False)
-  -s, --skip       skip any existing file (False)
-  -d, --delete     recursively delete all .mk files in [dir] (False)
-  -r, --root-only  generate [dir]/root.mk (False)
-  -R, --recursive  recursively generate rules.mk's (False)
-  -g, --makefile   generate a Makefile (False)
-  --renew          renew ${ROOT} in all Makefiles (False)
+  -h, --help         show this help message and exit
+  -f, --force        force overwriting existing files (False)
+  -s, --skip         skip any existing file (False)
+  -d, --delete       recursively delete all .mk files in [dir] (False)
+  -b, --branch-only  generate rules.mk for a single directory (False)
+  -r, --root-only    generate [dir]/root.mk (False)
+  -R, --recursive    recursively generate rules.mk's (False)
+  -g, --makefile     generate a Makefile (False)
+  --renew            renew ${ROOT} in all Makefiles (False)
 ```
 
 ## Generate root.mk
@@ -331,12 +342,11 @@ to force overwrite, or
 to skip creating any existing files.
 
 ## Generate only one rules.mk
-Sometimes it might be desirable to generate the `rules.mk` for a single subdirectory. The `zmake` script cannot do this yet. Explanation is available. In short, that is because the make program has undefined behavior when you reused a variable name to define pattern rules.
+Sometimes it might be desirable to generate the `rules.mk` for a single subdirectory. The `zmake` script can do this by
 
-If you just want to create one `rules.mk` file, use the `-s/--skip` flag:
+    zmake --branch-only demo/sort
 
-    zmake <dir> -R -s
-
+`--force/-f` and `-skip/-s` works with `--branch-only/-b`.
 ## Delete `.mk` files
 
 Deleting all the `.mk` files can be nasty if you have lots of directories. You can use

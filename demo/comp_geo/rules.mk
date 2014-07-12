@@ -1,28 +1,28 @@
 #  THIS DIRECTORY
-DIR00003:=${ROOT}/comp_geo
+DIRa36ebe408e3ccc8eb7ea1d969ef946d4:=${ROOT}/comp_geo
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00003}C:=
-${DIR00003}CPP:=gen2dpts.cpp geo_utils.cpp 
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}C:=
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CPP:=gen2dpts.cpp geo_utils.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00003}CFLAGS:=${CFLAGS}
-${DIR00003}CXXFLAGS:=${CXXFLAGS}
-${DIR00003}INCS:=${INCS}
-${DIR00003}LIBS:=${LIBS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CFLAGS:=${CFLAGS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CXXFLAGS:=${CXXFLAGS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}INCS:=${INCS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}LIBS:=${LIBS}
 
-DEP+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.d} ${${DIR00003}C:%.c=${DIR00003}/%.d} 
-OBJ+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.o} ${${DIR00003}C:%.c=${DIR00003}/%.o} 
-ASM+=${${DIR00003}CPP:%.cpp=${DIR00003}/%.s} ${${DIR00003}C:%.c=${DIR00003}/%.s} 
+DEP+=${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CPP:%.cpp=${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.d} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}C:%.c=${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.d} 
+OBJ+=${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CPP:%.cpp=${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.o} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}C:%.c=${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.o} 
+ASM+=${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CPP:%.cpp=${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.s} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}C:%.c=${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.s} 
 
-${DIR00003}/%.o: ${DIR00003}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
-${DIR00003}/%.s: ${DIR00003}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00003}CFLAGS} ${${DIR00003}INCS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.o: ${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}INCS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.s: ${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}INCS}
 
-${DIR00003}/%.o: ${DIR00003}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
-${DIR00003}/%.s: ${DIR00003}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00003}CXXFLAGS} ${${DIR00003}INCS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.o: ${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CXXFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}INCS}
+${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.s: ${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}CXXFLAGS} ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00003}/%.o
-	${CXX} -o $@ $^ ${${DIR00003}LIBS}
+%.exe: ${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}/%.o
+	${CXX} -o $@ $^ ${${DIRa36ebe408e3ccc8eb7ea1d969ef946d4}LIBS}

@@ -1,28 +1,28 @@
 #  THIS DIRECTORY
-DIR00009:=${ROOT}/sort/quicksort
+DIR25d315f8b5f973cc05cf3c9b3ab39f84:=${ROOT}/sort/quicksort
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00009}C:=
-${DIR00009}CPP:=quicksort.cpp test_quicksort.cpp 
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}C:=
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CPP:=quicksort.cpp test_quicksort.cpp 
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00009}CFLAGS:=${CFLAGS}
-${DIR00009}CXXFLAGS:=${CXXFLAGS}
-${DIR00009}INCS:=${INCS}
-${DIR00009}LIBS:=${LIBS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CFLAGS:=${CFLAGS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CXXFLAGS:=${CXXFLAGS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}INCS:=${INCS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}LIBS:=${LIBS}
 
-DEP+=${${DIR00009}CPP:%.cpp=${DIR00009}/%.d} ${${DIR00009}C:%.c=${DIR00009}/%.d} 
-OBJ+=${${DIR00009}CPP:%.cpp=${DIR00009}/%.o} ${${DIR00009}C:%.c=${DIR00009}/%.o} 
-ASM+=${${DIR00009}CPP:%.cpp=${DIR00009}/%.s} ${${DIR00009}C:%.c=${DIR00009}/%.s} 
+DEP+=${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CPP:%.cpp=${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.d} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}C:%.c=${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.d} 
+OBJ+=${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CPP:%.cpp=${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.o} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}C:%.c=${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.o} 
+ASM+=${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CPP:%.cpp=${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.s} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}C:%.c=${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.s} 
 
-${DIR00009}/%.o: ${DIR00009}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00009}CFLAGS} ${${DIR00009}INCS}
-${DIR00009}/%.s: ${DIR00009}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00009}CFLAGS} ${${DIR00009}INCS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.o: ${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}INCS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.s: ${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}INCS}
 
-${DIR00009}/%.o: ${DIR00009}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00009}CXXFLAGS} ${${DIR00009}INCS}
-${DIR00009}/%.s: ${DIR00009}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00009}CXXFLAGS} ${${DIR00009}INCS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.o: ${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CXXFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}INCS}
+${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.s: ${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}CXXFLAGS} ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}INCS}
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00009}/%.o
-	${CXX} -o $@ $^ ${${DIR00009}LIBS}
+%.exe: ${DIR25d315f8b5f973cc05cf3c9b3ab39f84}/%.o
+	${CXX} -o $@ $^ ${${DIR25d315f8b5f973cc05cf3c9b3ab39f84}LIBS}
