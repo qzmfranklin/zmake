@@ -83,7 +83,6 @@ void solve2x2(double *restrict A, double *restrict rhs, double *restrict x);
   */
 void verify_dir(const char *dir);
 
-
 enum link_cout_flag_enum {LC_APP, LC_NOAPP}; 
 /*
  * Open file fname and link its stream to that of cout
