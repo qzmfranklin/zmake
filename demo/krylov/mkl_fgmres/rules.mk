@@ -23,7 +23,8 @@ ${DIRfb159fde1affb8870954e81852674ebf}CXXFLAGS:=${CXXFLAGS} \
 	 -m64 -I$(MKLROOT)/include
 ${DIRfb159fde1affb8870954e81852674ebf}INCS:=${INCS}
 ${DIRfb159fde1affb8870954e81852674ebf}LIBS:=${LIBS} \
-	 -L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm
+	-L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm \
+	-Wl,--no-as-needed 
 endif
 
 DEP+=${${DIRfb159fde1affb8870954e81852674ebf}CPP:%.cpp=${DIRfb159fde1affb8870954e81852674ebf}/%.d} ${${DIRfb159fde1affb8870954e81852674ebf}C:%.c=${DIRfb159fde1affb8870954e81852674ebf}/%.d} 
