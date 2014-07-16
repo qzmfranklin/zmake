@@ -1,0 +1,28 @@
+#  THIS DIRECTORY
+DIR00011:=${ROOT}/rte2dvis/utils
+#  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
+${DIR00011}C:=
+${DIR00011}CPP:=test_rmsm.cpp utils.cpp rmsm.cpp 
+#  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
+${DIR00011}CFLAGS:=${CFLAGS}
+${DIR00011}CXXFLAGS:=${CXXFLAGS}
+${DIR00011}INCS:=${INCS}
+${DIR00011}LIBS:=${LIBS}
+
+DEP+=${${DIR00011}CPP:%.cpp=${DIR00011}/%.d} ${${DIR00011}C:%.c=${DIR00011}/%.d} 
+OBJ+=${${DIR00011}CPP:%.cpp=${DIR00011}/%.o} ${${DIR00011}C:%.c=${DIR00011}/%.o} 
+ASM+=${${DIR00011}CPP:%.cpp=${DIR00011}/%.s} ${${DIR00011}C:%.c=${DIR00011}/%.s} 
+
+${DIR00011}/%.o: ${DIR00011}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00011}CFLAGS} ${${DIR00011}INCS}
+${DIR00011}/%.s: ${DIR00011}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00011}CFLAGS} ${${DIR00011}INCS}
+
+${DIR00011}/%.o: ${DIR00011}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00011}CXXFLAGS} ${${DIR00011}INCS}
+${DIR00011}/%.s: ${DIR00011}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00011}CXXFLAGS} ${${DIR00011}INCS}
+
+# Linking pattern rule for this directory
+%.exe: ${DIR00011}/%.o
+	${CXX} -o $@ $^ ${${DIR00011}LIBS}

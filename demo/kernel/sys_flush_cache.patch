@@ -1,0 +1,53 @@
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index ec255a1..353459d 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -324,6 +324,7 @@
+ 315	common	sched_getattr		sys_sched_getattr
+ 316	common	renameat2		sys_renameat2
+ 
++511	64	flush_cache		sys_flush_cache
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+ # for native 64-bit operation.
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index b0881a0..3ab9e77 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -204,6 +204,9 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	}								\
+ 	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
+ 
++
++asmlinkage long sys_flush_cache(void);
++
+ asmlinkage long sys32_quotactl(unsigned int cmd, const char __user *special,
+ 			       qid_t id, void __user *addr);
+ asmlinkage long sys_time(time_t __user *tloc);
+diff --git a/kernel/Makefile b/kernel/Makefile
+index f2a8b62..a3717b9 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -10,7 +10,8 @@ obj-y     = fork.o exec_domain.o panic.o \
+ 	    kthread.o sys_ni.o posix-cpu-timers.o \
+ 	    hrtimer.o nsproxy.o \
+ 	    notifier.o ksysfs.o cred.o reboot.o \
+-	    async.o range.o groups.o smpboot.o
++	    async.o range.o groups.o smpboot.o \
++	    flush_cache.o
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ # Do not trace debug files and internal ftrace files
+diff --git a/kernel/flush_cache.c b/kernel/flush_cache.c
+new file mode 100644
+index 0000000..6644fa6
+--- /dev/null
++++ b/kernel/flush_cache.c
+@@ -0,0 +1,7 @@
++#include <linux/syscalls.h>
++
++asmlinkage long sys_flush_cache(void)
++{
++	asm volatile("wbinvd");
++	return 0;
++}

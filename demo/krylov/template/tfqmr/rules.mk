@@ -1,0 +1,28 @@
+#  THIS DIRECTORY
+DIR00019:=${ROOT}/krylov/template/tfqmr
+#  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
+${DIR00019}C:=
+${DIR00019}CPP:=tfqmr.cpp 
+#  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
+${DIR00019}CFLAGS:=${CFLAGS}
+${DIR00019}CXXFLAGS:=${CXXFLAGS}
+${DIR00019}INCS:=${INCS}
+${DIR00019}LIBS:=${LIBS}
+
+DEP+=${${DIR00019}CPP:%.cpp=${DIR00019}/%.d} ${${DIR00019}C:%.c=${DIR00019}/%.d} 
+OBJ+=${${DIR00019}CPP:%.cpp=${DIR00019}/%.o} ${${DIR00019}C:%.c=${DIR00019}/%.o} 
+ASM+=${${DIR00019}CPP:%.cpp=${DIR00019}/%.s} ${${DIR00019}C:%.c=${DIR00019}/%.s} 
+
+${DIR00019}/%.o: ${DIR00019}/%.c
+	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00019}CFLAGS} ${${DIR00019}INCS}
+${DIR00019}/%.s: ${DIR00019}/%.c
+	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00019}CFLAGS} ${${DIR00019}INCS}
+
+${DIR00019}/%.o: ${DIR00019}/%.cpp
+	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00019}CXXFLAGS} ${${DIR00019}INCS}
+${DIR00019}/%.s: ${DIR00019}/%.cpp
+	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00019}CXXFLAGS} ${${DIR00019}INCS}
+
+# Linking pattern rule for this directory
+%.exe: ${DIR00019}/%.o
+	${CXX} -o $@ $^ ${${DIR00019}LIBS}
