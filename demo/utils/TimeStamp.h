@@ -18,6 +18,10 @@
 
 #include <cmath>
 
+#if defined(__x86_64__)
+/*
+ * Use rdtsc to get cpu cycles.
+ */
 class TimeStamp{
 	private:
 		unsigned int a1, d1;
@@ -41,20 +45,21 @@ class TimeStamp{
 		}
 };
 
-#if defined(ARMV6)  // V6 is the earliest arch that has a standard cyclecount
-uint32 pmccntr;
-uint32 pmuseren;
-uint32 pmcntenset;
-// Read the user mode perf monitor counter access permissions.
-asm volatile ("mrc p15, 0, %0, c9, c14, 0" : "=r" (pmuseren));
-if (pmuseren & 1) {  // Allows reading perfmon counters for user mode code.
-	asm volatile ("mrc p15, 0, %0, c9, c12, 1" : "=r" (pmcntenset));
-	if (pmcntenset & 0x80000000ul) {  // Is it counting?
-		asm volatile ("mrc p15, 0, %0, c9, c13, 0" : "=r" (pmccntr));
-		// The counter is set up to count every 64th cycle
-		return static_cast<int64>(pmccntr) * 64;  // Should optimize to << 6
-	}
-}
-#endif
+#else
+#include <sys/time.h>
+/*
+ * No x86 rdtsc, use the syscall, accurate to usec
+ */
+class TimeStamp{
+	private:
+		struct timeval t1, t2;
 
+	public:
+		void tic(){ gettimeofday(&t1,NULL); }
+		double toc(){
+			gettimeofday(&t2,NULL);
+			return (t2.tv_sec - t1.tv_sec) +
+				(t2.tv_usec - t1.tv_usec) / 1.0E6;
+		}
+};
 #endif
