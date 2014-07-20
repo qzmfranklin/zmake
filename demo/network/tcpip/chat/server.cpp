@@ -1,6 +1,6 @@
 #include "../inet_utils.h"
 #include <signal.h>
-#define BACKLOG 3
+#include <sys/wait.h>
 
 static void perr(const char * msg)
 {
@@ -54,18 +54,19 @@ int main(int argc, char const* argv[])
 	if (argc<2) perr("usage: server.exe [port]");
 
 	struct addrinfo *plist = 
-		get_addrinfo_list("localhost",argv[1],SOCK_STREAM);
+		get_addrinfo_list_server("localhost",argv[1],SOCK_STREAM);
 	int fd = try_bind(plist);
-	if (fd==-1) perr("Cannot bind socket to port");
+	if (fd==-1) perr("main: Cannot bind socket to port");
 
 	freeaddrinfo(plist);
 
+	const int BACKLOG=3; // max num of pending accepts
 	if (listen(fd,BACKLOG)==-1) {
 		perror("listen");
 		exit(1);
 	}
 
-	// reap dead children
+	// auto reap dead children
 	struct sigaction sa;
 	sa.sa_handler = sigchld_handler; 
 	sa.sa_flags   = SA_RESTART;
@@ -77,16 +78,15 @@ int main(int argc, char const* argv[])
 
 	while(1) {
 		struct sockaddr_storage addr;
-		socklen_t addr_len;
+		socklen_t addr_len = INET6_ADDRSTRLEN;
 		//memset(&addr,0,sizeof(addr));
 		int client_fd = accept(fd,(struct sockaddr *)&addr,&addr_len);
-		if (fd==-1) {
+		if (client_fd==-1) {
 			perror("accept");
 			exit(1);
 		}
 		fprintf(stderr,"Got connection from\n");
-		fprintf(stderr,"helloe\n");
-		print_sockaddr((struct sockaddr*)&addr);
+		//print_sockaddr((struct sockaddr*)&addr);
 		fprintf(stderr,"\n");
 
 		int pid=fork();
@@ -104,7 +104,6 @@ int main(int argc, char const* argv[])
 			close(client_fd);
 			_exit(0);
 		}
-
 		// parent
 		close(client_fd);
 	}

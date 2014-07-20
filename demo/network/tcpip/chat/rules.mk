@@ -7,7 +7,7 @@ ${DIRc07e84ba35c9ecbde1c2adceccc766d7}CPP:=client.cpp server.cpp
 ${DIRc07e84ba35c9ecbde1c2adceccc766d7}CFLAGS:=${CFLAGS}
 ${DIRc07e84ba35c9ecbde1c2adceccc766d7}CXXFLAGS:=${CXXFLAGS}
 ${DIRc07e84ba35c9ecbde1c2adceccc766d7}INCS:=${INCS}
-${DIRc07e84ba35c9ecbde1c2adceccc766d7}LIBS:=${LIBS}
+${DIRc07e84ba35c9ecbde1c2adceccc766d7}LIBS:=${LIBS} -pthread
 
 DEP+=${${DIRc07e84ba35c9ecbde1c2adceccc766d7}CPP:%.cpp=${DIRc07e84ba35c9ecbde1c2adceccc766d7}/%.d} ${${DIRc07e84ba35c9ecbde1c2adceccc766d7}C:%.c=${DIRc07e84ba35c9ecbde1c2adceccc766d7}/%.d} 
 OBJ+=${${DIRc07e84ba35c9ecbde1c2adceccc766d7}CPP:%.cpp=${DIRc07e84ba35c9ecbde1c2adceccc766d7}/%.o} ${${DIRc07e84ba35c9ecbde1c2adceccc766d7}C:%.c=${DIRc07e84ba35c9ecbde1c2adceccc766d7}/%.o} 

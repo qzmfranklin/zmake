@@ -1,6 +1,6 @@
 #include "inet_utils.h"
 
-void *get_in_addr(const void *addr)
+void *get_sockaddr_in(const void *addr)
 {
 	struct sockaddr *p = (struct sockaddr*)addr;
 	switch (p->sa_family) {
@@ -13,7 +13,7 @@ void *get_in_addr(const void *addr)
 	}
 }
 
-int get_addrstrlen(const void *addr)
+int get_sockaddr_strlen(const void *addr)
 {
 	struct sockaddr *p = (struct sockaddr*)addr;
 	switch (p->sa_family) {
@@ -26,10 +26,10 @@ int get_addrstrlen(const void *addr)
 	}
 }
 
-void get_ipaddrstr(const void *addr, char *addrstr)
+void get_sockaddr_str(const void *addr, char *addrstr)
 {
 	struct sockaddr *p = (struct sockaddr*)addr;
-	inet_ntop(p->sa_family,get_in_addr(p),addrstr,get_addrstrlen(p));
+	inet_ntop(p->sa_family,get_sockaddr_in(p),addrstr,get_sockaddr_strlen(p));
 }
 
 struct addrinfo *get_addrinfo_list( 
@@ -92,10 +92,10 @@ void print_sockaddr(const struct sockaddr *p)
 		port = ipv6->sin6_port;
 		break;
 	default:
-		fprintf(stderr,"invalid ip address family, abort\n");
+		fprintf(stderr,"print_sockaddr: Invalid ip address family, abort\n");
+		fprintf(stderr,"sa_family = %d\n",p->sa_family);
 		fprintf(stderr,"AF_INET   = %d\n",AF_INET);
 		fprintf(stderr,"AF_INET6  = %d\n",AF_INET6);
-		fprintf(stderr,"sa_family = %d\n",p->sa_family);
 		exit(1);
 		break;
 	}
@@ -167,10 +167,11 @@ int try_bind(struct addrinfo *plist)
 		}
 		break;
 	}
-	if (p==NULL) 
+	if (p==NULL) {
 		fd=-1;
-	else 
-		fprintf(stderr,"Bound to port\n");
+		fprintf(stderr,"try_bind: fail\n");
+	} else 
+		fprintf(stderr,"try_bind: success\n");
 	return fd;
 }
 
@@ -178,11 +179,11 @@ int pollerr(const int revents)
 {
 	int err=-1;
 	if (revents & POLLHUP)
-		fprintf(stderr,"Remote connection closed\n");
+		fprintf(stderr,"pollerr: Remote connection closed\n");
 	else if (revents & POLLERR)
-		fprintf(stderr,"Socket error\n");
+		fprintf(stderr,"pollerr: Socket error\n");
 	else if (revents & POLLNVAL)
-		fprintf(stderr,"Invalid fd\n");
+		fprintf(stderr,"pollerr: Invalid fd\n");
 	else
 		err=0;
 	return err;

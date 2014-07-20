@@ -18,8 +18,21 @@
 extern "C" {
 #endif
 
-void *get_in_addr(const void *addr);
-void get_ipaddrstr(const void *addr, char *addrstr);
+/*
+ * return addr->sin_addr or sin6_addr depending on sa_family
+ */
+void *get_sockaddr_in(const void *addr);
+
+/*
+ * return INET_ADDRSTRLEN or INET6_ADDRSTRLEN depending on sa_family
+ */
+int get_sockaddr_strlen(const void *addr);
+
+/*
+ * put ascii representation of ip address in *addrstr
+ */
+void get_sockaddr_str(const void *addr, char *addrstr);
+
 
 /*
  * Copied from Divakar Viswanath, added port
