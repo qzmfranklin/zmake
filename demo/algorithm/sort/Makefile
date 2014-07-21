@@ -1,10 +1,10 @@
-ROOT    :=/Users/qzmfrank/git/zmake/demo
-d       :=${ROOT}/sort# this directory
+ROOT    :=/home/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/sort# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/utils/rules.mk
--include ${ROOT}/sort/rules.mk
--include ${ROOT}/sort/heapsort/rules.mk
--include ${ROOT}/sort/quicksort/rules.mk
+-include ${ROOT}/algorithm/sort/rules.mk
+-include ${ROOT}/algorithm/sort/heapsort/rules.mk
+-include ${ROOT}/algorithm/sort/quicksort/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean

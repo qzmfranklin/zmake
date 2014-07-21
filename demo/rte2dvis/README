@@ -1,0 +1,5 @@
+rte2dvis = Radiative Transport Equation 2D Volume Integral Solver
+
+This is an effective numerical volume integral solver for the RTE.
+Latest version:
+	solver/solver_v2.h

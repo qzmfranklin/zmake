@@ -74,7 +74,7 @@ static void merge(double *restrict d_min, double _Complex *restrict pair_min,
 		int *restrict work_size, double _Complex *restrict *work)
 {
 	fprintf(stderr,"\t\tmerge\n");
-	const double x0 = 0.5*( a[n1-1] + a[n1] );
+	const double x0 = 0.5*( creal(a[n1-1]) + creal(a[n1]) );
 	const double x1 = x0 - sqrt(*d_min);
 	const double x2 = x0 + sqrt(*d_min);
 	const int     n = n1 + n2;

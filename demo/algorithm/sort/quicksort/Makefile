@@ -1,8 +1,7 @@
-ROOT    :=/Users/qzmfrank/git/zmake/demo
-d       :=${ROOT}/sort/quicksort# this directory
+ROOT    :=/home/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/sort/quicksort# this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/utils/rules.mk
--include ${ROOT}/sort/quicksort/rules.mk
+-include ${ROOT}/algorithm/sort/quicksort/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean

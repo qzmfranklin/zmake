@@ -1,7 +1,7 @@
-ROOT    :=/Users/qzmfrank/git/zmake/demo
-d       :=${ROOT}/diffpar# this directory
+ROOT    :=/home/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/diffpar# this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/diffpar/rules.mk
+-include ${ROOT}/algorithm/diffpar/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean

@@ -5,8 +5,8 @@
 
 int main(int argc, char const* argv[])
 {
-	const int N = 70*1000*1000+1;
-	//const int N = 37;
+	const int N = 70*1000*1000;
+	//const int N = 371;
 	double *data = (double*)malloc(sizeof(double)*2*N);
 	assert(data);
 	for (int i = 0; i < 2*N; i++)

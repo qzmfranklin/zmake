@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "comp_geo/geo_utils.h"
 #include "closest_pair.h"
 #include "utils/Table.h"
