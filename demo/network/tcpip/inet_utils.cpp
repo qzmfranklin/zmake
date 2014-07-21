@@ -26,10 +26,16 @@ int get_sockaddr_strlen(const void *addr)
 	}
 }
 
-void get_sockaddr_str(const void *addr, char *addrstr)
+int get_sockaddr_str(const void *addr, char *addrstr)
 {
 	struct sockaddr *p = (struct sockaddr*)addr;
-	inet_ntop(p->sa_family,get_sockaddr_in(p),addrstr,get_sockaddr_strlen(p));
+	int addrstr_len = get_sockaddr_strlen(addr);
+	if (addrstr_len==-1) {
+		perror("get_sockaddr_str: unexpectied value of addrstr_len");
+		exit(1);
+	}
+	inet_ntop(p->sa_family,get_sockaddr_in(p),addrstr,addrstr_len);
+	return addrstr_len;
 }
 
 struct addrinfo *get_addrinfo_list( 
@@ -51,7 +57,6 @@ struct addrinfo *get_addrinfo_list(
 }
 
 struct addrinfo *get_addrinfo_list_server( 
-		const char *addr, 
 		const char *port,
 		const int socktype)
 {
@@ -61,9 +66,9 @@ struct addrinfo *get_addrinfo_list_server(
 	hint.ai_socktype = socktype;
 	hint.ai_flags    = AI_PASSIVE; // passive open
 	struct addrinfo *res;
-	int rval = getaddrinfo(addr,port,&hint,&res);
+	int rval = getaddrinfo(NULL,port,&hint,&res);
 	if (rval) {
-		perror("get_addrinfo_list: getaddrinfo");
+		perror("get_addrinfo_list_server: getaddrinfo");
 		exit(1);
 	}
 	return res;
@@ -262,7 +267,7 @@ void *client_recvmgr(void *args)
 			exit(1);
 		}
 		if (pollerr(ufds.revents)) exit(1);
-		int bytesread = read(fd,buf,BLKSZ);
+		int bytesread = read(fd,buf,BLKSZ-1);
 		buf[bytesread]=0;
 		//fprintf(stderr,"%s",buf);
 		printf("%s\n",buf);

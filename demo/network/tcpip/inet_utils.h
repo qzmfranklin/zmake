@@ -19,6 +19,7 @@ extern "C" {
 #endif
 
 /*
+ * *addr is one of : struct sockaddr*, sockaddr6, and sockaddr_storage*
  * return addr->sin_addr or sin6_addr depending on sa_family
  */
 void *get_sockaddr_in(const void *addr);
@@ -30,8 +31,9 @@ int get_sockaddr_strlen(const void *addr);
 
 /*
  * put ascii representation of ip address in *addrstr
+ * return the addstr_len
  */
-void get_sockaddr_str(const void *addr, char *addrstr);
+int get_sockaddr_str(const void *addr, char *addrstr);
 
 
 /*
@@ -43,7 +45,6 @@ struct addrinfo *get_addrinfo_list(
 		const int socktype);
 
 struct addrinfo *get_addrinfo_list_server(
-		const char *addr, 
 		const char *port,
 		const int socktype);
 

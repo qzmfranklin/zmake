@@ -54,7 +54,7 @@ int main(int argc, char const* argv[])
 	if (argc<2) perr("usage: server.exe [port]");
 
 	struct addrinfo *plist = 
-		get_addrinfo_list_server("localhost",argv[1],SOCK_STREAM);
+		get_addrinfo_list_server(argv[1],SOCK_STREAM);
 	int fd = try_bind(plist);
 	if (fd==-1) perr("main: Cannot bind socket to port");
 
@@ -79,14 +79,13 @@ int main(int argc, char const* argv[])
 	while(1) {
 		struct sockaddr_storage addr;
 		socklen_t addr_len = INET6_ADDRSTRLEN;
-		//memset(&addr,0,sizeof(addr));
 		int client_fd = accept(fd,(struct sockaddr *)&addr,&addr_len);
 		if (client_fd==-1) {
 			perror("accept");
 			exit(1);
 		}
 		fprintf(stderr,"Got connection from\n");
-		//print_sockaddr((struct sockaddr*)&addr);
+		print_sockaddr((struct sockaddr*)&addr);
 		fprintf(stderr,"\n");
 
 		int pid=fork();
@@ -96,8 +95,8 @@ int main(int argc, char const* argv[])
 		} else if (pid==0) { 
 			// child
 			close(fd);
-			const char welcome[] = "Welcome!";
-			//write(client_fd,welcome,sizeof(welcome));
+			//const char welcome[] = "Welcome!";
+			//write(client_fd,welcome,sizeof(welcome)-1);
 			struct client_mgr_t args={client_fd,60.0};
 			server_recvmgr(&args);
 

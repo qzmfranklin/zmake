@@ -1,4 +1,4 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/sort/mergesort# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/sort/mergesort/rules.mk

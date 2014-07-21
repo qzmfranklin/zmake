@@ -1,4 +1,4 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/comp_geo/farthest_pair# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/comp_geo/rules.mk
