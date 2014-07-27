@@ -10,4 +10,4 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-test_quicksort.exe: ${d}/quicksort.o ${d}/test_quicksort.o ${ROOT}/utils/utils.o
+test_quicksort.exe: ${d}/quicksort.o ${d}/test_quicksort.o

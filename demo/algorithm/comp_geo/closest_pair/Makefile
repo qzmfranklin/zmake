@@ -1,8 +1,8 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/comp_geo/closest_pair# this directory
+d       :=${ROOT}/algorithm/comp_geo/closest_pair# this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/comp_geo/rules.mk
--include ${ROOT}/comp_geo/closest_pair/rules.mk
+-include ${ROOT}/algorithm/comp_geo/rules.mk
+-include ${ROOT}/algorithm/comp_geo/closest_pair/rules.mk
 -include ${ROOT}/utils/rules.mk
 -include ${DEP}
 
@@ -13,7 +13,7 @@ clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 test_closest_pair.exe: ${d}/test_closest_pair.o  ${d}/closest_pair.o \
-	${ROOT}/comp_geo/geo_utils.o
+	${ROOT}/algorithm/comp_geo/geo_utils.o
 
 time_closest_pair.exe: ${d}/time_closest_pair.o  ${d}/closest_pair.o \
-	${ROOT}/comp_geo/geo_utils.o ${ROOT}/utils/Table.o
+	${ROOT}/algorithm/comp_geo/geo_utils.o ${ROOT}/utils/Table.o

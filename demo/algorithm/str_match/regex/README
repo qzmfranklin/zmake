@@ -1,0 +1,5 @@
+Implements a simple regex:
+	1.	Only lower case letters.
+	2.	The dot '.' can represent a single letter.
+	3.	A letter or a dot followed by a star '*' represents zero or more
+		of it.

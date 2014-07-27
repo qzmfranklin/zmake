@@ -1,5 +1,5 @@
 #  THIS DIRECTORY
-DIR55d798f673d589d83eacccb1d1468316:=${ROOT}/comp_geo/closest_pair
+DIR55d798f673d589d83eacccb1d1468316:=${ROOT}/algorithm/comp_geo/closest_pair
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR55d798f673d589d83eacccb1d1468316}C:=
 ${DIR55d798f673d589d83eacccb1d1468316}CPP:=closest_pair.cpp test_closest_pair.cpp time_closest_pair.cpp 

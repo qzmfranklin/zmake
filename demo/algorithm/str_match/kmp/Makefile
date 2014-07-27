@@ -1,7 +1,7 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/str_match/kmp# this directory
+d       :=${ROOT}/algorithm/str_match/kmp# this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/str_match/kmp/rules.mk
+-include ${ROOT}/algorithm/str_match/kmp/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean

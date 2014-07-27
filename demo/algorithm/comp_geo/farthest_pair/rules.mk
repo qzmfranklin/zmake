@@ -1,5 +1,5 @@
 #  THIS DIRECTORY
-DIR7ec4054751990fca2282047fea824f54:=${ROOT}/comp_geo/farthest_pair
+DIR7ec4054751990fca2282047fea824f54:=${ROOT}/algorithm/comp_geo/farthest_pair
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR7ec4054751990fca2282047fea824f54}C:=
 ${DIR7ec4054751990fca2282047fea824f54}CPP:=convex_hull.cpp graham_scan.cpp test_convex_hull.cpp 

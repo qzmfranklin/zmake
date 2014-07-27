@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include "quicksort.h"
-#include "utils/utils.h"
 
 static void print_i(const int n, const int *a)
 {

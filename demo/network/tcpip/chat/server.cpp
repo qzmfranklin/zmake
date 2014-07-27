@@ -13,6 +13,11 @@ static void sigchld_handler(int s)
 	while(waitpid(-1, NULL, WNOHANG) > 0);
 }
 
+struct client_mgr_t {
+	int fd;
+	double timeout_sec;
+};
+
 static void *server_recvmgr(void *args)
 {
 	fprintf(stderr,"recvmgr starts\n");

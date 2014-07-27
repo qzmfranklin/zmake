@@ -1,0 +1,7 @@
+closest_pair/
+	Implemented the O(nlgn) algorithm for finding the closest pair in a
+	given set of 2D points, with benchmark attestting to the O(nlgn) scale.
+
+farthest_pair/
+	Implemented the O(nlgn) algorithm for finding the farthest pair in a
+	given set of 3D points.

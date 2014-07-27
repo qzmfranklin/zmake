@@ -1,0 +1,5 @@
+diffpar is a sample program that implements the solution to the following
+problem:
+	Given a sorted array A and a positive number diff, find the pair of
+	elements in A whose difference is closest to diff in O(n) time. The n is
+	the number of elements in A.

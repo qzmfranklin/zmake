@@ -1,0 +1,8 @@
+Implemented 
+	in-place heap sort using binary-/tri-/quad-trees in heapsort/
+	recursive and non-recursive quick sort in quicksort/
+	natural merge sort in mergesort/
+
+cmp_sort.exe benchmarks the performace of the many sorting algorithms.
+	Test results on a Ubuntu14.04 machine and a MacOSX machine are available
+	in darwin_40M.txt and ubuntu_40M.txt, respectively.

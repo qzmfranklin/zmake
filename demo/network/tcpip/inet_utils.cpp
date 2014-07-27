@@ -104,7 +104,7 @@ void print_sockaddr(const struct sockaddr *p)
 		exit(1);
 		break;
 	}
-	fprintf(stderr,"[%5d] %s",port,addrstr);
+	printf("%s.%d\n",addrstr,port);
 }
 
 void print_addrinfo(const struct addrinfo *p)
@@ -118,7 +118,6 @@ void print_addrinfo_list(const struct addrinfo *list)
 		fprintf(stderr,"\t");
 		print_addrinfo(list);
 		list = list->ai_next;
-		fprintf(stderr,"\n");
 	}
 }
 
@@ -193,87 +192,3 @@ int pollerr(const int revents)
 		err=0;
 	return err;
 }
-
-void *client_sendmgr(void *args)
-{
-	fprintf(stderr,"sendmgr starts\n");
-
-	int    fd  =((struct client_mgr_t*)args)->fd;
-	double sec =((struct client_mgr_t*)args)->timeout_sec;
-	int    timeout = sec>=0.0?(int)(sec*1000):-1;
-
-	char buf[BUFSIZ];
-	buf[0]=0;
-
-	// poll the stdin for user input
-	struct pollfd ufds;
-	ufds.fd     = STDIN_FILENO;
-	ufds.events = POLLIN;
-
-	//fprintf(stderr,"local>");
-	while(1) {
-		int rval=poll(&ufds,1,-1);
-		if (rval==-1) {
-			perror("sendmgr: poll");
-			break;
-		}
-
-		int len = read(STDIN_FILENO,buf,BUFSIZ-1);
-		buf[len-1]=0;
-
-		/*
-		 *fprintf(stderr,"echo :%s[end]\n",buf);
-		 *for (int i = 0; i < len; i++)
-		 *        fprintf(stderr,"%d ",buf[i]);
-		 *fprintf(stderr,"\n");
-		 */
-
-		if (!strcmp(buf,"quit")) {
-			fprintf(stderr,"Quit\n");
-			exit(1);
-		}
-
-		write(fd,buf,len-1);
-		//fprintf(stderr,"local>");
-	}
-
-	fprintf(stderr,"sendmgr ends\n");
-	return NULL;
-}
-
-void *client_recvmgr(void *args)
-{
-	fprintf(stderr,"recvmgr starts\n");
-
-	int    fd  =((struct client_mgr_t*)args)->fd;
-	double sec =((struct client_mgr_t*)args)->timeout_sec;
-	int    timeout = sec>=0.0?(int)(sec*1000):-1;
-
-	char   buf[BUFSIZ];
-	const size_t BLKSZ=128;
-
-	// poll the socket fd for incoming message
-	struct pollfd ufds;
-	ufds.fd     = fd;
-	ufds.events = POLLIN;
-
-	while(1) {
-		int rval = poll(&ufds,1,timeout);
-		if (rval==-1) {
-			perror("recvmgr: poll");
-			break;
-		} else if (rval==0) {
-			fprintf(stderr,"Timeout occured after %fs\n",sec);
-			exit(1);
-		}
-		if (pollerr(ufds.revents)) exit(1);
-		int bytesread = read(fd,buf,BLKSZ-1);
-		buf[bytesread]=0;
-		//fprintf(stderr,"%s",buf);
-		printf("%s\n",buf);
-	}
-	fprintf(stderr,"recvmgr ends\n");
-	return NULL;
-}
-
-

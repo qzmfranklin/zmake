@@ -2,7 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <float.h>
-#include "comp_geo/geo_utils.h"
+#include "../geo_utils.h"
 #include "closest_pair.h"
 
 #define MAX(a,b) ((a)>(b)?(a):(b))

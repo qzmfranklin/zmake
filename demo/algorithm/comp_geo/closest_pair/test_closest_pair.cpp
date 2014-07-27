@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
-#include "comp_geo/geo_utils.h"
+#include "../geo_utils.h"
 #include "closest_pair.h"
 
 int main(int argc, char const* argv[])
