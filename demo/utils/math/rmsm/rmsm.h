@@ -15,6 +15,7 @@
 
 
 #include <complex.h>
+#include <vector>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,9 +31,13 @@ struct st_rmsm {
 	int     status; // internal status
 	int     len; // number of columns/rows
 	int    *rsz; // rsz[k] = number of non-zero elements in the k-th row
-	int    *pos; // see rmsm_mul
-	double *data;// internal representation of matrix
-	void   *tmp; // internal use only
+	int    *col; // col[k] = the column number of val[k]
+	/*
+	 * val[k] = k-th non-empty element in the row-major serial
+	 * representation of the matrix
+	 */
+	double *val; 
+	std::vector<vessel_t> *tmp; // internal use only
 };
 
 struct st_rmsm *rmsm_create(const int len);

@@ -1,24 +1,7 @@
 #include "rmsm.h"
 #include <stdio.h>
 #include <assert.h>
-#include <vector.h>
-
-
-/*
- *typedef struct {
- *        int col;
- *        double val;
- *} vessel_t;
- *
- *struct st_rmsm {
- *        int     status; // internal status
- *        int     len; // number of columns/rows
- *        int    *rsz; // rsz[k] = number of non-zero elements in the k-th row
- *        int    *pos; // see rmsm_mul for description and utility
- *        double *data;// internal representation of matrix
- *        void   *tmp; // internal use only
- *};
- */
+#include <vector>
 
 struct st_rmsm *rmsm_create(const int len)
 {
@@ -28,22 +11,22 @@ struct st_rmsm *rmsm_create(const int len)
 	m->status=0;
 	m->len = len;
 	m->rsz = (int*)malloc(sizeof(int)*len);
-	assert(rsz);
-	m->pos = NULL;
-	m->data= NULL;
-	m->tmp = (void*) new std::vector<vessel_t>[4];
+	assert(m->rsz);
+	m->col = NULL;
+	m->val = NULL;
+	m->tmp = new std::vector<vessel_t>[len];
 
 	m->status=1;
+
+	return m;
 }
 
 void rmsm_add(struct st_rmsm *m, const double val, const int row, const int col)
 {
 	assert(m->status==1);
 
-#ifndef RELEASE
 	assert(row>=0 && row < m->len);
 	assert(col>=0 && col < m->len);
-#endif
 
 	vessel_t tmp={col,val};
 	m->tmp[row].push_back(tmp);
@@ -84,8 +67,8 @@ static void pack(struct st_rmsm *m, std::vector<vessel_t> *tmp)
 	int k=0;
 	for (int i = 0; i < m->len; i++) {
 		for (int j = 0; j < tmp[i].size(); j++) {
-			m->pos[k]  = tmp[i].at(j).pos;
-			m->data[k] = tmp[i].at(j).val;
+			m->col[k] = tmp[i].at(j).col;
+			m->val[k] = tmp[i].at(j).val;
 			k++;
 		}
 	}
@@ -103,11 +86,11 @@ void rmsm_pack(struct st_rmsm *m)
 	merge_dup(m,tmp);
 	delete [] m->tmp;
 
-	const int ntot = ntot(m,tmp);
-	m->data = (double*)malloc(sizeof(double)*ntot);
-	m->pos  = (double*)malloc(sizeof(int)*ntot);
-	assert(m->data);
-	assert(m->pos);
+	const int size = ntot(m,tmp);
+	m->val = (double*)malloc(sizeof(double)*size);
+	m->col = (int*)   malloc(sizeof(int)   *size);
+	assert(m->val);
+	assert(m->col);
 
 	pack(m,tmp);
 
@@ -134,7 +117,7 @@ void rmsm_mul(const struct st_rmsm *m,
 	int k=0;
 	for (int i = 0; i < m->len; i++)
 		for (int j = 0; j < m->rsz[i]; j++) {
-			out[i] += m->data[k] * in[m->pos[k]];
+			out[i] += m->val[k] * in[m->col[k]];
 			k++;
 		}
 }
@@ -149,16 +132,23 @@ void rmsm_mul_complex(const struct st_rmsm *m,
 	int k=0;
 	for (int i = 0; i < m->len; i++)
 		for (int j = 0; j < m->rsz[i]; j++) {
-			out[i] += m->data[k] * in[m->pos[k]];
+			out[i] += m->val[k] * in[m->col[k]];
 			k++;
 		}
+}
+
+void rmsm_print_info(const struct st_rmsm *m)
+{
+	assert(m->status > 0);
+	printf("    status = %d  ", m->status);
+	printf("(0=uninit'd 1=init'd 2=packed)\n");
 }
 
 void rmsm_destroy(struct st_rmsm *m)
 {
 	assert(m->status==2);
 	free(m->rsz);
-	free(m->pos);
-	free(m->data);
+	free(m->col);
+	free(m->val);
 	free(m);
 }
