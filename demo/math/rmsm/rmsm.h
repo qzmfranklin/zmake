@@ -2,42 +2,52 @@
 #define _RMSM_H_
 
 /*
- * Row Major Spase Matrix (RMSM)
- * Only be included indirectly through including spmat. through including
- * spmat.h. Not in the user space, i.e., not for direct use.
+ * Row Major Sparse Matrix (RMSM)
+ *
+ * Optimized for matrix(real,sparse)-vector(real/complex,dense) multiplication.
+ *
+ * NOTE:
+ * 	1. The user interface is opaque.
+ * 	2. The user owns any vectors that are passed to RMSM functions.
+ * 	3. RMSM only supports real matrix, though you can multiply this real 
+ * 	matrix by either real or complex vectors.
  */
 
+
 #include <complex.h>
-#include <vector>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// only for internal use
+// internal use only
 typedef struct {
-	int i;
-	double d;
-} intdbl_t;
-// row-major sparse square matrix, good for A.x operation
+	int col;
+	double val;
+} vessel_t;
+
 struct st_rmsm {
-	int status; // internal status
-	int dim; // dimension of this matrix
-	int length; // num of non-zero elements, = length of col,data
-	int *pos; // i-th row starts from col[pos[i]] and data[pos[i]]
-	int *rsz; // i-th row has rsz[i] non-zero elements, 'rsz' stands for row size
-	int *col;
-	double *data;
-	std::vector<intdbl_t> *tmp; // used only when unpacked
+	int     status; // internal status
+	int     len; // number of columns/rows
+	int    *rsz; // rsz[k] = number of non-zero elements in the k-th row
+	int    *pos; // see rmsm_mul
+	double *data;// internal representation of matrix
+	void   *tmp; // internal use only
 };
-struct st_rmsm *rmsm_create(const int size);
-void rmsm_add(struct st_rmsm *m, const int row, const int col, const double val);
+
+struct st_rmsm *rmsm_create(const int len);
+void rmsm_add(struct st_rmsm *m, const double val, const int row, const int col);
 void rmsm_pack(struct st_rmsm *m);
-void rmsm_print_matrixinfo(const struct st_rmsm *m);
+void rmsm_print_info(const struct st_rmsm *m);
 void rmsm_destroy(struct st_rmsm *m);
-void rmsm_dmul(const struct st_rmsm *m, const double *restrict in, double *restrict out);
-void rmsm_zmul(const struct st_rmsm *m, const double _Complex *restrict in, double _Complex *restrict out);
+void rmsm_mul(const struct st_rmsm *m,
+		const double *restrict in,
+		double *restrict out);
+void rmsm_mul_complex(const struct st_rmsm *m,
+		const double _Complex *restrict in,
+		double _Complex *restrict out);
 void rmsm_print_row(const struct st_rmsm *m, const int row);
+
 #ifdef __cplusplus
 }
 #endif 
