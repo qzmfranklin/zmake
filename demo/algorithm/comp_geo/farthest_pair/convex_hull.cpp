@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
-#include "comp_geo/geo_utils.h"
+#include "../geo_utils.h"
 #include "convex_hull.h"
 
 static int status=1;

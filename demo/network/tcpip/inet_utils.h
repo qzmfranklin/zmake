@@ -70,16 +70,6 @@ int try_bind(struct addrinfo *plist);
  */
 int pollerr(const int revents);
 
-/*
- * Send/Recv manager for client, invoked by pthreads
- */
-struct client_mgr_t {
-	int fd;
-	double timeout_sec;
-};
-void *client_sendmgr(void *args);
-void *client_recvmgr(void *args);
-
 #ifdef __cplusplus
 }
 #endif

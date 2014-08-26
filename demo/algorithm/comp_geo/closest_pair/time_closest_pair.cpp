@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include "comp_geo/geo_utils.h"
+#include "../geo_utils.h"
 #include "closest_pair.h"
 #include "utils/Table.h"
 #include "utils/TimeStat.h"

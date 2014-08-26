@@ -1,0 +1,6 @@
+mkl_fgmres/
+	Test using Intel Math Kernel Library routines to solve large linear
+	problems. GMRES.
+
+template/
+	C++ templates attempting to implement the TFQMR solver. Not done yet.

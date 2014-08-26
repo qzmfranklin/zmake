@@ -2,7 +2,7 @@
 #define _CONVEX_HULL_H_
 
 #include <complex.h>
-#include "comp_geo/geo_utils.h"
+#include "../geo_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
