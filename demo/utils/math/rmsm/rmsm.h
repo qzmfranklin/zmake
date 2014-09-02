@@ -53,6 +53,9 @@ void rmsm_mul_complex(const struct st_rmsm *m,
 		double _Complex *restrict out);
 void rmsm_print_row(const struct st_rmsm *m, const int row);
 
+// count the number of multiplications and additions in a single M-V mul
+int rmsm_count_operation(const struct st_rmsm *m);
+
 #ifdef __cplusplus
 }
 #endif 

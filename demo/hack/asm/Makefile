@@ -10,6 +10,6 @@ clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 %.exe: %.s
-	${CC} -o $@ $< ${CFLAGS}
+	${CC} -o $@ $< ${CFLAGS} -g
 
 addmany.exe: ${d}/addmany.s

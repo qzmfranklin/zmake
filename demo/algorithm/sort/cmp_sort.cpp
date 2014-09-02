@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
-#include "sort/heapsort/heapsort.h"
-//#include "sort/mergesort/mergesort.h"
-#include "sort/quicksort/quicksort.h"
+#include "heapsort/heapsort.h"
+//#include "mergesort/mergesort.h"
+#include "quicksort/quicksort.h"
 #include "utils/Table.h"
 #include "utils/TimeStat.h"
 
@@ -118,7 +118,7 @@ class cmpsort {
 int main(int argc, char const* argv[])
 {
 	if (argc<1) {
-		printf("Usage: cmp_sort.exe [num_trials]\n");
+		fprintf(stderr,"Usage: cmp_sort.exe [num_trials]\n");
 		exit(1);
 	}
 	int N;
