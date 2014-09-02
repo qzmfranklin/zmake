@@ -16,8 +16,6 @@ private:
 	int status;
 	int len; // size of matrix/vector
 	double weight; // [0,1] fraction of matrix to be filled
-	double *colm; // col-major matrix, original matrix
-	double *rowm; // row-major matrix
 	struct st_rmsm *m;  // row-major-sparse-matrix
 	double *in;
 	double *out;
@@ -86,10 +84,6 @@ private:
 
 		m = rmsm_create(len);
 		assert(m);
-		colm = (double*)malloc(sizeof(double)*len*len);
-		assert(colm);
-		rowm = (double*)malloc(sizeof(double)*len*len);
-		assert(rowm);
 		in = (double*)malloc(sizeof(double)*len);
 		assert(in);
 		out = (double*)malloc(sizeof(double)*len);
@@ -103,16 +97,9 @@ private:
 		assert(status==1);
 
 		srand(time(NULL));
-		for (int i = 0; i < len*len; i++)
-			if ((double)rand()/RAND_MAX < weight)
-				rowm[i] = 10.0 * rand()/RAND_MAX;
-
-		for (int i = 0; i < len*len; i++)
-			colm[i] = rowm[i];
-
 		for (int i = 0; i < len; i++)
 			for (int j = 0; j < len; j++)
-				rmsm_add(m,rowm[j+i*len],i,j);
+				rmsm_add(m,10.0*rand()/RAND_MAX,i,j);
 
 		rmsm_pack(m);
 
@@ -125,8 +112,6 @@ private:
 
 		free(in);
 		free(out);
-		free(colm);
-		free(rowm);
 		rmsm_destroy(m);
 
 		status = 0;
@@ -162,22 +147,24 @@ int main(int argc, char const* argv[])
 	sscanf(argv[1],"%d",&numtrials);
 	sscanf(argv[2],"%lf",&weight);
 
-	const int m = 5;
-	const int n = 6;
-	const char* rows[m] = {"16","64","256","4096","8192"};
-	const char* cols[n] = {"ROWMAJOR","nrl'd","COLMAJOR","nrl'd","RMSM","nrl'd"};
+	const int m = 9;
+	const int n = 3;
+	const char* rows[m] = {"64","200","256","1000","1024",
+		"4096","15000","100*1000","1000*1000"};
+	const char* cols[n] = {"max","median","min"};
 	double data[m*n];
 
-	const int lenlist[m] = {16,64,256,4096,8192};
+	const int lenlist[m] = {64,200,256,1000,1024,
+		4096,15000,100*1000,1000*1000};
 
 	time_rmsm t;
-	for(int i=0; i < m; i++)
-		for (int j = 0; j < n/2; j++) {
-			t.set(lenlist[i],weight);
-			const double cycles = t.run(j,numtrials);
-			data[2*j+i*n] = cycles;
-			data[2*j+1+i*n] = cycles/t.num_operations();
-		}
+	for(int i=0; i < m; i++) {
+		printf("%d\n",i);
+		t.set(lenlist[i],weight);
+		const double cycles = t.run((int)RMSM,numtrials);
+		data[2*i  ] = cycles;
+		data[2*i+1] = cycles/t.num_operations();
+	}
 
 	Table table;
 	table.dim(m,n);

@@ -15,8 +15,7 @@ struct st_rmsm *rmsm_create(const int len)
 
 	m->status=0;
 	m->len = len;
-	m->rsz = (int*)malloc(sizeof(int)*len);
-	assert(m->rsz);
+	m->rsz = NULL;
 	m->col = NULL;
 	m->val = NULL;
 	m->tmp = new std::vector<vessel_t>[len];
@@ -102,8 +101,10 @@ void rmsm_pack(struct st_rmsm *m)
 	delete [] m->tmp;
 
 	const int size = ntot(m,tmp);
+	m->rsz = (int*)   malloc(sizeof(double)*size);
 	m->val = (double*)malloc(sizeof(double)*size);
 	m->col = (int*)   malloc(sizeof(int)   *size);
+	assert(m->rsz);
 	assert(m->val);
 	assert(m->col);
 
@@ -175,10 +176,15 @@ void rmsm_print_info(const struct st_rmsm *m)
 
 void rmsm_destroy(struct st_rmsm *m)
 {
-	assert(m->status==2);
-	free(m->rsz);
-	free(m->col);
-	free(m->val);
+	assert(m->status > 0);
+
+	if (m->status==1) {
+		delete [] m->tmp;
+	} else if (m->status==2) {
+		free(m->rsz);
+		free(m->col);
+		free(m->val);
+	}
 	free(m);
 }
 
