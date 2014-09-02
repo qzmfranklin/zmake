@@ -1,5 +1,10 @@
+<<<<<<< HEAD:demo/comp_geo/closest_pair/Makefile
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/comp_geo/closest_pair# this directory
+=======
 ROOT    :=/home/qzmfrank/git/zmake/demo
 d       :=${ROOT}/algorithm/comp_geo/closest_pair# this directory
+>>>>>>> 47d2514d20df243a6a77623c64a195d9e2e5e591:demo/algorithm/comp_geo/closest_pair/Makefile
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/comp_geo/rules.mk
 -include ${ROOT}/algorithm/comp_geo/closest_pair/rules.mk

@@ -1,7 +1,8 @@
 ROOT    :=/Users/qzmfrank/git/zmake/demo
-d       :=${ROOT}/utils# this directory
+d       :=${ROOT}/utils/math/rmsm# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/utils/rules.mk
+-include ${ROOT}/utils/math/rmsm/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean
@@ -10,8 +11,4 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-test_stat.exe: ${d}/test_stat.o
-
-test_timestat.exe: ${d}/test_timestat.o
-
-test_table.exe: ${d}/test_table.o ${d}/Table.o
+test_rmsm.exe: ${d}/rmsm.o ${d}/test_rmsm.o ${ROOT}/utils/utils.o

@@ -1,4 +1,4 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/krylov/mkl_fgmres# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/krylov/mkl_fgmres/rules.mk
