@@ -1,5 +1,5 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/asm# this directory
+d       :=${ROOT}/hack/asm# this directory
 -include ${ROOT}/root.mk
 -include ${DEP}
 
@@ -12,4 +12,4 @@ clean:
 %.exe: %.s
 	${CC} -o $@ $< ${CFLAGS}
 
-helloworld.exe: helloworld.s
+addmany.exe: ${d}/addmany.s
