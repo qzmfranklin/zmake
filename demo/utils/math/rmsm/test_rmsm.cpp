@@ -12,18 +12,25 @@ static void print_vector(const char *banner, const int n, const double *a)
 
 int main(int argc, char const* argv[])
 {
-	const int size=13;
+	if (argc<3) {
+		fprintf(stderr,"Usage: test_rmsm.exe [size] [num_elements]\n");
+		exit(1);
+	}
+	int size, num_elements;
+	sscanf(argv[1],"%d",&size);
+	sscanf(argv[2],"%d",&num_elements);
+
 	struct st_rmsm *m=rmsm_create(size);
 	//rmsm_print_info(m); 
 
-	for (int i = 0; i < 500; i++) {
-		int row=rand()%size;
-		int col=rand()%size;
-		double val=5.0*rand()/RAND_MAX;
+	for (int i = 0; i < num_elements; i++) {
+		int row = rand() % size;
+		int col = rand() % size;
+		double val = 10.0 * rand()/RAND_MAX/num_elements*size;
 		rmsm_add(m,val,row,col);
 	}
 
-	rmsm_pack(m); 
+	rmsm_pack(m,RMSM_ABSERR,0.0); 
 	printf("m=\n");
 	rmsm_print_info(m); 
 

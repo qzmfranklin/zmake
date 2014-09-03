@@ -20,6 +20,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+enum {
+	RMSM_ABSERR = 0,
+	RMSM_RELERR
+};
 
 // internal use only
 typedef struct {
@@ -42,7 +46,7 @@ struct st_rmsm {
 
 struct st_rmsm *rmsm_create(const int len);
 void rmsm_add(struct st_rmsm *m, const double val, const int row, const int col);
-void rmsm_pack(struct st_rmsm *m);
+void rmsm_pack(struct st_rmsm *m, const int flag, const double eps);
 void rmsm_print_info(const struct st_rmsm *m);
 void rmsm_destroy(struct st_rmsm *m);
 void rmsm_mul(const struct st_rmsm *m,
@@ -51,6 +55,9 @@ void rmsm_mul(const struct st_rmsm *m,
 void rmsm_mul_complex(const struct st_rmsm *m,
 		const double _Complex *restrict in,
 		double _Complex *restrict out);
+
+// return the number of non-empty elements in this matrix
+int rmsm_num_elements(const struct st_rmsm *m);
 
 // count the number of multiplications and additions in a single M-V mul
 int rmsm_count_operation(const struct st_rmsm *m);

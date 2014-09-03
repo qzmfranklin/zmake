@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
+#include <string.h>
 
 enum matrix_type {
 	ROWMAJOR = 0,
@@ -102,19 +103,22 @@ private:
 	{
 		assert(status==1);
 
+		memset(rowm,0,sizeof(double)*len*len);
+		memset(colm,0,sizeof(double)*len*len);
+
+		const int num_elements = weight * len * len;
+
 		srand(time(NULL));
-		for (int i = 0; i < len*len; i++)
-			if ((double)rand()/RAND_MAX < weight)
-				rowm[i] = 10.0 * rand()/RAND_MAX;
+		for (int i = 0; i < num_elements; i++) {
+			const int row = rand() % len;
+			const int col = rand() % len;
+			const double val = 1.0 * rand() / RAND_MAX;
+			rowm[col+row*len] = val;
+			colm[row+col*len] = val;
+			rmsm_add(m,val,row,col);
+		}
 
-		for (int i = 0; i < len*len; i++)
-			colm[i] = rowm[i];
-
-		for (int i = 0; i < len; i++)
-			for (int j = 0; j < len; j++)
-				rmsm_add(m,rowm[j+i*len],i,j);
-
-		rmsm_pack(m);
+		rmsm_pack(m,RMSM_RELERR,1E-10);
 
 		status = 2;
 	}
@@ -171,13 +175,14 @@ int main(int argc, char const* argv[])
 	const int lenlist[m] = {16,64,256,4096,8192};
 
 	time_rmsm t;
-	for(int i=0; i < m; i++)
+	for(int i=0; i < m; i++) {
+		t.set(lenlist[i],weight);
 		for (int j = 0; j < n/2; j++) {
-			t.set(lenlist[i],weight);
 			const double cycles = t.run(j,numtrials);
-			data[2*j+i*n] = cycles;
+			data[2*j+i*n]   = cycles;
 			data[2*j+1+i*n] = cycles/t.num_operations();
 		}
+	}
 
 	Table table;
 	table.dim(m,n);

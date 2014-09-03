@@ -5,13 +5,7 @@
 #include <time.h>
 #include <assert.h>
 
-enum matrix_type {
-	ROWMAJOR = 0,
-	COLMAJOR,
-	RMSM
-};
-
-class time_rmsm {
+class time_rmsm_large {
 private:
 	int status;
 	int len; // size of matrix/vector
@@ -20,9 +14,9 @@ private:
 	double *in;
 	double *out;
 public:
-	time_rmsm() { status = 0; }
+	time_rmsm_large() { status = 0; }
 
-	~time_rmsm() { release(); }
+	~time_rmsm_large() { release(); }
 
 	void set(const int n, const double w)
 	{
@@ -39,35 +33,14 @@ public:
 		status = 3;
 	}
 
-	double run(const int type, const int numtrials)
+	double run(const int numtrials)
 	{
 		assert(status==3);
 		TimeStat clk(numtrials);
 		for (int i = 0; i < numtrials; i++) {
-			switch ((enum matrix_type)type) {
-			case ROWMAJOR:
 				clk.tic();
-				mul_rowmajor();
+				rmsm_mul(m,in,out);
 				clk.toc();
-				break;
-			case COLMAJOR:
-				clk.tic();
-				mul_colmajor();
-				clk.toc();
-				break;
-			case RMSM:
-				clk.tic();
-				mul_rmsm();
-				clk.toc();
-				break;
-			default:
-				fprintf(stderr,"test::run unknown matrix_type %d\n",type);
-				fprintf(stderr, "\t0 = ROWMAJOR\n"
-						"\t1 = COLMAJOR\n"
-						"\t2 = RMSM\n");
-				abort();
-				break;
-			}
 		}
 		return clk.median();
 	}
@@ -96,12 +69,17 @@ private:
 	{
 		assert(status==1);
 
-		srand(time(NULL));
-		for (int i = 0; i < len; i++)
-			for (int j = 0; j < len; j++)
-				rmsm_add(m,10.0*rand()/RAND_MAX,i,j);
+		const int num_elements = weight * len * len;
 
-		rmsm_pack(m);
+		srand(time(NULL));
+		for (int i = 0; i < num_elements; i++) {
+			const int row = rand() % len;
+			const int col = rand() % len;
+			const double val = 1.0 * rand() / RAND_MAX;
+			rmsm_add(m,val,row,col);
+		}
+
+		rmsm_pack(m,RMSM_RELERR,1E-10);
 
 		status = 2;
 	}
@@ -116,30 +94,12 @@ private:
 
 		status = 0;
 	}
-	void mul_rowmajor()
-	{
-		for (int i = 0; i < len; i++)
-			for (int j = 0; j < len; j++)
-				out[i] += rowm[j+i*len] * in[j];
-	}
-
-	void mul_colmajor()
-	{
-		for (int j = 0; j < len; j++)
-			for (int i = 0; i < len; i++)
-				out[i] += colm[i+j*len] * in[j];
-	}
-
-	void mul_rmsm()
-	{
-		rmsm_mul(m,in,out);
-	}
 };
 
 int main(int argc, char const* argv[])
 {
 	if (argc<3) {
-		fprintf(stderr,"Usage: time_rmsm.exe [numtrials] [weight]\n");
+		fprintf(stderr,"Usage: time_rmsm_large.exe [numtrials] [weight]\n");
 		exit(1);
 	}
 	int numtrials;
@@ -147,21 +107,21 @@ int main(int argc, char const* argv[])
 	sscanf(argv[1],"%d",&numtrials);
 	sscanf(argv[2],"%lf",&weight);
 
-	const int m = 9;
-	const int n = 3;
+	const int m = 10;
+	const int n = 2;
 	const char* rows[m] = {"64","200","256","1000","1024",
-		"4096","15000","100*1000","1000*1000"};
-	const char* cols[n] = {"max","median","min"};
+		"4096","15000","100*1000","1000*1000","10*1000*1000"};
+	const char* cols[n] = {"median","median/num_ops"};
 	double data[m*n];
 
 	const int lenlist[m] = {64,200,256,1000,1024,
-		4096,15000,100*1000,1000*1000};
+		4096,15000,100*1000,1000*1000,10*1000*1000};
 
-	time_rmsm t;
+	time_rmsm_large t;
 	for(int i=0; i < m; i++) {
-		printf("%d\n",i);
+		printf("\t%d %d\n",i,lenlist[i]);
 		t.set(lenlist[i],weight);
-		const double cycles = t.run((int)RMSM,numtrials);
+		const double cycles = t.run(numtrials);
 		data[2*i  ] = cycles;
 		data[2*i+1] = cycles/t.num_operations();
 	}
@@ -174,12 +134,8 @@ int main(int argc, char const* argv[])
 	char banner[BUFSIZ];
 	sprintf(banner, "\n"
 			"\tBenchmark the performance of the RMSM\n"
-			"\t(Row Major Sparse Matrix) against row-\n"
-			"\tmajor and col-major matrix.\n\n"
+			"\t(Row Major Sparse Matrix)\n\n"
 			"\tTime is in CPU cycles.\n\n"
-			"\tnrl'd = normalized, i.e., devided the\n"
-			"\traw data by the number of mul and add\n"
-			"\toperations in a single M-V mul.\n\n"
 			"\t\tnumtrials = %d\n"
 			"\t\tweight    = %f"
 			,numtrials
