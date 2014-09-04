@@ -5,45 +5,20 @@ extern "C" {
 #endif
 
 /*
- * 			Hough Transformation
- * The Hough transformation converts the problem of finding collinear points to
- * the problem of finding concurrent curves. It can pick out collinear points as
- * well as human eyes can do.
- *
- * Below is a C-style implementation of 2D Hough transformation. Hough
- * transformation in higher dimensions requires the discretization of
- * high-dimensional phase space. This leads to computationally unacceptable
- * costs in CPU time and memory.
- *
- * Any attempt to do 3D Hough transformation must be divided into sub-problems
- * that only deal with 2D Hough transformations one at a time.
- *
- * 			Usage Model
- * Input:
- * 	The raw data
- * 		P_i(x_i,y_i)		i=1,2,...,N
- * 	is passed as an array of double precision floating point number pairs,
- * 	i.e., xy[2*N], where
- * 		xy[2*i]   = x_i
- * 		xy[2*i+1] = y_i
- * 	The number of points, N, is also passed as a separate variable.
- *
- * Output:
- * 	TODO
- * 	
- *
- * 	NOTE: Once the array xy[2*N] is passed to ht_create, the user MUST NOT
- * 	alter its content until having called ht_destroy. The array is kept
- * 	intact.
+ * see README.md for documentation
  */
+
+struct st_ht_tmp;
 struct st_hough_trans {
 	int status; // internal status
 	int num; // number of data points
 	double *xy; // data points
+	struct st_ht_tmp *tmp; // internal workspace
 };
 
 /*
- * 		r-phi phase space
+ * 	r-phi phase space box
+ *
  *   r  ^
  *      |
  *      |
@@ -66,11 +41,27 @@ struct st_ht_phase_box {
 };
 
 /*
+ * internal workspace, do not use me
+ */
+struct st_ht_tmp {
+	int     numr; // number of grids in r
+	int     nump; // number of grids in phi
+	double  delr; // delta r
+	double  delp; // delta phi
+	double *aryr; // grid in r
+	double *aryp; // grid in phi
+	int    *grid; // count in grid
+};
+
+/*
  * Once the *xy is passed to ht_create, the user MUST NOT alter the content of
  * *xy until ht_destroy is called.
  */
 struct st_hough_trans *ht_create(const int n, const double *xy);
 
+/*
+ * Allocates new h->tmp after releasing old one (if alloc'd)
+ */
 void ht_refine_box(const struct st_hough_trans *h,
 		const struct st_ht_phase_box *restrict in,
 		const double delta_r, const double delta_phi
@@ -81,6 +72,10 @@ void ht_refine_box_with_shift(const struct st_hough_trans *h,
 		const double delta_r, const double delta_phi
 		struct st_ht_phase_box *restrict out);
 
+/*
+ * Find the mask of points that correspond to a given box. Assumes that the *mask
+ * is long enough but does not check that.
+ */
 void ht_find_points_for_box(const struct st_hough_trans *h,
 		const struct st_ht_phase_box *box, char *mask);
 
