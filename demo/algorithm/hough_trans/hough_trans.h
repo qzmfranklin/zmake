@@ -40,14 +40,6 @@ struct st_hough_trans {
 	int status; // internal status
 	int num; // number of data points
 	double *xy; // data points
-	/*
-	 * INTEGRAL PARAMETERS
-	 */
-	int ipar[32];
-	/*
-	 * DOUBLE PRECISION PARAMETERS
-	 */
-	double dpar[32];
 };
 
 /*
@@ -79,16 +71,18 @@ struct st_ht_phase_box {
  */
 struct st_hough_trans *ht_create(const int n, const double *xy);
 
-void ht_set_pars(struct st_hough_trans *h, const int ipar[32], const double dpar[32]);
+void ht_refine_box(const struct st_hough_trans *h,
+		const struct st_ht_phase_box *restrict in,
+		const double delta_r, const double delta_phi
+		struct st_ht_phase_box *restrict out);
 
-/* 
- * reset h->ipar and h->dpar to zeros
- */
-void ht_reset_pars(struct st_hough_trans *h);
+void ht_refine_box_with_shift(const struct st_hough_trans *h,
+		const struct st_ht_phase_box *restrict in,
+		const double delta_r, const double delta_phi
+		struct st_ht_phase_box *restrict out);
 
-void ht_refine(struct st_hough_trans *h, struct st_ht_phase_box *box);
-
-//void ht_
+void ht_find_points_for_box(const struct st_hough_trans *h,
+		const struct st_ht_phase_box *box, char *mask);
 
 void ht_print_info(const struct st_hough_trans *h);
 
