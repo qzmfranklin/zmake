@@ -48,9 +48,11 @@ struct st_ht_tmp {
 	int     nump; // number of grids in phi
 	double  delr; // delta r
 	double  delp; // delta phi
-	double *aryr; // grid in r
-	double *aryp; // grid in phi
-	int    *grid; // count in grid
+	double *aryr; // [numr+1] grid in r
+	double *aryp; // [nump+1] grid in phi
+	double *rphi; // [nump+1] workspace for holding r(phi) list
+	int    *rank; // [nump+1] rank in r
+	int    *grid; // [nump*numr] count in grid, phi-major, grid[i,j]=grid[j+i*numr]
 };
 
 /*
@@ -61,13 +63,14 @@ struct st_hough_trans *ht_create(const int n, const double *xy);
 
 /*
  * Allocates new h->tmp after releasing old one (if alloc'd)
+ * 0=succuss 1=fail:too close to boundary
  */
-void ht_refine_box(const struct st_hough_trans *h,
+int ht_refine_box(const struct st_hough_trans *h,
 		const struct st_ht_phase_box *restrict in,
 		const double delta_r, const double delta_phi
 		struct st_ht_phase_box *restrict out);
 
-void ht_refine_box_with_shift(const struct st_hough_trans *h,
+int ht_refine_box_with_shift(const struct st_hough_trans *h,
 		const struct st_ht_phase_box *restrict in,
 		const double delta_r, const double delta_phi
 		struct st_ht_phase_box *restrict out);
