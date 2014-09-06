@@ -44,12 +44,12 @@ struct st_ht_phase_box {
  * internal workspace, do not use me
  */
 struct st_ht_tmp {
-	int     numr; // number of grids in r
 	int     nump; // number of grids in phi
-	double  delr; // delta r
+	int     numr; // number of grids in r
 	double  delp; // delta phi
-	double *aryr; // [numr+1] grid in r
+	double  delr; // delta r
 	double *aryp; // [nump+1] grid in phi
+	double *aryr; // [numr+1] grid in r
 	double *rphi; // [nump+1] workspace for holding r(phi) list
 	int    *rank; // [nump+1] rank in r
 	int    *grid; // [nump*numr] count in grid, phi-major, grid[i,j]=grid[j+i*numr]
@@ -61,19 +61,36 @@ struct st_ht_tmp {
  */
 struct st_hough_trans *ht_create(const int n, const double *xy);
 
+void ht_alloc_buffer(struct st_hough_trans *h,
+		const struct st_ht_phase_box *restrict in,
+		const double delta_r, const double delta_phi);
+
 /*
  * Allocates new h->tmp after releasing old one (if alloc'd)
- * 0=succuss 1=fail:too close to boundary
+ * Return: 
+ * 	0=success 
+ * 	1=fail: too close to boundary, but still returns the proper index
+ *
+ * Output: *index, upon exit,
+ * 	index[0] = peak p1 index in aryp
+ * 	index[1] = peak r1 index in aryr
  */
-int ht_refine_box(const struct st_hough_trans *h,
+int ht_find_peak_in_rphi_grid(struct st_hough_trans *h,
 		const struct st_ht_phase_box *restrict in,
-		const double delta_r, const double delta_phi
-		struct st_ht_phase_box *restrict out);
+		const double delta_r, const double delta_phi,
+		int *restrict index);
 
-int ht_refine_box_with_shift(const struct st_hough_trans *h,
-		const struct st_ht_phase_box *restrict in,
-		const double delta_r, const double delta_phi
-		struct st_ht_phase_box *restrict out);
+/*
+ * Find the coordinates of the box corresponding to the given index
+ */
+void ht_find_box_coord(const struct st_hough_trans *h,
+		const int *index, struct st_ht_phase_box *box);
+
+/*
+ * Same as ht_find_box_coord, but shift the box by the weight(count)
+ */
+void ht_find_box_coord_with_shift(const struct st_hough_trans *h,
+		const int *index, struct st_ht_phase_box *box);
 
 /*
  * Find the mask of points that correspond to a given box. Assumes that the *mask
@@ -81,6 +98,8 @@ int ht_refine_box_with_shift(const struct st_hough_trans *h,
  */
 void ht_find_points_for_box(const struct st_hough_trans *h,
 		const struct st_ht_phase_box *box, char *mask);
+
+void ht_free_buffer(const struct st_hough_trans *h);
 
 void ht_print_info(const struct st_hough_trans *h);
 

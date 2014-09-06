@@ -1,5 +1,8 @@
-#include <hough_trans.h>
+#include "hough_trans.h"
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 
 //struct st_ht_tmp;
@@ -39,7 +42,7 @@
  * Once the *xy is passed to ht_create, the user MUST NOT alter the content of
  * *xy until ht_destroy is called.
  */
-struct st_hough_trans *ht_create(const int n, const double *xy)
+struct st_hough_trans *ht_create(const int n, double *xy)
 {
 	struct st_hough_trans *h = (struct st_hough_trans*)
 		malloc(sizeof(struct st_hough_trans));
@@ -98,6 +101,8 @@ static void init_tmp(struct st_hough_trans *h,
 	assert(h->status==1);
 
 	struct st_ht_tmp *tmp = h->tmp;
+	const int nump = h->tmp->nump;
+	const int numr = h->tmp->numr;
 
 	// avoid RAW dependency to enable vectorization
 	for (int i = 0; i < numr; i++)
@@ -111,7 +116,15 @@ static void init_tmp(struct st_hough_trans *h,
 	h->status=2;
 }
 
-static void free_tmp(const struct st_hough_trans *h)
+void ht_alloc_buffer(struct st_hough_trans *h,
+		const struct st_ht_phase_box *restrict in,
+		const double delta_r, const double delta_phi)
+{
+	alloc_tmp(h,in,delta_r,delta_phi);
+	init_tmp(h,in,delta_r,delta_phi);
+}
+
+void ht_free_buffer(struct st_hough_trans *h)
 {
 	assert(h->status==2);
 
@@ -138,7 +151,7 @@ static void free_tmp(const struct st_hough_trans *h)
  *        int    *grid; // [nump*numr] count in grid, phi-major, grid[i,j]=grid[j+i*numr]
  *};
  */
-static inline double compute_rphi_from_point_and_phi(const double *xy, const double phi)
+static inline double compute_r_from_point_and_phi(const double *xy, const double phi)
 {
 	return xy[0] * cos(phi) + xy[1] * sin(phi);
 }
@@ -168,18 +181,18 @@ static void add_point_to_grid_by_index(struct st_hough_trans *h, const int index
 	for (int i = 0; i < nump + 1; i++)
 		rphi[i] = compute_r_from_point_and_phi(h->xy+2*index,aryp[i]);
 
-	memset(tmp->rank,0,sizeof(int) * (nump + 1) );
+	memset(h->tmp->rank,0,sizeof(int) * (nump + 1) );
 	for (int i = 0; i < nump + 1; i++)
 		rank[i] = determine_rank(numr,aryr,rphi[i]);
 
-	memset(tmp->grid,0,sizeof(int) * numr * nump);
+	memset(h->tmp->grid,0,sizeof(int) * numr * nump);
 	for (int i = 0; i < nump; i++)
 		for (int j = max(0,rank[i]); j <= min(numr-1,rank[i]) ; j++)
 			grid[j+i*numr]++;
 }
 
 
-// 0=succuss, 1=fail on boundary
+// 0=succuss, 1=fail: too close to boundary
 static int find_max(const int m, const int n, const int *restrict a,
 		int *restrict pos)
 {
@@ -199,43 +212,106 @@ static int find_max(const int m, const int n, const int *restrict a,
 	return ii==0 || ii==m || jj==0 || jj==n ;
 }
 
-int ht_refine_box(struct st_hough_trans *h,
+/*
+ * Return: 
+ * 	0=success 1=fail: too close to boundary
+ *
+ * Output: *index, upon exit,
+ * 	index[0] = peak p1 index in aryp
+ * 	index[1] = peak r1 index in aryr
+ */
+int ht_find_peak_in_rphi_grid(struct st_hough_trans *h,
 		const struct st_ht_phase_box *restrict in,
-		const double delta_r, const double delta_phi
-		struct st_ht_phase_box *restrict out)
+		const double delta_r, const double delta_phi,
+		int *restrict index)
 {
-	if (h->status == 1) free_tmp(h);
-	alloc_tmp(h,in,delta_r,delta_phi);
-	init_tmp(h,in,delta_r,delta_phi);
+	assert(h->status==2);
 
 	for (int i = 0; i < h->num; i++)
 		add_point_to_grid_by_index(h,i);
 
-	int pos[2];
-	int res = find_max(h->tmp->nump,t->tmp->numr,h->tmp->grid,pos);
+	int res = find_max( h->tmp->nump, h->tmp->numr,
+			h->tmp->grid, index );
 	if (res)
-		fprintf(stderr,"ht_refine_box: boundary too close\n");
+		fprintf(stderr,"ht_refine_box: too close to boundary\n");
 
-	free_tmp(h);
+	h->status=3;
 
 	return res;
 }
 
-void ht_refine_box_with_shift(const struct st_hough_trans *h,
-		const struct st_ht_phase_box *restrict in,
-		const double delta_r, const double delta_phi
-		struct st_ht_phase_box *restrict out)
+void ht_find_box_coord(const struct st_hough_trans *h,
+		const int *index, struct st_ht_phase_box *box)
 {
+	assert(h->status == 3);
+
+	const int i = i;
+	const int j = j;
+	assert(i >= 0);
+	assert(i <  h->tmp->nump);
+	assert(j >= 0);
+	assert(j <  h->tmp->numr);
+
+	box->p1 = h->tmp->aryp[i  ];
+	box->p2 = h->tmp->aryp[i+1];
+	box->r1 = h->tmp->aryr[j  ];
+	box->r2 = h->tmp->aryr[j+1];
 }
 
 /*
- * Find the mask of points that correspond to a given box. Assumes that the *mask
- * is long enough but does not check that.
+ * Taking the weighted average of all cells around it, must not be on the
+ * boundary.
+ *
+ * Output:
+ * 	*box
+ */
+void ht_find_box_coord_with_shift(const struct st_hough_trans *h,
+		const int *index, struct st_ht_phase_box *box)
+{
+	assert(h->status == 3);
+
+	const int i0 = i0;
+	const int j0 = j0;
+	assert(i0 > 0);
+	assert(i0 < h->tmp->nump-1);
+	assert(j0 > 0);
+	assert(j0 < h->tmp->numr-1);
+
+	double i_new=0.0, j_new=0.0, weight=0.0;
+	for (int i = i0-1; i <= i0+1; i++)
+		for (int j = j0-1; j <= j0+1 ; j++) {
+			const double w = h->tmp->grid[j+i*h->tmp->numr];
+			i_new  += w * i;
+			j_new  += w * j;
+			weight += w;
+		}
+	i_new /= weight;
+	j_new /= weight;
+
+	const double dp = h->tmp->delp;
+	const double dr = h->tmp->delr;
+	const double p0 = h->tmp->aryp[0];
+	const double r0 = h->tmp->aryr[0];
+	box->p1 = p0 + i_new * dp;
+	box->r1 = r0 + j_new * dr;
+	box->p2 = box->p1 + dp;
+	box->r2 = box->r1 + dr;
+}
+
+/*
+ * Find the mask of points that correspond to a given box.
+ * Assumes that the *mask is long enough but does not check it.
  */
 void ht_find_points_for_box(const struct st_hough_trans *h,
 		const struct st_ht_phase_box *box, char *mask);
 
-void ht_print_info(const struct st_hough_trans *h);
+void ht_print_info(const struct st_hough_trans *h)
+{
+}
 
-void ht_destroy(const struct st_hough_trans *h);
-
+void ht_destroy(struct st_hough_trans *h)
+{
+	if (h->status > 0)
+		ht_free_buffer(h);
+	free(h);
+}
