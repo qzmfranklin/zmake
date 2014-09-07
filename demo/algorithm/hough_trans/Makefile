@@ -10,3 +10,5 @@ all: ${OBJ}
 asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
+
+#test_hough_trans.exe: ${d}/hough_trans.o ${d}/test_hough_trans.o

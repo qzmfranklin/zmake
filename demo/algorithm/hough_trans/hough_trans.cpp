@@ -270,17 +270,19 @@ void ht_find_box_coord_with_shift(const struct st_hough_trans *h,
 {
 	assert(h->status == 3);
 
-	const int i0 = i0;
-	const int j0 = j0;
+	const int i0 = index[0];
+	const int j0 = index[1];
+	const struct st_ht_tmp *tmp = h->tmp;
+
 	assert(i0 > 0);
-	assert(i0 < h->tmp->nump-1);
+	assert(i0 < tmp->nump-1);
 	assert(j0 > 0);
-	assert(j0 < h->tmp->numr-1);
+	assert(j0 < tmp->numr-1);
 
 	double i_new=0.0, j_new=0.0, weight=0.0;
 	for (int i = i0-1; i <= i0+1; i++)
 		for (int j = j0-1; j <= j0+1 ; j++) {
-			const double w = h->tmp->grid[j+i*h->tmp->numr];
+			const double w = tmp->grid[j+i*tmp->numr];
 			i_new  += w * i;
 			j_new  += w * j;
 			weight += w;
@@ -288,10 +290,10 @@ void ht_find_box_coord_with_shift(const struct st_hough_trans *h,
 	i_new /= weight;
 	j_new /= weight;
 
-	const double dp = h->tmp->delp;
-	const double dr = h->tmp->delr;
-	const double p0 = h->tmp->aryp[0];
-	const double r0 = h->tmp->aryr[0];
+	const double dp = tmp->delp;
+	const double dr = tmp->delr;
+	const double p0 = tmp->aryp[0];
+	const double r0 = tmp->aryr[0];
 	box->p1 = p0 + i_new * dp;
 	box->r1 = r0 + j_new * dr;
 	box->p2 = box->p1 + dp;

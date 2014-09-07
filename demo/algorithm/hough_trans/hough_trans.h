@@ -5,7 +5,7 @@ extern "C" {
 #endif
 
 /*
- * see README.md for documentation
+ * see README.md for more documentation
  */
 
 struct st_ht_tmp;
