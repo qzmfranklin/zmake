@@ -1,4 +1,4 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/utils/math/rmsm# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/utils/rules.mk

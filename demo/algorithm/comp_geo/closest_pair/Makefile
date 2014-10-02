@@ -1,5 +1,5 @@
 <<<<<<< HEAD:demo/comp_geo/closest_pair/Makefile
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/comp_geo/closest_pair# this directory
 =======
 ROOT    :=/home/qzmfrank/git/zmake/demo

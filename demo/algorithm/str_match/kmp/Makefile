@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/str_match/kmp# this directory
 =======
 ROOT    :=/home/qzmfrank/git/zmake/demo

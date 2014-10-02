@@ -12,7 +12,8 @@ struct st_ht_tmp;
 struct st_hough_trans {
 	int status; // internal status
 	int num; // number of data points
-	double *xy; // data points
+	double *x;
+	double *y;
 	struct st_ht_tmp *tmp; // internal workspace
 };
 
@@ -59,7 +60,8 @@ struct st_ht_tmp {
  * Once the *xy is passed to ht_create, the user MUST NOT alter the content of
  * *xy until ht_destroy is called.
  */
-struct st_hough_trans *ht_create(const int n, const double *xy);
+struct st_hough_trans *ht_create(const int n, const double *restrict x,
+		const double *restrict y);
 
 void ht_alloc_buffer(struct st_hough_trans *h,
 		const struct st_ht_phase_box *restrict in,

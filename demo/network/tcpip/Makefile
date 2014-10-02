@@ -1,4 +1,4 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/network/tcpip# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/network/tcpip/rules.mk

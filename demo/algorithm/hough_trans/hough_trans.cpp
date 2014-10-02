@@ -5,14 +5,6 @@
 #include <stdio.h>
 #include <math.h>
 
-//struct st_ht_tmp;
-//struct st_hough_trans {
-	//int status; // internal status
-	//int num; // number of data points
-	//double *xy; // data points
-	//struct st_ht_tmp *tmp; // internal workspace
-//};
-
 /*
  * 	r-phi phase space box
  *
@@ -30,25 +22,20 @@
  *     phi1            phi2
  *
  */
-//struct st_ht_phase_box {
-	//double p1;
-	//double p2;
-	//double r1;
-	//double r2;
-//};
-
 
 /*
  * Once the *xy is passed to ht_create, the user MUST NOT alter the content of
  * *xy until ht_destroy is called.
  */
-struct st_hough_trans *ht_create(const int n, double *xy)
+struct st_hough_trans *ht_create(const int n, const double *restrict x,
+		const double *restrict y);
 {
 	struct st_hough_trans *h = (struct st_hough_trans*)
 		malloc(sizeof(struct st_hough_trans));
 	assert(h);
 	h->num    = n;
-	h->xy     = xy;
+	h->x      = x;
+	h->y      = y;
 	h->status = 0;
 	return h;
 }
@@ -151,10 +138,6 @@ void ht_free_buffer(struct st_hough_trans *h)
  *        int    *grid; // [nump*numr] count in grid, phi-major, grid[i,j]=grid[j+i*numr]
  *};
  */
-static inline double compute_r_from_point_and_phi(const double *xy, const double phi)
-{
-	return xy[0] * cos(phi) + xy[1] * sin(phi);
-}
 
 static int determine_rank(const int numr, const double *rlist, const double rval)
 {
@@ -179,7 +162,7 @@ static void add_point_to_grid_by_index(struct st_hough_trans *h, const int index
 	int    *grid = h->tmp->grid;
 
 	for (int i = 0; i < nump + 1; i++)
-		rphi[i] = compute_r_from_point_and_phi(h->xy+2*index,aryp[i]);
+		rphi[i] = h->x[index] * cos(aryp[i]) + h->y[index] * sin(aryp[i]);
 
 	memset(h->tmp->rank,0,sizeof(int) * (nump + 1) );
 	for (int i = 0; i < nump + 1; i++)
@@ -190,7 +173,6 @@ static void add_point_to_grid_by_index(struct st_hough_trans *h, const int index
 		for (int j = max(0,rank[i]); j <= min(numr-1,rank[i]) ; j++)
 			grid[j+i*numr]++;
 }
-
 
 // 0=succuss, 1=fail: too close to boundary
 static int find_max(const int m, const int n, const int *restrict a,

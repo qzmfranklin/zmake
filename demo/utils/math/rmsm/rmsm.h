@@ -46,6 +46,13 @@ struct st_rmsm {
 
 struct st_rmsm *rmsm_create(const int len);
 void rmsm_add(struct st_rmsm *m, const double val, const int row, const int col);
+
+/*
+ * Delete zero or near zero elements. The threshold for deletion is eps.
+ * flag : RMSM_ABSERR = eps is absolute error
+ *        RMSM_RELERR = eps is relative error
+ * Relative error is calcaulted using the L2 norm of the matrix.
+ */
 void rmsm_pack(struct st_rmsm *m, const int flag, const double eps);
 void rmsm_print_info(const struct st_rmsm *m);
 void rmsm_destroy(struct st_rmsm *m);
