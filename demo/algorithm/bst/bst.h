@@ -15,7 +15,7 @@ extern "C" {
  */
 
 struct bst {
-	int val;
+	int key;
 	int bf; // balance factor
 	struct bst *left;
 	struct bst *right;
@@ -26,16 +26,13 @@ struct bst {
  * Return an allocated empty node if str==NULL.
  * Return NULL if it fails to create the tree.
  */
-struct bst *bst_create(const char *str);
+struct bst *bst_from_string(const char *str);
 
 /*
  * Output the linear representation of the tree to *out.
- * The string *out can be used in bst_create() directly.
- * Upon return:
- * 	*len = the number of bytes used
- * 	*out = the string
+ * The string *out is null terminated and can be used in bst_create() directly.
  */
-void bst_to_str(const struct bst *t, int *len, char *out);
+void bst_to_string(const struct bst *t, char *out);
 
 /*
  * Deep copy a tree. Return the root pointer to the new tree. The new tree need
@@ -48,6 +45,9 @@ struct bst *bst_copy(const struct bst *t);
  * 	0	not balanced
  */
 int bst_is_balanced(const struct bst *t);
+
+/* Depth/Height of binary search tree */
+int bst_height(const struct bst *t);
 
 void bst_insert(struct bst *t, const int val);
 
