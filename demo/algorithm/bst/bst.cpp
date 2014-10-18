@@ -99,8 +99,8 @@ static struct bst *_bst_from_string(const char *in)
 
 	struct bst *res = (*mask)[0];
 
-	delete  mask;
-	delete  keys;
+	delete mask;
+	delete keys;
 
 	return res;
 }
