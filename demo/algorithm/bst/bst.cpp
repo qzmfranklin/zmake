@@ -15,7 +15,7 @@
  *};
  */
 
-/* 
+/*
  * Any runtime error would exit(1).
  * TODO: error handler to avoid memory leak
  */
@@ -23,9 +23,9 @@ static struct bst *_bst_from_string(const char *in)
 {
 	if (in[0] != '{') {
 		fprintf(stderr,"bst_create: "
-				"create_bst_from_string: "
-				"Invalid input string:"
-				"\n%s",in);
+		        "create_bst_from_string: "
+		        "Invalid input string:"
+		        "\n%s",in);
 		exit(1);
 	}
 
@@ -58,9 +58,9 @@ static struct bst *_bst_from_string(const char *in)
 			keys->push_back(0);
 		} else {
 			fprintf(stderr,"bst_create: "
-					"create_bst_from_string: "
-					"Invalid input string:"
-					"\n%s",in);
+			        "create_bst_from_string: "
+			        "Invalid input string:"
+			        "\n%s",in);
 			exit(1);
 		}
 	}
@@ -123,7 +123,10 @@ int bst_height(const struct bst *t)
 {
 }
 
-typedef struct { int key; int right; } linear_node_do_not_use_me;
+typedef struct {
+	int key;
+	int right;
+} linear_node_do_not_use_me;
 
 void bst_to_string(struct bst *in, char *out)
 {
