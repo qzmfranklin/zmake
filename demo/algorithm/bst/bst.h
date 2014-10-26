@@ -6,15 +6,12 @@ extern "C" {
 #endif
 
 /*
- * Linear representation of binary search tree (BST):
- * 	enclosed in {}
- * 	separated by comma
- * 	# = null
- * 	integer = val
- * 	spaces (' ') are ignored
+ * AVL Binary Search Tree
+ * No recursion or parent pointers
  */
 
-struct bst {
+
+struct bst{
 	int key;
 	int bf; // balance factor
 	struct bst *left;
@@ -22,54 +19,32 @@ struct bst {
 };
 
 /*
- * Create a binary tree of integral values from its linear representation *str.
- * Return an allocated empty node if str==NULL.
- * Return NULL if it fails to create the tree.
+ * Return the pointer to the root node
+ * Return NULL in case of allocation failure
  */
-struct bst *bst_from_string(const char *str);
+struct bst *bst_create(const int key);
 
 /*
- * Output the linear representation of the tree to *out.
- * The string *out is null terminated and can be used in bst_create() directly.
+ * Return the pointer to the newly inserted node
+ * Return NULL in case of allocation failure or collision with existing node
+ * *t may be changed, points to the new root node
  */
-void bst_to_string(const struct bst *t, char *out);
+struct bst *bst_insert(struct bst **t, const int key);
 
 /*
- * Deep copy a tree. Return the root pointer to the new tree. The new tree need
- * to be destroyed by bst_destroy().
+ * Return the pointer to the first node with value val
+ * Return NULL if no match was found
  */
-struct bst *bst_copy(const struct bst *t);
+struct bst *bst_search(struct bst *t, const int key);
 
 /*
- * 	1	is height balanced
- * 	0	not balanced
+ * Only use me to delete a node returned by bst_search() or bst_insert()
+ * *t may be changed, points to the new root node
  */
-int bst_is_balanced(const struct bst *t);
+void bst_delete(struct bst **t, const struct bst *node);
 
-/* Depth/Height of binary search tree */
-int bst_height(const struct bst *t);
+void bst_destroy(struct bst *t);
 
-void bst_insert(struct bst *t, const int val);
-
-/*
- * Return the pointer to the first node with value val.
- * Return NULL if no match was found.
- */
-struct bst *bst_seek(const bst *t, const int val);
-
-/*
- * Delete the node pointed to by *node.
- *
- * 	BE CAREFUL USING ME
- * Assume *node is a valid node in the tree but do not check it.
- * Designed to be used after bst_seek().
- */
-int bst_delete(struct bst *t, struct bst *node);
-
-void bst_destroy(const struct bst *t);
-
-
-	
 #ifdef __cplusplus
 }
 #endif

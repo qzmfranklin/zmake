@@ -1,5 +1,3 @@
-# Zhongming Qu <qzmfranklin@gmail.com>, 2014
-
 GTEST_DIR:=.#no trailing spaces!
 # include dependency files
 -include $($(wildcard $(GTEST_DIR)/src/*.cc):$(GTEST_DIR)/src/%.cc=%.d) \
