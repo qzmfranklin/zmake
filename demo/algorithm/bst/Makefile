@@ -11,5 +11,4 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-# Sample linking rules for in-source build:
-#test_heapsort.exe: ${d}/heapsort.o ${d}/test_heapsort.o ${ROOT}/utils/utils.o
+test_bst.exe: ${d}/bst.o ${d}/test_bst.o
