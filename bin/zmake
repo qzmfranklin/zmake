@@ -14,6 +14,8 @@ parser=argparse.ArgumentParser(description=
 
 parser.add_argument('dir',action='store',nargs='?',default='.',
                    help='directory of source files (%(default)s)')
+parser.add_argument('-R','--recursive',action='store_true',default=False,
+                 help='combined with -b/--renew, recursively (%(default)s)') 
 
 # group_general, mutually exlusive
 group_general=parser.add_mutually_exclusive_group()
@@ -29,8 +31,6 @@ group_mk.add_argument('-b','--branch-only',action='store_true',default=False,
                  help='generate rules.mk for a single directory (%(default)s)') 
 group_mk.add_argument('-r','--root-only',action='store_true',default=False,
                  help='generate [dir]/root.mk (%(default)s)')
-group_mk.add_argument('-R','--recursive',action='store_true',default=False,
-                 help='recursively generate rules.mk\'s (%(default)s)') 
 
 # group_makefile
 group_makefile=parser.add_mutually_exclusive_group()
@@ -41,7 +41,7 @@ group_makefile.add_argument('-g','--makefile',action='store_true',default=False,
         #help='output the Makefile to TARGET (%(default)s)') 
 target='Makefile'
 group_makefile.add_argument('--renew',action='store_true',default=False,
-        help='renew ${ROOT} in all Makefiles (%(default)s)')
+        help='renew ${ROOT} in one Makefile, with -R, renew all (%(default)s)')
 
 
 
@@ -292,6 +292,8 @@ def delete_all(dir):
 
 def replace_1stline(fname,root):
     """replace the 1st line in a Makefile"""
+    print(fname)
+
     tmp=fname+'.orig'
     shutil.copyfile(fname,tmp)
     lines=open(tmp,'r').readlines()
@@ -313,35 +315,34 @@ def replace_1stline(fname,root):
     fout.writelines(lines)
     fout.close()
 
-    print('renewed',fname)
+def renew_makefile(dir,target):
+    """renew ${ROOT} in one Makefile"""
+    root=find_root(dir)
+    fname=os.path.join(os.path.abspath(dir),target)
+    if os.path.isfile(fname):
+        replace_1stline(fname,root)
 
 def renew_makefiles(dir,target):
     """renew ${ROOT} in all Makefiles"""
     root=find_root(dir)
-    i=0
     for path,dirs,files in os.walk(root):
         fname=os.path.join(path,target)
-        #i=i+1 # only for test use
-        #if i>2:
-            #continue
         if os.path.isfile(fname):
             replace_1stline(fname,root)
-
 
 if args.delete:
     delete_all(args.dir)
     exit(0)
 
 if args.branch_only:
-    gen_branch_only(args.dir,texts['branch'])
+    if args.recursive:
+        rwalk(args.dir,texts)
+    else: 
+        gen_branch_only(args.dir,texts['branch'])
     exit(0)
 
 if args.root_only:
     gen_root(args.dir,texts['root'])
-    exit(0)
-
-if args.recursive:
-    rwalk(args.dir,texts)
     exit(0)
 
 if args.makefile:
@@ -349,5 +350,8 @@ if args.makefile:
     exit(0)
 
 if args.renew:
-    renew_makefiles(args.dir,'Makefile')
+    if args.recursive:
+        renew_makefiles(args.dir,'Makefile')
+    else:
+        renew_makefile(args.dir,'Makefile')
     exit(0)

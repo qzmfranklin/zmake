@@ -1,4 +1,4 @@
-ROOT    :=/Users/qzmfrank/git/zmake/demo
+ROOT    :=/home/qzmfrank/git/zmake/demo
 d       :=${ROOT}/algorithm/diffpar# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/diffpar/rules.mk
