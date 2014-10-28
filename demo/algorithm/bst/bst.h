@@ -46,15 +46,26 @@ void bst_delete(struct bst **t, const struct bst *node);
 /*
  * bst_traverse() has three different modes. The mode is specified by the mode
  * parameter. Admissible mode values are defined by the following enum type.
+ * So far, he following combinations are supported and behave as expected:
+ * 	BST_(*)ORDER (default to BST_STACK)
+ * 	BST_(*)ORDER | BST_RECURSIVE
+ * 	BST_(*)ORDER | BST_STACK
+ * 	BST_(PRE/IN)ORDER | BST_MORRIS
+ * 	BST_(*)ORDER | BST_DEBUG (use stack)
+ * Any other combination of flags is either utterly unsupported or capable of
+ * leading to undefined behavior
  */
 enum {
 	BST_PREORDER  = 0x1,
 	BST_INORDER   = 0x2,
 	BST_POSTORDER = 0x3,
 
-	BST_RECURSIVE = 0x1<<4,
-	BST_STACK     = 0x2<<4,
-	BST_MORRIS    = 0x3<<4
+	BST_MASK      = 0xFF,
+
+	BST_RECURSIVE = 0x1<<8, // default
+	BST_STACK     = 0x1<<9,
+	BST_MORRIS    = 0x1<<10,
+	BST_DEBUG     = 0x1<<11
 };
 void bst_traverse(struct bst *t, const int mode);
 
