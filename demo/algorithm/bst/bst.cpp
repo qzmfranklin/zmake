@@ -6,18 +6,20 @@
 
 static void _bst_print_node(const struct bst *p)
 {
-	printf("%5d\n",p->key);
+	printf("%d\n",p->key);
 }
 
 static void _bst_print_node_debug(const struct bst *p)
 {
+	if (p == NULL)
+		return;
 	fprintf(stderr,"\t%5d, bf = %2d, self = %p, left = %p, right = %p\n",
 			p->key,p->bf,p,p->left,p->right);
 }
 
 struct bst *bst_create(const int key)
 {
-	fprintf(stderr,"bst_create(%d)\n",key);
+	//fprintf(stderr,"bst_create(%d)\n",key);
 	struct bst *root = (struct bst*) malloc(sizeof(struct bst));
 	if (root) {
 		root->key    = key;
@@ -25,13 +27,13 @@ struct bst *bst_create(const int key)
 		root->left   = NULL;
 		root->right  = NULL;
 	}
-	bst_print_node(root);
+	//_bst_print_node_debug(root);
 	return root;
 }
 
 static struct bst *_bst_alloc_node(const int key)
 {
-	fprintf(stderr,"_bst_alloc_node(%d)\n",key);
+	//fprintf(stderr,"_bst_alloc_node(%d)\n",key);
 	struct bst *q = (struct bst*) malloc(sizeof(struct bst));
 	if (q == NULL)
 		return NULL;
@@ -52,7 +54,7 @@ static struct bst *_bst_alloc_node(const int key)
  */
 static void _bst_LR(struct bst *x)
 {
-	fprintf(stderr,"_bst_LR(%p)\n",x);
+	//fprintf(stderr,"_bst_LR(%p)\n",x);
 	struct bst *z = x->left;
 	struct bst *y = x->left->right;
 	x->left  = y;
@@ -72,7 +74,7 @@ static void _bst_LR(struct bst *x)
  */
 static struct bst *_bst_LL(struct bst *x)
 {
-	fprintf(stderr,"_bst_LL(%p)\n",x);
+	//fprintf(stderr,"_bst_LL(%p)\n",x);
 	struct bst *y = x->left;
 	x->left  = y->right;
 	y->right = x;
@@ -100,7 +102,7 @@ static struct bst *_bst_rotate_right(struct bst *p)
  */
 static void _bst_RL(struct bst *x)
 {
-	fprintf(stderr,"_bst_RL(%p)\n",x);
+	//fprintf(stderr,"_bst_RL(%p)\n",x);
 	struct bst *z = x->right;
 	struct bst *y = x->right->left;
 	x->right = y;
@@ -120,7 +122,7 @@ static void _bst_RL(struct bst *x)
  */
 static struct bst *_bst_RR(struct bst *x)
 {
-	fprintf(stderr,"_bst_RR(%p)\n",x);
+	//fprintf(stderr,"_bst_RR(%p)\n",x);
 	struct bst *y = x->right;
 	x->right = y->left;
 	y->left  = x;
@@ -129,11 +131,10 @@ static struct bst *_bst_RR(struct bst *x)
 	y->bf++;
 
 	/*
-	 *bst_print_node(y);
-	 *bst_print_node(x);
-	 *bst_print_node(y->right);
+	 *_bst_print_node_debug(y);
+	 *_bst_print_node_debug(x);
+	 *_bst_print_node_debug(y->right);
 	 */
-	fprintf(stderr,"_bst_RR(%p) ends here\n",x);
 
 	return y;
 }
@@ -150,28 +151,44 @@ static struct bst *_bst_rotate_left(struct bst *p)
 static struct bst *_bst_update_bf_and_rotate(struct bst *p, struct bst *q,
 		::std::stack<struct bst*> *s)
 {
-	fprintf(stderr,"_bst_update_bf_and_rotate(p,q,&s) "
-			"p = %p, q = %p, s->size() = %lu\n",p,q,s->size());
-	struct bst *tmp = p;
+	//fprintf(stderr,"_bst_update_bf_and_rotate(p,q,&s), new node q =\n");
+	//_bst_print_node_debug(q);
+
+	/*
+	 * _bst_rotate_left/right returns the root of the balanced (tmp)
+	 * subtree. The old root of the unbalanced subtree (p)'s parent
+	 * needs to be updated to adopt the new child.
+	 *
+	 * If p was already the root of the whole tree (s.empty() == true),
+	 * let p = tmp and return p. Otherwise update p's parent to adopt
+	 * tmp.
+	 *
+	 * If tmp is already balanced, with or without rebalancing, exit
+	 * loop. In this case, clear the stack (s) to retrieve the root
+	 * of the whole tree.
+	 */
 	while (1) {
-		fprintf(stderr,"\t\ts->size() = %lu\n",s->size());
+		//fprintf(stderr,"\t\ts->size() = %lu\n",s->size());
 
 		if (p->left == q)
 			p->bf++;
 		else
 			p->bf--;
 
-		bst_print_node(p);
+		//_bst_print_node_debug(p);
 
-		if (p->bf == 0)
-			break;
-		else if (p->bf < -1)
+		struct bst *tmp; // new root of the subtree
+		if (p->bf < -1)
 			tmp = _bst_rotate_left(p);
 		else if (p->bf > +1)
 			tmp = _bst_rotate_right(p);
+		else
+			tmp = p;
 
-		if (s->empty())
+		if (s->empty()) {
+			p = tmp;
 			break;
+		}
 
 		q = p;
 		p = s->top();
@@ -181,23 +198,26 @@ static struct bst *_bst_update_bf_and_rotate(struct bst *p, struct bst *q,
 			p->left = tmp;
 		else
 			p->right = tmp;
+
+		if (tmp->bf == 0)
+			break;
 	}
 
 	while (!s->empty()) {
-		tmp = s->top();
+		p = s->top();
 		s->pop();
 	}
 
-	fprintf(stderr,"_bst_update_bf_and_rotate(p,q,&s) ends here "
-			"with tmp = %p\n",tmp);
+	//fprintf(stderr,"_bst_update_bf_and_rotate(p,q,&s) ends here "
+			//"with p = \n");
+	//_bst_print_node_debug(p);
 
-
-	return tmp;
+	return p;
 }
 
 struct bst *bst_insert(struct bst **t, const int key)
 {
-	fprintf(stderr,"\nbst_insert(%d)\n",key);
+	//fprintf(stderr,"\nbst_insert(%d)\n",key);
 	if (*t == NULL)
 		return NULL;
 
@@ -205,8 +225,15 @@ struct bst *bst_insert(struct bst **t, const int key)
 	struct bst *p = *t;
 	::std::stack<struct bst*> s;
 	while (p) {
-		static int i=0;
-		//fprintf(stderr,"key = %d, p->key = %d, p = %p\n",key,p->key,p);
+		/*
+		 * // debug use only
+		 *static int i=0;
+		 *i++;
+		 *if (i>20) {
+		 *        fprintf(stderr,"too many iterations, abort\n");
+		 *        abort();
+		 *}
+		 */
 		if (key == p->key) {
 			break;
 		} else if (key > p->key) {
@@ -215,11 +242,6 @@ struct bst *bst_insert(struct bst **t, const int key)
 		} else {
 			s.push(p);
 			p = p->left;
-		}
-		i++;
-		if (i>10) {
-			fprintf(stderr,"too many iterations, abort\n");
-			abort();
 		}
 	}
 
@@ -238,8 +260,6 @@ struct bst *bst_insert(struct bst **t, const int key)
 	else
 		p->right = q;
 	*t = _bst_update_bf_and_rotate(p,q,&s);
-
-	printf("\n");
 
 	return q;
 }
@@ -268,7 +288,7 @@ void bst_print_node(const struct bst *p)
 	_bst_print_node(p);
 }
 
-static void _bst_traverse_recursive_preorder(const struct bst *t)
+static void _bst_traverse_recursive_preorder(struct bst *t)
 {
 	if (t == NULL)
 		return;
@@ -277,7 +297,7 @@ static void _bst_traverse_recursive_preorder(const struct bst *t)
 	_bst_traverse_recursive_preorder(t->right);
 }
 
-static void _bst_traverse_recursive_inorder(const struct bst *t)
+static void _bst_traverse_recursive_inorder(struct bst *t)
 {
 	if (t == NULL)
 		return;
@@ -286,7 +306,7 @@ static void _bst_traverse_recursive_inorder(const struct bst *t)
 	_bst_traverse_recursive_inorder(t->right);
 }
 
-static void _bst_traverse_recursive_postorder(const struct bst *t)
+static void _bst_traverse_recursive_postorder(struct bst *t)
 {
 	if (t == NULL)
 		return;
@@ -295,11 +315,8 @@ static void _bst_traverse_recursive_postorder(const struct bst *t)
 	_bst_print_node(t);
 }
 
-static void _bst_traverse_recursive(const struct bst *t, const int mode)
+static void _bst_traverse_recursive(struct bst *t, const int mode)
 {
-	fprintf(stderr,"_bst_traverse_recursive not implemented\n");
-	return;
-
 	switch (mode) {
 	case BST_PREORDER:
 		_bst_traverse_recursive_preorder(t);
@@ -316,7 +333,7 @@ static void _bst_traverse_recursive(const struct bst *t, const int mode)
 	}
 }
 
-static void _bst_traverse_stack_preorder(const struct bst *t)
+static void _bst_traverse_stack_preorder(struct bst *t)
 {
 	::std::stack<struct bst*> s;
 	s.push(t);
@@ -331,11 +348,18 @@ static void _bst_traverse_stack_preorder(const struct bst *t)
 	}
 }
 
-static void _bst_traverse_stack_inorder(const struct bst *t)
+// FIXME: infinite loop
+static void _bst_traverse_stack_inorder(struct bst *t)
 {
 	::std::stack<struct bst*> s;
 	s.push(t);
 	while (!s.empty()) {
+		static int i = 0;
+		i++;
+		if (i>30) {
+			fprintf(stderr,"too many iterations, abort\n");
+			abort();
+		}
 		struct bst *p = s.top();
 		s.pop();
 		if (!p->left && !p->right) {
@@ -353,7 +377,7 @@ static void _bst_traverse_stack_inorder(const struct bst *t)
 	}
 }
 
-static void _bst_traverse_stack_postorder(const struct bst *t)
+static void _bst_traverse_stack_postorder(struct bst *t)
 {
 	::std::stack<struct bst*> s;
 	s.push(t);
@@ -375,11 +399,8 @@ static void _bst_traverse_stack_postorder(const struct bst *t)
 	}
 }
 
-static void _bst_traverse_stack(const struct bst *t, const int mode)
+static void _bst_traverse_stack(struct bst *t, const int mode)
 {
-	fprintf(stderr,"_bst_traverse_ not implemented\n");
-	return;
-
 	switch (mode) {
 	case BST_PREORDER:
 		_bst_traverse_stack_preorder(t);
@@ -442,7 +463,7 @@ static void _bst_traverse_morris_preorder(struct bst *t)
 	}
 }
 
-static void _bst_traverse_morris(const struct bst *t, const int mode)
+static void _bst_traverse_morris(struct bst *t, const int mode)
 {
 	switch (mode) {
 	case BST_PREORDER:
@@ -460,9 +481,9 @@ static void _bst_traverse_morris(const struct bst *t, const int mode)
 	}
 }
 
-static void _bst_traverse_debug_preorder(const struct bst *t)
+static void _bst_traverse_debug_preorder(struct bst *t)
 {
-	::std::debug<struct bst*> s;
+	::std::stack<struct bst*> s;
 	s.push(t);
 	while (!s.empty()) {
 		struct bst *p = s.top();
@@ -475,9 +496,9 @@ static void _bst_traverse_debug_preorder(const struct bst *t)
 	}
 }
 
-static void _bst_traverse_debug_inorder(const struct bst *t)
+static void _bst_traverse_debug_inorder(struct bst *t)
 {
-	::std::debug<struct bst*> s;
+	::std::stack<struct bst*> s;
 	s.push(t);
 	while (!s.empty()) {
 		struct bst *p = s.top();
@@ -497,9 +518,9 @@ static void _bst_traverse_debug_inorder(const struct bst *t)
 	}
 }
 
-static void _bst_traverse_debug_postorder(const struct bst *t)
+static void _bst_traverse_debug_postorder(struct bst *t)
 {
-	::std::debug<struct bst*> s;
+	::std::stack<struct bst*> s;
 	s.push(t);
 	while (!s.empty()) {
 		struct bst *p = s.top();
@@ -519,7 +540,7 @@ static void _bst_traverse_debug_postorder(const struct bst *t)
 	}
 }
 
-static void _bst_traverse_debug(const struct bst *t, const int mode)
+static void _bst_traverse_debug(struct bst *t, const int mode)
 {
 	switch (mode) {
 	case BST_PREORDER:
@@ -539,19 +560,20 @@ static void _bst_traverse_debug(const struct bst *t, const int mode)
 
 void bst_traverse(struct bst *t, const int mode)
 {
-	fprintf(stderr,"bst_traverse(%p)\n",t);
+	//fprintf(stderr,"bst_traverse(%p,0x%X)\n",t,mode);
 	if (mode & BST_RECURSIVE)
 		_bst_traverse_recursive(t,mode & BST_MASK);
 	else if (mode & BST_STACK)
-		_bst_traverse_stack(t,mod & BST_MASK);
+		_bst_traverse_stack(t,mode & BST_MASK);
 	else if (mode & BST_MORRIS)
 		_bst_traverse_morris(t,mode & BST_MASK);
 	else if (mode & BST_DEBUG)
 		_bst_traverse_debug(t,mode & BST_MASK);
 	else {
-		printf("bst_traverse(%p,%X): unknown mode, default to BST_STACK\n",t,mode);
+		printf("Unknown mode, default to BST_STACK\n");
 		_bst_traverse_stack(t,mode & BST_MASK);
 	}
+	printf("\n");
 }
 
 void bst_destroy(struct bst *t);
