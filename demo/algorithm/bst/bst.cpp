@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stack>
 #include "bst.h"
@@ -13,6 +14,7 @@ struct bst *bst_create(const int key)
 		root->left   = NULL;
 		root->right  = NULL;
 	}
+	bst_print_node(root);
 	return root;
 }
 
@@ -136,7 +138,7 @@ static struct bst *_bst_update_bf_and_rotate(struct bst *p, struct bst *q,
 			"p = %p, q = %p, s->size() = %lu\n",p,q,s->size());
 	struct bst *tmp = p;
 	while (1) {
-		fprintf(stderr,"    s->size() = %lu\n",s->size());
+		fprintf(stderr,"\t\ts->size() = %lu\n",s->size());
 		bst_print_node(p);
 
 		if (p->left == q)
@@ -174,7 +176,7 @@ static struct bst *_bst_update_bf_and_rotate(struct bst *p, struct bst *q,
 
 struct bst *bst_insert(struct bst **t, const int key)
 {
-	fprintf(stderr,"bst_insert(%d)\n",key);
+	fprintf(stderr,"\nbst_insert(%d)\n",key);
 	if (*t == NULL)
 		return NULL;
 
@@ -306,6 +308,7 @@ static void _bst_traverse_preorder(struct bst *t)
  */
 void bst_traverse(struct bst *t, const int mode)
 {
+	printf("bst_traverse(%p)\n",t);
 	switch (mode) {
 	case BST_PREORDER:
 		_bst_traverse_preorder(t);

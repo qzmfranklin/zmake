@@ -11,6 +11,7 @@ int main(int argc, char const* argv[])
 	bst_insert(&t,keys[1]);
 	bst_insert(&t,keys[2]);
 	bst_insert(&t,keys[3]);
+	bst_insert(&t,keys[4]);
 
 	return 0;
 }
