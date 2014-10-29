@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stack>
+#include <queue>
 #include "bst.h"
 
 static int _bst_is_leaf(const struct bst *p)
@@ -153,10 +154,10 @@ static struct bst *_bst_rotate_left(struct bst *p)
 }
 
 /* returns the root of the whole tree */
-static struct bst *_bst_update_bf_and_rotate(struct bst *p, struct bst *q,
+static struct bst *_bst_insert_update_bf_and_rotate(struct bst *p, struct bst *q,
 		::std::stack<struct bst*> *s)
 {
-	//fprintf(stderr,"_bst_update_bf_and_rotate(p,q,&s), new node q =\n");
+	//fprintf(stderr,"_bst_insert_update_bf_and_rotate(p,q,&s), new node q =\n");
 	//_bst_print_node_debug(q);
 
 	/*
@@ -213,7 +214,7 @@ static struct bst *_bst_update_bf_and_rotate(struct bst *p, struct bst *q,
 		s->pop();
 	}
 
-	//fprintf(stderr,"_bst_update_bf_and_rotate(p,q,&s) ends here "
+	//fprintf(stderr,"_bst_insert_update_bf_and_rotate(p,q,&s) ends here "
 			//"with p = \n");
 	//_bst_print_node_debug(p);
 
@@ -226,19 +227,9 @@ struct bst *bst_insert(struct bst **t, const int key)
 	if (*t == NULL)
 		return NULL;
 
-	/* Avoid recursion with a stack */
 	struct bst *p = *t;
 	::std::stack<struct bst*> s;
 	while (p) {
-		/*
-		 * // debug use only
-		 *static int i=0;
-		 *i++;
-		 *if (i>20) {
-		 *        fprintf(stderr,"too many iterations, abort\n");
-		 *        abort();
-		 *}
-		 */
 		if (key == p->key) {
 			break;
 		} else if (key > p->key) {
@@ -257,14 +248,13 @@ struct bst *bst_insert(struct bst **t, const int key)
 	if (q == NULL)
 		return NULL;
 
-	/* attach, update balance factor, rotate as proper */
 	p = s.top();
 	s.pop();
 	if (key < p->key)
 		p->left = q;
 	else
 		p->right = q;
-	*t = _bst_update_bf_and_rotate(p,q,&s);
+	*t = _bst_insert_update_bf_and_rotate(p,q,&s);
 
 	return q;
 }
@@ -282,10 +272,106 @@ struct bst *bst_search(struct bst *t, const int key)
 	return p;
 }
 
-// TODO
-void bst_delete(struct bst *t, const struct bst *node)
+static struct bst *_bst_delete_update_bf_and_rotate(struct bst *p,
+		struct bst *q, ::std::stack<struct bst*> *s)
 {
-	fprintf(stderr,"bst_delete(%p,%p) not implemented yet\n",t,node);
+	fprintf(stderr,"_bst_delete_update_bf_and_rotate(%p,%lu)\n",q,s->size());
+
+	/*
+	 * Same with _bst_insert_update_bf_and_rotate, except that the exit
+	 * condition is changed to tmp->bf != 0
+	 */
+	while (1) {
+		if (p->left == q)
+			p->bf--;
+		else
+			p->bf++;
+
+		struct bst *tmp;
+		if (p->bf > +1)
+			tmp = _bst_rotate_right(p);
+		else if (p->bf < -1)
+			tmp = _bst_rotate_left(p);
+		else
+			tmp = p;
+
+		if (s->empty()) {
+			p = tmp;
+			break;
+		}
+
+		q = p;
+		p = s->top();
+		s->pop();
+
+		if (p->left == q)
+			p->left = tmp;
+		else
+			p->right = tmp;
+
+		if (tmp->bf != 0)
+			break;
+	}
+
+	while (!s->empty()) {
+		p = s->top();
+		s->pop();
+	}
+
+	return p;
+}
+
+/*
+ * Modified from http://en.wikipedia.org/wiki/AVL_tree
+ */
+void bst_delete(struct bst **t, const int key)
+{
+	fprintf(stderr,"\nbst_delete(%p,%d)\n",*t,key);
+	struct bst *x = *t; // node with the key to be deleted
+	::std::stack<struct bst*> s;
+	while (x)
+		if (key == x->key) {
+			break;
+		} else if (key > x->key) {
+			s.push(x);
+			x = x->right;
+		} else {
+			s.push(x);
+			x = x->left;
+		}
+	if (!x)
+		return;
+
+	struct bst *y = x; // node to delete
+	if (y->left) {
+		s.push(y);
+		y = y->left;
+		while (y->right) {
+			s.push(y);
+			y = y->right;
+		}
+		x->key = y->key;
+	}
+
+	if (s.empty()) {
+		if (y->left)
+			*t = y->left;
+		else
+			*t = y->right;
+		free(y);
+		return;
+	}
+
+	struct bst *p;
+	p = s.top();
+	s.pop();
+	if (p->left == y)
+		p->left  = (y->left) ? (y->left) : (y->right);
+	else
+		p->right = (y->left) ? (y->left) : (y->right);
+
+	*t = _bst_delete_update_bf_and_rotate(p,y,&s);
+	free(y);
 }
 
 void bst_print_node(const struct bst *p)
@@ -424,29 +510,6 @@ static void _bst_traverse_stack(struct bst *t, const int mode)
 	}
 }
 
-static void _bst_traverse_morris_inorder(struct bst *t)
-{
-	struct bst *curr = t;
-	while (curr) {
-		if (curr->left == NULL) {
-			_bst_print_node(curr);
-			curr = curr->right;
-			continue;
-		}
-		struct bst *prev = curr->left;
-		while (prev->right != NULL  &&  prev->right != curr)
-			prev = prev->right;
-		if (prev->right == NULL) {
-			prev->right = curr;
-			curr = curr->left;
-		} else {
-			_bst_print_node(curr);
-			prev->right = NULL;
-			curr = curr->right;
-		}
-	}
-}
-
 static void _bst_traverse_morris_preorder(struct bst *t)
 {
 	struct bst *curr = t;
@@ -464,8 +527,31 @@ static void _bst_traverse_morris_preorder(struct bst *t)
 			prev->right = curr->right;
 			curr = curr->left;
 		} else {
+			curr = prev->right;
 			prev->right = NULL;
+		}
+	}
+}
+
+static void _bst_traverse_morris_inorder(struct bst *t)
+{
+	struct bst *curr = t;
+	while (curr) {
+		if (curr->left == NULL) {
+			_bst_print_node(curr);
 			curr = curr->right;
+			continue;
+		}
+		struct bst *prev = curr->left;
+		while (prev->right != NULL  &&  prev->right != curr)
+			prev = prev->right;
+		if (prev->right == NULL) {
+			prev->right = curr;
+			curr = curr->left;
+		} else {
+			_bst_print_node(curr);
+			curr = prev->right;
+			prev->right = NULL;
 		}
 	}
 }
@@ -495,21 +581,126 @@ static void _bst_traverse_morris(struct bst *t, const int mode)
 	}
 }
 
+static void _bst_traverse_debug_preorder(struct bst *t)
+{
+	::std::stack<struct bst*> s;
+	s.push(t);
+	while (!s.empty()) {
+		struct bst *p = s.top();
+		s.pop();
+		_bst_print_node_debug(p);
+		if (p->right)
+			s.push(p->right);
+		if (p->left)
+			s.push(p->left);
+	}
+}
+
+static void _bst_traverse_debug_inorder(struct bst *t)
+{
+	::std::stack<struct bst*> s;
+	struct bst *p = t;
+	while (1)
+		if (p) {
+			s.push(p);
+			p = p->left;
+		} else {
+			if (s.empty())
+				break;
+			p = s.top();
+			s.pop();
+			_bst_print_node_debug(p);
+			p = p->right;
+		}
+}
+
+static struct bst *_bst_peek_debug(::std::stack<struct bst*> *s)
+{
+	return (s->empty())  ?  NULL  :  s->top();
+}
+
+/*
+ * See http://www.geeksforgeeks.org/iterative-postorder-traversal-using-stack/
+ * for details.
+ */
+static void _bst_traverse_debug_postorder(struct bst *t)
+{
+	::std::stack<struct bst*> s;
+	struct bst *p = t;
+	while (1) {
+		while (p) {
+			if (p->right)
+				s.push(p->right);
+			s.push(p);
+			p = p->left;
+		}
+		if (s.empty())
+			break;
+		p = s.top();
+		s.pop();
+		if (p->right  &&  p->right == _bst_peek_debug(&s)) {
+			s.pop();
+			s.push(p);
+			p = p->right;
+		} else {
+			_bst_print_node_debug(p);
+			p = NULL;
+		}
+	}
+}
+
+static void _bst_traverse_debug_levelorder(struct bst *t)
+{
+	if (t == NULL)
+		return;
+	::std::queue<struct bst*> q;
+	q.push(t);
+	while (!q.empty()) {
+		struct bst *tmp = q.front();
+		q.pop();
+		_bst_print_node_debug(tmp);
+		if (tmp->left)
+			q.push(tmp->left);
+		if (tmp->right)
+			q.push(tmp->right);
+	}
+}
+
 static void _bst_traverse_debug(struct bst *t, const int mode)
 {
 	switch (mode) {
 	case BST_PREORDER:
-		//_bst_traverse_debug_preorder(t);
+		_bst_traverse_debug_preorder(t);
 		break;
 	case BST_INORDER:
-		//_bst_traverse_debug_inorder(t);
+		_bst_traverse_debug_inorder(t);
 		break;
 	case BST_POSTORDER:
-		//_bst_traverse_debug_postorder(t);
+		_bst_traverse_debug_postorder(t);
+		break;
+	case BST_LEVELORDER:
+		_bst_traverse_debug_levelorder(t);
 		break;
 	default:
 		fprintf(stderr,"_bst_traverse_debug: unknown mode %d\n",mode);
 		break;
+	}
+}
+
+static void _bst_traverse_levelorder(struct bst *t)
+{
+	if (t == NULL)
+		return;
+	::std::queue<struct bst*> q;
+	q.push(t);
+	while (!q.empty()) {
+		struct bst *tmp = q.front();
+		q.pop();
+		_bst_print_node(tmp);
+		if (tmp->left)
+			q.push(tmp->left);
+		if (tmp->right)
+			q.push(tmp->right);
 	}
 }
 
@@ -524,6 +715,8 @@ void bst_traverse(struct bst *t, const int mode)
 		_bst_traverse_morris(t,mode & BST_MASK);
 	else if (mode & BST_DEBUG)
 		_bst_traverse_debug(t,mode & BST_MASK);
+	else if (mode == BST_LEVELORDER)
+		_bst_traverse_levelorder(t);
 	else {
 		printf("Unknown mode, default to BST_STACK\n");
 		_bst_traverse_stack(t,mode & BST_MASK);
