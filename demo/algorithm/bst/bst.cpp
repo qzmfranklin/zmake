@@ -4,6 +4,11 @@
 #include <stack>
 #include "bst.h"
 
+static int _bst_is_leaf(const struct bst *p)
+{
+	return !p->left && !p->right;
+}
+
 static void _bst_print_node(const struct bst *p)
 {
 	printf("%d\n",p->key);
@@ -348,54 +353,56 @@ static void _bst_traverse_stack_preorder(struct bst *t)
 	}
 }
 
-// FIXME: infinite loop
 static void _bst_traverse_stack_inorder(struct bst *t)
 {
 	::std::stack<struct bst*> s;
-	s.push(t);
-	while (!s.empty()) {
-		static int i = 0;
-		i++;
-		if (i>30) {
-			fprintf(stderr,"too many iterations, abort\n");
-			abort();
-		}
-		struct bst *p = s.top();
-		s.pop();
-		if (!p->left && !p->right) {
+	struct bst *p = t;
+	while (1)
+		if (p) {
+			s.push(p);
+			p = p->left;
+		} else {
+			if (s.empty())
+				break;
+			p = s.top();
+			s.pop();
 			_bst_print_node(p);
-			while (s.size() >= 1) {
-				_bst_print_node(s.top());
-				s.pop();
-			}
+			p = p->right;
 		}
-		if (p->right)
-			s.push(p->right);
-		s.push(p);
-		if (p->left)
-			s.push(p->left);
-	}
 }
 
+static struct bst *_bst_peek_stack(::std::stack<struct bst*> *s)
+{
+	return (s->empty())  ?  NULL  :  s->top();
+}
+
+/*
+ * See http://www.geeksforgeeks.org/iterative-postorder-traversal-using-stack/
+ * for details.
+ */
 static void _bst_traverse_stack_postorder(struct bst *t)
 {
 	::std::stack<struct bst*> s;
-	s.push(t);
-	while (!s.empty()) {
-		struct bst *p = s.top();
-		s.pop();
-		if (!p->left && !p->right) {
-			_bst_print_node(p);
-			while (s.size() >= 1) {
-				_bst_print_node(s.top());
-				s.pop();
-			}
+	struct bst *p = t;
+	while (1) {
+		while (p) {
+			if (p->right)
+				s.push(p->right);
+			s.push(p);
+			p = p->left;
 		}
-		s.push(p);
-		if (p->right)
-			s.push(p->right);
-		if (p->left)
-			s.push(p->left);
+		if (s.empty())
+			break;
+		p = s.top();
+		s.pop();
+		if (p->right  &&  p->right == _bst_peek_stack(&s)) {
+			s.pop();
+			s.push(p);
+			p = p->right;
+		} else {
+			_bst_print_node(p);
+			p = NULL;
+		}
 	}
 }
 
@@ -463,6 +470,13 @@ static void _bst_traverse_morris_preorder(struct bst *t)
 	}
 }
 
+//TODO
+static void _bst_traverse_morris_postorder(struct bst *t)
+{
+	fprintf(stderr,"_bst_traverse_morris_postorder not implemented yet\n");
+	return;
+}
+
 static void _bst_traverse_morris(struct bst *t, const int mode)
 {
 	switch (mode) {
@@ -473,7 +487,7 @@ static void _bst_traverse_morris(struct bst *t, const int mode)
 		_bst_traverse_morris_inorder(t);
 		break;
 	case BST_POSTORDER:
-		fprintf(stderr,"_bst_traverse_morris_postorder not implemented\n");
+		_bst_traverse_morris_postorder(t);
 		break;
 	default:
 		fprintf(stderr,"_bst_traverse_morris: unknown mode %d\n",mode);
@@ -481,76 +495,17 @@ static void _bst_traverse_morris(struct bst *t, const int mode)
 	}
 }
 
-static void _bst_traverse_debug_preorder(struct bst *t)
-{
-	::std::stack<struct bst*> s;
-	s.push(t);
-	while (!s.empty()) {
-		struct bst *p = s.top();
-		s.pop();
-		_bst_print_node(p);
-		if (p->right)
-			s.push(p->right);
-		if (p->left)
-			s.push(p->left);
-	}
-}
-
-static void _bst_traverse_debug_inorder(struct bst *t)
-{
-	::std::stack<struct bst*> s;
-	s.push(t);
-	while (!s.empty()) {
-		struct bst *p = s.top();
-		s.pop();
-		if (!p->left && !p->right) {
-			_bst_print_node_debug(p);
-			while (s.size() >= 1) {
-				_bst_print_node_debug(s.top());
-				s.pop();
-			}
-		}
-		if (p->right)
-			s.push(p->right);
-		s.push(p);
-		if (p->left)
-			s.push(p->left);
-	}
-}
-
-static void _bst_traverse_debug_postorder(struct bst *t)
-{
-	::std::stack<struct bst*> s;
-	s.push(t);
-	while (!s.empty()) {
-		struct bst *p = s.top();
-		s.pop();
-		if (!p->left && !p->right) {
-			_bst_print_node_debug(p);
-			while (s.size() >= 1) {
-				_bst_print_node_debug(s.top());
-				s.pop();
-			}
-		}
-		s.push(p);
-		if (p->right)
-			s.push(p->right);
-		if (p->left)
-			s.push(p->left);
-	}
-}
-
 static void _bst_traverse_debug(struct bst *t, const int mode)
 {
 	switch (mode) {
 	case BST_PREORDER:
-		_bst_traverse_debug_preorder(t);
+		//_bst_traverse_debug_preorder(t);
 		break;
 	case BST_INORDER:
-		_bst_traverse_debug_inorder(t);
+		//_bst_traverse_debug_inorder(t);
 		break;
 	case BST_POSTORDER:
-		_bst_traverse_debug_postorder(t);
+		//_bst_traverse_debug_postorder(t);
 		break;
 	default:
 		fprintf(stderr,"_bst_traverse_debug: unknown mode %d\n",mode);
