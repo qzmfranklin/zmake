@@ -39,12 +39,12 @@ static int strmatch_kmp(const int tlen, const char *restrict t,
 
 	int j = -1, k = -1;
 	for (int i = 0; i < tlen; i++) {
-		while (j>-1 && p[j+1]!=t[i])
-			j=pi[j];
-		if (p[j+1]==t[i])
+		while (j > -1  &&  p[j+1] != t[i])
+			j = pi[j];
+		if (p[j+1] == t[i])
 			j++;
-		if (j==plen-1)
-			pos[++k] = i-j;
+		if (j == plen - 1)
+			pos[++k] = i - j;
 		//fprintf(stderr,"%3d %3d %3d\n",i,j,k);
 	}
 
