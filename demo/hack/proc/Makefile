@@ -1,5 +1,5 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/hack/kernel/proc# this directory
+d       :=${ROOT}/hack/proc#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/hack/kernel/proc/rules.mk
 -include ${ROOT}/utils/rules.mk

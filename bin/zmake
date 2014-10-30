@@ -291,26 +291,45 @@ def delete_all(dir):
 
 
 def replace_1stline(fname,root):
-    """replace the 1st line in a Makefile"""
-    print(fname)
-
+    """replace the ROOT:= line in a Makefile"""
     tmp=fname+'.orig'
     shutil.copyfile(fname,tmp)
     lines=open(tmp,'r').readlines()
     os.remove(tmp)
 
-    #ROOT    :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
     # find the line containing the def of ROOT
     ln_num=0
     index=0
     for line in lines:
         index=line.find('ROOT    :=')
         if index>=0:
-            line=line[0:index]+'ROOT    :='+root+'\n'
             break
         ln_num=ln_num+1
     lines[ln_num]=lines[ln_num][0:index]+'ROOT    :='+root+'\n'
 
+    fout=open(fname,'w')
+    fout.writelines(lines)
+    fout.close()
+
+def replace_2ndline(fname,root):
+    """replace the d:= line in a Makefile"""
+    tmp=fname+'.orig'
+    shutil.copyfile(fname,tmp)
+    lines=open(tmp,'r').readlines()
+    os.remove(tmp)
+    dir = os.path.dirname(fname)
+
+    ln_num=0
+    index=0
+    for line in lines:
+        index=line.find('d       :=')
+        if index>=0:
+            break
+        ln_num=ln_num+1
+    lines[ln_num]=lines[ln_num][0:index] \
+                    +'d       :=${ROOT}/' \
+                    +os.path.relpath(dir,root) \
+                    +'#this directory\n'
     fout=open(fname,'w')
     fout.writelines(lines)
     fout.close()
@@ -320,7 +339,9 @@ def renew_makefile(dir,target):
     root=find_root(dir)
     fname=os.path.join(os.path.abspath(dir),target)
     if os.path.isfile(fname):
+        print(fname)
         replace_1stline(fname,root)
+        replace_2ndline(fname,root)
 
 def renew_makefiles(dir,target):
     """renew ${ROOT} in all Makefiles"""
@@ -329,6 +350,7 @@ def renew_makefiles(dir,target):
         fname=os.path.join(path,target)
         if os.path.isfile(fname):
             replace_1stline(fname,root)
+            replace_2ndline(fname,root)
 
 if args.delete:
     delete_all(args.dir)
