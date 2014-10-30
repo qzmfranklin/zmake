@@ -4,7 +4,7 @@ CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -g -fpermissive -pthread
 
 CXX		:=${CC}
-CXXFLAGS	:=${CFLAGS}
+CXXFLAGS	:=${CFLAGS} -std=c++11
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT}

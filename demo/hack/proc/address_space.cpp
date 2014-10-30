@@ -14,5 +14,7 @@ int main(int argc, char const* argv[])
 	printf("STACK   = %p\n",&STACK);
 	printf("HEAP    = %p\n",HEAP);
 
+	free(HEAP);
+
 	return 0;
 }
