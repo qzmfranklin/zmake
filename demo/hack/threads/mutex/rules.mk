@@ -2,7 +2,7 @@
 DIR1dcd86b038d4a91af743cece9ed52d7f:=${ROOT}/hack/threads/mutex
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
 ${DIR1dcd86b038d4a91af743cece9ed52d7f}C:=
-${DIR1dcd86b038d4a91af743cece9ed52d7f}CPP:=dynamic.cpp static.cpp 
+${DIR1dcd86b038d4a91af743cece9ed52d7f}CPP:=dynamic.cpp static.cpp switch.cpp whoisfirst.cpp
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
 ${DIR1dcd86b038d4a91af743cece9ed52d7f}CFLAGS:=${CFLAGS}
 ${DIR1dcd86b038d4a91af743cece9ed52d7f}CXXFLAGS:=${CXXFLAGS}

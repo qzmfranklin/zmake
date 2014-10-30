@@ -1,4 +1,4 @@
-ROOT    :=/Users/qzmfrank/git/zmake/demo
+ROOT    :=/home/qzmfrank/git/zmake/demo
 d       :=${ROOT}/hack/threads/mutex# this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/hack/threads/mutex/rules.mk
@@ -14,4 +14,4 @@ clean:
 static.exe: ${d}/static.o
 dynamic.exe: ${d}/dynamic.o
 switch.exe: ${d}/switch.o
-pthread_whosfirst.exe: ${d}/pthread_whosfirst.o
+whoisfirst.exe: ${d}/whoisfirst.o

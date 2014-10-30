@@ -1,7 +1,7 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/bst# this directory
+d       :=${ROOT}/hack/kernel/proc# this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/algorithm/bst/rules.mk
+-include ${ROOT}/hack/kernel/proc/rules.mk
 -include ${ROOT}/utils/rules.mk
 -include ${DEP}
 
@@ -11,4 +11,4 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-test_bst.exe: ${d}/bst.o ${d}/test_bst.o
+address_space.exe: ${d}/address_space.o

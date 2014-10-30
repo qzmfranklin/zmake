@@ -25,7 +25,7 @@ int main(int argc, char const* argv[])
 	//bst_traverse(t,BST_PREORDER | BST_DEBUG);
 	//bst_traverse(t,BST_INORDER | BST_DEBUG);
 	//bst_traverse(t,BST_POSTORDER | BST_DEBUG);
-	//bst_traverse(t,BST_LEVELORDER | BST_DEBUG);
+	bst_traverse(t,BST_LEVELORDER | BST_DEBUG);
 	//bst_traverse(t,BST_LEVELORDER);
 
 	return 0;

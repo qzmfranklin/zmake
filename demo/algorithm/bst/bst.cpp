@@ -275,7 +275,7 @@ struct bst *bst_search(struct bst *t, const int key)
 static struct bst *_bst_delete_update_bf_and_rotate(struct bst *p,
 		struct bst *q, ::std::stack<struct bst*> *s)
 {
-	fprintf(stderr,"_bst_delete_update_bf_and_rotate(%p,%lu)\n",q,s->size());
+	//fprintf(stderr,"_bst_delete_update_bf_and_rotate(%p,%lu)\n",q,s->size());
 
 	/*
 	 * Same with _bst_insert_update_bf_and_rotate, except that the exit
@@ -326,7 +326,7 @@ static struct bst *_bst_delete_update_bf_and_rotate(struct bst *p,
  */
 void bst_delete(struct bst **t, const int key)
 {
-	fprintf(stderr,"\nbst_delete(%p,%d)\n",*t,key);
+	//fprintf(stderr,"\nbst_delete(%p,%d)\n",*t,key);
 	struct bst *x = *t; // node with the key to be deleted
 	::std::stack<struct bst*> s;
 	while (x)

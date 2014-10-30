@@ -155,7 +155,7 @@ def strfile(fname,str):
     fd=open(fname,'w')
     fd.write(str)
     fd.close()
-    print('generated',fname)
+    print(fname)
 
 def strfile2(fname,str):
     """create file, copy string into it, check existing file"""
