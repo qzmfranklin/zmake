@@ -4,7 +4,9 @@
 
 int main(int argc, char const* argv[])
 {
-	printf("sizeof(struct _st_dag_node) = %lu\n",sizeof(struct _st_dag_node));
-	printf("sizeof(struct _st_dag) = %lu\n",sizeof(struct _st_dag));
+	dag_node node;
+	dag g;
+	printf("sizeof(node) = %lu\n",sizeof(dag_node));
+	printf("sizeof(dag)  = %lu\n",sizeof(dag));
 	return 0;
 }
