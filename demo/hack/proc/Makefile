@@ -1,8 +1,7 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
+ROOT    :=/Users/qzmfrank/git/zmake/demo
 d       :=${ROOT}/hack/proc#this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/hack/kernel/proc/rules.mk
--include ${ROOT}/utils/rules.mk
+-include ${ROOT}/hack/proc/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean

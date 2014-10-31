@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/graph/dag# this directory
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/graph/dag#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/graph/dag/rules.mk
 -include ${DEP}

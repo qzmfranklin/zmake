@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/hack/threads/mutex# this directory
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/hack/threads/mutex#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/hack/threads/mutex/rules.mk
 -include ${ROOT}/utils/rules.mk
