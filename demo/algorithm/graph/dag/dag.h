@@ -26,7 +26,8 @@ class dag;
 class dag_node {
 	private:
 		int _status;
-		int _order;
+		int _dfs_order;
+		int _bfs_order;
 		const string &_key;
 		string _recipe;
 		set<dag_node*> _in_list;
@@ -34,9 +35,9 @@ class dag_node {
 
 	public:
 		dag_node(string &&key, string &&recipe = ""):
-			_key(::std::forward<string>(key)),
-			_recipe(::std::forward<string>(recipe)),
-			_order(0),
+			_key(::std::move(key)),
+			_recipe(::std::move(recipe)),
+			_dfs_order(0), _bfs_order(0),
 			_status(WHITE) { };
 
 		string &get_recipe() noexcept
@@ -82,12 +83,6 @@ class dag_node {
 			GREY,  // put on stack/queue
 			BLACK, // visited
 		};
-};
-
-class compare_node_order {
-	public:
-		bool operator() (dag_node *&u, dag_node *&v) const noexcept
-		{ return u->_order   <   v->_order; }
 };
 
 class dag {
