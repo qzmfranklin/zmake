@@ -9,42 +9,46 @@
 #include <queue>
 #include <string>
 #include <vector>
-#include <utility>
+//#include <utility>
 
 /*
  * Adjacency list representation of directed acyclic graph
  */
 
 using ::std::string;
-using ::std::unordered_map;
+using ::std::map;
+//using ::std::unordered_map;
 using ::std::set;
-using ::std::vector;
-using ::std::priority_queue;
+//using ::std::vector;
+//using ::std::priority_queue;
 
 class dag;
 class dag_node {
 	private:
-		int _priority;  /* only used in scheduling */
-		int _status;    /* only used in traversal */
-		const string _key;
+		int _status;
+		int _order;
+		const string &_key;
 		string _recipe;
-		set<dag_node*> _child_list;
+		set<dag_node*> _in_list;
+		set<dag_node*> _out_list;
 
 	public:
-		dag_node(const string &&key, string &&recipe = ""):
-			_key(::std::move(key)),
-			_recipe(::std::move(recipe)), _priority(0), _status(WHITE) { };
+		dag_node(string &&key, string &&recipe = ""):
+			_key(::std::forward<string>(key)),
+			_recipe(::std::forward<string>(recipe)),
+			_order(0),
+			_status(WHITE) { };
 
-		const string &get_recipe() const noexcept
+		string &get_recipe() noexcept
 		{ return _recipe; }
 
-		void set_recipe(const string &recipe) noexcept
-		{ _recipe = recipe; }
+		void set_recipe(string &&recipe) noexcept
+		{ _recipe = ::std::move(recipe); }
 
 		void print_node() const noexcept
 		{
 			printf( "%s:",_key.c_str());
-			for (auto &child: _child_list)
+			for (auto &child: _out_list)
 				printf(" %s",child->_key.c_str());
 			printf("\n");
 		}
@@ -59,8 +63,8 @@ class dag_node {
 		dag_node *first_white_child() const noexcept
 		{
 			dag_node *v = NULL;
-			for (auto &&v_itr = _child_list.begin();
-					v_itr != _child_list.end(); ++v_itr)
+			for (auto &&v_itr = _out_list.begin();
+					v_itr != _out_list.end(); ++v_itr)
 				if ((*v_itr)->_status == WHITE) {
 					v = *v_itr;
 					break;
@@ -69,7 +73,7 @@ class dag_node {
 		}
 
 		friend class dag;
-		friend class compare_node_priority;
+		friend class compare_node_order;
 
 	public:
 		enum {
@@ -80,23 +84,19 @@ class dag_node {
 		};
 };
 
-class compare_node_priority {
+class compare_node_order {
 	public:
 		bool operator() (dag_node *&u, dag_node *&v) const noexcept
-		{ return u->_priority   <   v->_priority; }
+		{ return u->_order   <   v->_order; }
 };
 
 class dag {
 	private:
 		int _status;
-		unordered_map<string, dag_node*> _node_list;
+		map<string, dag_node*> _node_list;
 
 	public:
-		dag(const size_t size = 100)
-		{
-			_status = INIT;
-			_node_list.reserve(size);
-		}
+		dag() { _status = INIT; }
 
 		~dag()
 		{
@@ -105,19 +105,19 @@ class dag {
 		}
 
 		/* Return NULL if no match was found */
-		dag_node *get_node(const string &&key)
+		dag_node *get_node(string &&key)
 		{ return _node_list.count(key) ? _node_list[key] : NULL; }
 
 		/*
 		 * Return pointer to the node with key, allocate new node if
 		 * needed
 		 */
-		dag_node *add_node(const string &&key)
+		dag_node *add_node(string &&key)
 		{
 			//dag_node *p = get_node(::std::move(key));
 			dag_node *p = get_node(::std::move(key));
 			if (!p) {
-				p = new dag_node(::std::move(key));
+				p = new dag_node(::std::forward<string>(key));
 				assert(p);
 				_node_list[key] = p;
 			}
@@ -128,11 +128,23 @@ class dag {
 		 * Add node(s) if needed, always succeed if STL does not throw
 		 * an exception
 		 */
-		void add_edge(const string &&from, const string &&to)
+		void add_edge(string &&from, string &&to)
 		{
 			dag_node *u = add_node(::std::move(from));
 			dag_node *v = add_node(::std::move(to));
-			u->_child_list.insert(v);
+			u->_out_list.insert(v);
+			v->_in_list.insert(u);
+		}
+
+		void remove_node(string &&key);
+		void remove_edge(string &&from, string &&to)
+		{
+			dag_node *u = get_node(::std::forward<string>(from));
+			dag_node *v = get_node(::std::forward<string>(to));
+			if (!u  ||  !v)
+				return;
+			u->_out_list.erase(v);
+			v->_in_list.erase(u);
 		}
 
 		size_t num_node() const { return _node_list.size(); }
@@ -141,7 +153,7 @@ class dag {
 		{
 			size_t retval = 0;
 			for (auto &tmp: _node_list)
-				retval += tmp.second->_child_list.size();
+				retval += tmp.second->_out_list.size();
 			return retval;
 		}
 
@@ -150,8 +162,10 @@ class dag {
 		 */
 		bool is_dag();
 
-		priority_queue<dag_node*,vector<dag_node*>,compare_node_priority>
-			&&schedule(const string &&key);
+		/*
+		 *priority_queue<dag_node*,vector<dag_node*>,compare_node_order>
+		 *        &&schedule(const string &&key);
+		 */
 	private:
 		/*
 		 * Recolor all nodes to dag_node::WHITE

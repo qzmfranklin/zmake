@@ -79,10 +79,10 @@ is_not_dag:
 	return false;
 }
 
-priority_queue<dag_node*, vector<dag_node*>,
-	compare_node_priority> &&dag::schedule(const string &&key)
-{
-	dag_node *dest = get_node(::std::move(key));
-	auto *q = new priority_queue<dag_node*, vector<dag_node*>, compare_node_priority>;
-	return ::std::move(*q);
-}
+//priority_queue<dag_node*, vector<dag_node*>,
+	//compare_node_order> &&dag::schedule(string &&key)
+//{
+	//dag_node *dest = get_node(::std::move(key));
+	//auto *q = new priority_queue<dag_node*, vector<dag_node*>, compare_node_order>;
+	//return ::std::move(*q);
+//}

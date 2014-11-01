@@ -35,8 +35,7 @@ int main(int argc, char const* argv[])
 
 	using ::std::vector;
 	using ::std::priority_queue;
-	priority_queue<dag_node*, vector<dag_node*>, compare_node_priority>
-		flow = g.schedule("test_heapsort.exe");
+	//auto flow = g.schedule("test_heapsort.exe");
 
 	return 0;
 }
