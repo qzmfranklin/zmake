@@ -4,7 +4,7 @@
 
 int main(int argc, char const* argv[])
 {
-	const int keys[] = {1,2,3,4,5,6,7,8,9,10};
+	const int keys[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 	const int n = sizeof(keys) / sizeof(int);
 
 
@@ -25,7 +25,7 @@ int main(int argc, char const* argv[])
 	//bst_traverse(t,BST_PREORDER | BST_DEBUG);
 	//bst_traverse(t,BST_INORDER | BST_DEBUG);
 	//bst_traverse(t,BST_POSTORDER | BST_DEBUG);
-	bst_traverse(t,BST_LEVELORDER | BST_DEBUG);
+	//bst_traverse(t,BST_LEVELORDER | BST_DEBUG);
 	//bst_traverse(t,BST_LEVELORDER);
 
 	return 0;

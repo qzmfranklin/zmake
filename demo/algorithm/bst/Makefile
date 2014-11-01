@@ -1,5 +1,5 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/bst# this directory
+d       :=${ROOT}/algorithm/bst#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/bst/rules.mk
 -include ${ROOT}/utils/rules.mk
