@@ -2,87 +2,95 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stack>
-#include <queue>
-#include <map>
-#include <unordered_map>
-#include <string>
-#include <utility>
 #include "dag.h"
 
-//using ::std::string;
-//using ::std::unordered_map;
-//using ::std::set;
-using ::std::vector;
-using ::std::priority_queue;
-
-/*
- * Verify the DAG property using DFS O(V) with time and memory
- * 	WHITE = untouched
- * 	GREY  = pushed to stack, not visited
- * 	BLACK = visited
- * If a BLACK node is visited twice, this is not a DAG
- *
- * FIXME: intrinsically wrong! should use topological ordering (reversed post-order DFS)
- */
-bool dag::is_dag()
+void dag_node::print_node() const noexcept
 {
-	fprintf(stderr,"dag::is_dag()\n");
-	if (_node_list.empty())
-		return true;
+	printf("%s",_key.c_str());
 
-	::std::stack<dag_node *> s;
-	auto itr = _node_list.begin();
+	printf(" :");
+	for (auto &tmp: _in_list)
+		printf(" %s",tmp->_key.c_str());
 
-	while (1) {
-		while (itr != _node_list.end()) {
-			if (itr->second->_status == dag_node::WHITE)
-				break;
-			else
-				++itr;
-		}
-		if (itr == _node_list.end()   &&   s.empty())
-			break;
-		s.push(itr->second);
-		itr->second->_status = dag_node::GREY;
-		++itr;
-		while (!s.empty()) {
-			static int i = 0;
-			fprintf(stderr,"i = %d, s->size() = %lu\n",i++,s.size());
+	printf("      =>");
+	for (auto &tmp: _out_list)
+		printf(" %s",tmp->_key.c_str());
 
-			/* edge(u,v) = edge from u to v */
-			dag_node *u = s.top();
-			s.pop();
-			dag_node *v = u->first_white_child();
-
-			u->print_node();
-
-			//if (v)
-				//v->print_node();
-
-			if (!v) {
-				printf("output u\n");
-				u->_status = dag_node::BLACK;
-				continue;
-			}
-			/* Not a DAG is a node is visited twice */
-			if (v->_status == dag_node::BLACK)
-				goto is_not_dag;
-			s.push(v);
-			v->_status = dag_node::GREY;
-		}
-	}
-
-	_bleach();
-	return true;
-is_not_dag:
-	_bleach();
-	return false;
+	printf("\n");
 }
 
-//priority_queue<dag_node*, vector<dag_node*>,
-	//compare_node_order> &&dag::schedule(string &&key)
-//{
-	//dag_node *dest = get_node(::std::move(key));
-	//auto *q = new priority_queue<dag_node*, vector<dag_node*>, compare_node_order>;
-	//return ::std::move(*q);
-//}
+dag_node *dag::add_node(string &&key)
+{
+	dag_node *p = get_node(::std::forward<string>(key));
+	if (!p) {
+		p = new dag_node(::std::forward<string>(key));
+		assert(p);
+		_node_list[key] = p;
+	}
+	return p;
+}
+
+void dag::add_edge(string &&from, string &&to)
+{
+	dag_node *u = add_node(::std::forward<string>(from));
+	dag_node *v = add_node(::std::forward<string>(to));
+	u->_out_list.insert(v);
+	v->_in_list.insert(u);
+}
+
+void dag::remove_edge(string &&from, string &&to)
+{
+	dag_node *u = get_node(::std::forward<string>(from));
+	dag_node *v = get_node(::std::forward<string>(to));
+	if (!u  ||  !v)
+		return;
+	u->_out_list.erase(v);
+	v->_in_list.erase(u);
+}
+
+/*
+ * Modified from
+ * http://www.inf.ed.ac.uk/teaching/courses/inf2b/algnotes/note10.pdf
+ */
+bool dag::_dfs_one_node(dag_node *u, ::std::stack<dag_node*> *s)
+{
+	printf("\n");
+	s->push(u);
+	u->_status = dag_node::GREY;
+	bool retval = true;
+	while (!s->empty()) {
+		u = s->top();
+		s->pop();
+
+		u->print_node();
+		u->_status = dag_node::BLACK;
+
+		for (auto &v: u->_out_list)
+			if (v->_status == dag_node::WHITE) {
+				s->push(v);
+				v->_status = dag_node::GREY;
+			} else if (v->_status == dag_node::GREY) {
+				// FIXME
+				printf("LOOP DETECTED ON:\n\t");
+				v->print_node();
+				retval = false;
+			}
+	}
+	return retval;
+}
+
+bool dag::dfs()
+{
+	//fprintf(stderr,"dag::dfs()\n");
+	_bleach();
+	::std::stack<dag_node*> s;
+	bool retval = true;
+	for (auto &u: _node_list)
+		if (u.second->_status == dag_node::WHITE) {
+			dag_node *v = u.second;
+			while (!v->_in_list.empty())
+				v = *v->_in_list.begin();
+			retval &= _dfs_one_node(v,&s);
+		}
+	return retval;
+}

@@ -5,37 +5,37 @@ int main(int argc, char const* argv[])
 {
 	dag g;
 
-	g.add_edge("utils.o","utils.cpp");
-	g.add_edge("utils.o","utils.h");
-	g.add_edge("utils.cpp","utils.h");
-	g.add_edge("utils.cpp","stdlib.h");
-	g.add_edge("utils.h","stdlib.h");
+	/* add_edge(prerequisite,target) */
+	g.add_edge("utils.cpp", "utils.o"  );
+	g.add_edge("utils.h"  , "utils.o"  );
+	g.add_edge("utils.h"  , "utils.cpp");
+	g.add_edge("stdlib.h" , "utils.cpp");
+	g.add_edge("stdlib.h" , "utils.h"  );
 
-	g.add_edge("heapsort.o","heapsort.cpp");
-	g.add_edge("heapsort.o","heapsort.h");
-	g.add_edge("heapsort.h","utils.h");
-	g.add_edge("heapsort.h","stdlib.h");
+	g.add_edge("heapsort.cpp", "heapsort.o");
+	g.add_edge("heapsort.h"  , "heapsort.o");
+	g.add_edge("heapsort.h"  , "heapsort.cpp");
+	g.add_edge("utils.h"     , "heapsort.h");
+	g.add_edge("stdlib.h"    , "heapsort.h");
 
-	g.add_edge("test_heapsort.exe","test_heapsort.o");
-	g.add_edge("test_heapsort.exe","heapsort.o");
-	g.add_edge("test_heapsort.exe","utils.o");
-	g.add_edge("test_heapsort.o","test_heapsort.cpp");
-	g.add_edge("test_heapsort.o","heapsort.h");
-	g.add_edge("test_heapsort.o","utils.h");
-	g.add_edge("test_heapsort.cpp","heapsort.h");
-	g.add_edge("test_heapsort.cpp","utils.h");
-	g.add_edge("test_heapsort.cpp","stdlib.h");
+	g.add_edge("test_heapsort.o"  , "test_heapsort.exe");
+	g.add_edge("heapsort.o"       , "test_heapsort.exe");
+	g.add_edge("utils.o"          , "test_heapsort.exe");
+	g.add_edge("test_heapsort.cpp", "test_heapsort.o"  );
+	g.add_edge("heapsort.h"       , "test_heapsort.o"  );
+	g.add_edge("utils.h"          , "test_heapsort.o"  );
+	g.add_edge("heapsort.h"       , "test_heapsort.cpp");
+	g.add_edge("utils.h"          , "test_heapsort.cpp");
+	g.add_edge("stdlib.h"         , "test_heapsort.cpp");
 
-	/* Fail case */
-	g.add_edge("utils.cpp","utils.o");
+	// fail case 
+	//g.add_edge("utils.o","utils.cpp");
 
 	printf("number of nodes   = %lu\n",g.num_node());
 	printf("number of edges   = %lu\n",g.num_edge());
-	printf("is_dag            = %s\n", g.is_dag() ? "true" : "false");
 
-	using ::std::vector;
-	using ::std::priority_queue;
-	//auto flow = g.schedule("test_heapsort.exe");
+	printf("g %s a DAG\n", g.dfs() ? "is" : "is not");
+
 
 	return 0;
 }

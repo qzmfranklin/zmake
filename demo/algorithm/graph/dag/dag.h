@@ -2,14 +2,10 @@
 #define _DAG_H_
 
 #include <assert.h>
-#include <iostream>
 #include <set>
+#include <stack>
 #include <map>
-#include <unordered_map>
-#include <queue>
 #include <string>
-#include <vector>
-//#include <utility>
 
 /*
  * Adjacency list representation of directed acyclic graph
@@ -17,15 +13,12 @@
 
 using ::std::string;
 using ::std::map;
-//using ::std::unordered_map;
 using ::std::set;
-//using ::std::vector;
-//using ::std::priority_queue;
 
 class dag;
 class dag_node {
 	private:
-		int _status;
+		int _status;    // WHITE, GREY, BLACK
 		int _dfs_order;
 		int _bfs_order;
 		const string &_key;
@@ -40,22 +33,16 @@ class dag_node {
 			_dfs_order(0), _bfs_order(0),
 			_status(WHITE) { };
 
+		void print_recipe() const noexcept
+		{ printf("%s\n",_recipe.c_str()); }
+
 		string &get_recipe() noexcept
 		{ return _recipe; }
 
 		void set_recipe(string &&recipe) noexcept
 		{ _recipe = ::std::move(recipe); }
 
-		void print_node() const noexcept
-		{
-			printf( "%s:",_key.c_str());
-			for (auto &child: _out_list)
-				printf(" %s",child->_key.c_str());
-			printf("\n");
-		}
-
-		void print_recipe() const noexcept
-		{ printf("%s\n",_recipe.c_str()); }
+		void print_node() const noexcept;
 
 		/*
 		 * Return first white (not pushed, not visited) child
@@ -78,7 +65,6 @@ class dag_node {
 
 	public:
 		enum {
-			// for traversal
 			WHITE, // untouched
 			GREY,  // put on stack/queue
 			BLACK, // visited
@@ -91,7 +77,7 @@ class dag {
 		map<string, dag_node*> _node_list;
 
 	public:
-		dag() { _status = INIT; }
+		dag(): _status(INIT) {}
 
 		~dag()
 		{
@@ -107,44 +93,27 @@ class dag {
 		 * Return pointer to the node with key, allocate new node if
 		 * needed
 		 */
-		dag_node *add_node(string &&key)
-		{
-			//dag_node *p = get_node(::std::move(key));
-			dag_node *p = get_node(::std::move(key));
-			if (!p) {
-				p = new dag_node(::std::forward<string>(key));
-				assert(p);
-				_node_list[key] = p;
-			}
-			return p;
-		}
+		dag_node *add_node(string &&key);
 
 		/*
 		 * Add node(s) if needed, always succeed if STL does not throw
 		 * an exception
 		 */
-		void add_edge(string &&from, string &&to)
-		{
-			dag_node *u = add_node(::std::move(from));
-			dag_node *v = add_node(::std::move(to));
-			u->_out_list.insert(v);
-			v->_in_list.insert(u);
-		}
+		void add_edge(string &&from, string &&to);
 
+		/* 
+		 * Delete node(key) when it exists, otherwise do nothing
+		 */
 		void remove_node(string &&key);
-		void remove_edge(string &&from, string &&to)
-		{
-			dag_node *u = get_node(::std::forward<string>(from));
-			dag_node *v = get_node(::std::forward<string>(to));
-			if (!u  ||  !v)
-				return;
-			u->_out_list.erase(v);
-			v->_in_list.erase(u);
-		}
 
-		size_t num_node() const { return _node_list.size(); }
+		/*
+		 * Delete edge(from,to) when it exists, otherwise do nothing
+		 */
+		void remove_edge(string &&from, string &&to);
 
-		size_t num_edge() const
+		size_t num_node() const noexcept { return _node_list.size(); }
+
+		size_t num_edge() const noexcept
 		{
 			size_t retval = 0;
 			for (auto &tmp: _node_list)
@@ -153,23 +122,21 @@ class dag {
 		}
 
 		/*
-		 * Verify the DAG property using DFS O(V) with time and memory
+		 * Print graph in the Depth First Search (DFS)
+		 * Return true/false if the graph is/isn't a DAG
 		 */
-		bool is_dag();
+		bool dfs();
 
-		/*
-		 *priority_queue<dag_node*,vector<dag_node*>,compare_node_order>
-		 *        &&schedule(const string &&key);
-		 */
 	private:
-		/*
-		 * Recolor all nodes to dag_node::WHITE
-		 */
-		void _bleach()
+		/* Set all nodes to WHITE */
+		void _bleach() noexcept
 		{
 			for (auto &node: _node_list)
 				node.second->_status = dag_node::WHITE;
 		}
+
+		/* Auxilliary functions */
+		bool _dfs_one_node(dag_node *u, ::std::stack<dag_node*> *s);
 
 	public:
 		enum {
