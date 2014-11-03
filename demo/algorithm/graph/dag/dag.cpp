@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unordered_set>
 #include <stdlib.h>
 #include <assert.h>
 #include <stack>
@@ -21,17 +22,90 @@ void dag_node::print_node() const noexcept
 
 void dag_node::print_node_debug() const noexcept
 {
-	printf("%s",_key.c_str());
+	fprintf(stderr,"%s(%s)",_key.c_str(),
+			status_string().c_str());
 
-	printf(" :");
+	fprintf(stderr," :");
 	for (auto &tmp: _in_list)
-		printf(" %s",tmp->_key.c_str());
+		fprintf(stderr," %s(%s)",tmp->_key.c_str(),
+				tmp->status_string().c_str());
 
-	printf("      =>");
+	fprintf(stderr,"      =>");
 	for (auto &tmp: _out_list)
-		printf(" %s",tmp->_key.c_str());
+		fprintf(stderr," %s(%s)",tmp->_key.c_str(),
+				tmp->status_string().c_str());
 
-	printf("\n");
+	fprintf(stderr,"\n");
+}
+
+string &&dag_node::status_string() const noexcept
+{
+	::std::string *retval = new ::std::string;
+	switch (_status) {
+	case WHITE:
+		*retval = "WHITE";
+		break;
+	case GREY:
+		*retval = "GREY";
+		break;
+	case BLACK:
+		*retval = "BLACK";
+		break;
+	default:
+		*retval = "UNKNOWN STATUS";
+		break;
+	}
+	return ::std::move(*retval);
+}
+
+dag_node *dag_node::source_of() noexcept
+{
+	::std::unordered_set<dag_node*> s;
+	s.insert(this);
+	dag_node *retval = this;
+	while (!retval->_in_list.empty()) {
+		dag_node *tmp = *(retval->_in_list.begin());
+		if (s.count(tmp))
+			return this;
+		else {
+			s.insert(retval);
+			retval = tmp;
+		}
+	}
+	return retval;
+}
+
+dag_node *dag_node::first_white_child() const noexcept
+{
+	dag_node *retval = NULL;
+	for (auto &&v_itr: _out_list)
+		if (v_itr->_status == WHITE) {
+			retval = &(*v_itr);
+			break;
+		}
+	return retval;
+}
+
+dag_node *dag_node::first_grey_child() const noexcept
+{
+	dag_node *retval = NULL;
+	for (auto &&v_itr: _out_list)
+		if (v_itr->_status == GREY) {
+			retval = &(*v_itr);
+			break;
+		}
+	return retval;
+}
+
+dag_node *dag_node::first_non_black_child() const noexcept
+{
+	dag_node *retval = NULL;
+	for (auto &&v_itr: _out_list)
+		if (v_itr->_status != BLACK) {
+			retval = &(*v_itr);
+			break;
+		}
+	return retval;
 }
 
 dag_node *dag::add_node(string &&key)
@@ -91,42 +165,14 @@ void dag::dfs()
 	::std::stack<dag_node*> s;
 	for (auto &u: _node_list)
 		if (u.second->_status == dag_node::WHITE) {
-			dag_node *v = _source_of(u.second);
+			dag_node *v = u.second->source_of();
 			_dag_dfs_from_node(v,&s);
 		}
-}
-
-static dag_node *_first_grey_child(dag_node *p)
-{
-	if (p->_out_list.empty())
-		return NULL;
-
-	auto &tmp = p->_out_itr;
-	while (tmp != p->_out_list.end())
-		if ((*tmp)->_status == dag_node::GREY)
-			break;
-		else
-			++tmp;
-
-	return (tmp == p->_out_list.end())  ?  NULL  :  *tmp;
 }
 
 static dag_node *_stack_peek(::std::stack<dag_node*> *s)
 {
 	return (s->empty())  ?  NULL  :  s->top();
-}
-
-//const dag_node *tmp = _first_non_black(v);
-
-static dag_node *_first_non_black_child(dag_node *p)
-{
-	auto &tmp = p->_out_itr;
-	while (tmp != p->_out_list.end())
-		if ((*tmp)->_status != dag_node::BLACK)
-			break;
-		else
-			++tmp;
-	return *tmp;
 }
 
 static bool _is_dag_first_while(dag_node *p,
@@ -136,65 +182,79 @@ static bool _is_dag_first_while(dag_node *p,
 	if (!p)
 		return true;
 	while (!p->_out_list.empty()) {
+		//fprintf(stderr,"\n");
+		//fprintf(stderr,"PUSH\t");
+		//p->print_node_debug();
 		s1->push(p);
 		p->_status = dag_node::GREY;
 		/*
-		 * Push the first non-visited child of p to s1.
+		 * Push the first non-black child of p to s1.
 		 * Note that if any child of p is GREY, the
 		 * graph is cyclic.
 		 */
-		dag_node *tmp = _first_non_black_child(p);
-		if (!tmp)
-			break;
-		if (tmp->_status == dag_node::GREY)
-			return false;
-		else if (tmp->_status == dag_node::WHITE)
-			p = tmp;
 		/*
 		 * Push all but the first non-visited children
 		 * to s2. Also watch out for GREY children.
 		 */
-		for (auto &v = ++(p->_out_itr);
-				v != tmp->_out_list.end(); ++v)
-			if ((*v)->_status == dag_node::WHITE)
-				s2->push(*v);
-			else if ((*v)->_status == dag_node::GREY)
+		for (auto &v: p->_out_list) {
+			if (v == *(p->_out_list.begin()))
+				continue;
+			//v->print_node_debug();
+			if (v->_status == dag_node::WHITE)
+				s2->push(&(*v));
+			else if (v->_status == dag_node::GREY) {
+				fprintf(stderr,"LOOP DETECTED\n");
+				v->print_node_debug();
 				return false;
+			}
+		}
+		dag_node *tmp = p->first_non_black_child();
+		if (!tmp)
+			break;
+		//fprintf(stderr,"FIRST NON-BLACK CHILD\n\t\t");
+		//tmp->print_node_debug();
+		if (tmp->_status == dag_node::WHITE)
+			p = tmp;
+		else if (tmp->_status == dag_node::GREY) {
+			fprintf(stderr,"LOOP DETECTED\n");
+			tmp->print_node_debug();
+			return false;
+		}
 	}
 	return true;
 }
 
 /*
- * FIXME: not working...
  * Use two stacks s1 and s2 to do the DFS. At any time, s1 is the same as the
  * stack one sees in the naive recursive implementation. s1 is always GREY, s2
  * is always WHITE.
  */
 static bool _from_node_stack2(dag_node *p)
 {
-	::std::stack<dag_node*> s1, s2;
-
+	//::std::stack<dag_node*> ;
+	auto s1 = new ::std::stack<dag_node*>;
+	auto s2 = new ::std::stack<dag_node*>;
 	while (1) {
-		if (!_is_dag_first_while(p,&s1,&s2))
+		if (!_is_dag_first_while(p,s1,s2)) {
+			delete s1;
+			delete s2;
 			return false;
+		}
 
-		/*
-		 * s2 cannot be empty without first emptying s1
-		 */
-		if (s1.empty())
+		if (s1->empty())
 			break;
 
-		p = s1.top();
-		s1.pop();
-		dag_node *tmp = _first_grey_child(p);
+		p = s1->top();
+		s1->pop();
+		dag_node *tmp = p->first_grey_child();
 		/*
-		 * If p has at a GREY child that is on top of s2, push that
+		 * If p has a GREY child that is on top of s2, push that
 		 * child to s1 and pop it from s2
 		 */
-		if (tmp  &&  tmp == _stack_peek(&s2)) {
-			s1.push(p);
-			p = s2.top();
-			s2.pop();
+		if (tmp  &&  tmp == _stack_peek(s2)) {
+			s1->push(p);
+			p = s2->top();
+			s2->pop();
 		} else {
 			p->print_node();
 			p->_status = dag_node::BLACK;
@@ -202,6 +262,8 @@ static bool _from_node_stack2(dag_node *p)
 		}
 	}
 
+	delete s1;
+	delete s2;
 	return true;
 }
 
@@ -228,7 +290,6 @@ static bool _from_node(dag_node *p)
 bool dag::is_dag()
 {
 	_bleach();
-	_reset_iterators();
 
 	/*
 	 * Find a white node. Locate node's root source p. Do a DFS from p.
@@ -237,7 +298,7 @@ bool dag::is_dag()
 	 */
 	for (auto &u: _node_list)
 		if (u.second->_status == dag_node::WHITE) {
-			dag_node *p = _source_of(u.second);
+			dag_node *p = u.second->source_of();
 			if (_from_node(p) == false)
 				return false;
 		}
@@ -249,21 +310,4 @@ void dag::_bleach() noexcept
 {
 	for (auto &node: _node_list)
 		node.second->_status = dag_node::WHITE;
-}
-
-void dag::_reset_iterators() noexcept
-{
-	for (auto &node: _node_list) {
-		dag_node *p = node.second;
-		p->_in_itr  = p->_in_list.begin();
-		p->_out_itr = p->_out_list.begin();
-	}
-}
-
-dag_node *dag::_source_of(dag_node *p) const noexcept
-{
-	dag_node *retval = p;
-	while (!retval->_in_list.empty())
-		retval = *(retval->_in_list.begin());
-	return retval;
 }

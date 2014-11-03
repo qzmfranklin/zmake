@@ -18,15 +18,13 @@ using ::std::set;
 class dag;
 class dag_node {
 	public:
-		int _status;    // WHITE, GREY, BLACK
+		int _status;    // [WHITE, GREY, BLACK] | (OUTDATED)
 		int _dfs_order;
 		int _bfs_order;
 		const string &_key;
 		string _recipe;
 		set<dag_node*> _in_list;
 		set<dag_node*> _out_list;
-		set<dag_node*>::iterator _in_itr;
-		set<dag_node*>::iterator _out_itr;
 
 	public:
 		dag_node(string &&key, string &&recipe = ""):
@@ -47,30 +45,26 @@ class dag_node {
 		void print_node() const noexcept;
 		void print_node_debug() const noexcept;
 
+		dag_node *source_of() noexcept;
+		string &&status_string() const noexcept;
+
 		/*
-		 * Return first white (not pushed, not visited) child
-		 * Return NULL if no child is white
+		 * Return the pointer to first white/grey/non-black child if any
+		 * Return NULL if none
 		 */
-		dag_node *first_white_child() const noexcept
-		{
-			dag_node *v = NULL;
-			for (auto &&v_itr = _out_list.begin();
-					v_itr != _out_list.end(); ++v_itr)
-				if ((*v_itr)->_status == WHITE) {
-					v = *v_itr;
-					break;
-				}
-			return v;
-		}
+		dag_node *first_white_child() const noexcept;
+		dag_node *first_grey_child() const noexcept;
+		dag_node *first_non_black_child() const noexcept;
 
 		friend class dag;
-		friend class compare_node_order;
 
 	public:
 		enum {
-			WHITE, // untouched
+			WHITE   = 0x0, // untouched
 			GREY,  // put on stack/queue
 			BLACK, // visited
+
+			OUTDATED = 0x1<<8 // bit mask, if not, up to date
 		};
 };
 
@@ -137,8 +131,6 @@ class dag {
 		bool is_dag();
 	private:
 		void _bleach() noexcept;
-		void _reset_iterators() noexcept;
-		dag_node *_source_of(dag_node *p) const noexcept;
 
 	public:
 		enum {

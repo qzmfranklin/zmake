@@ -30,14 +30,16 @@ int main(int argc, char const* argv[])
 
 	// fail case 
 	g.add_edge("utils.o","utils.cpp");
+	g.add_edge("test_heapsort.exe","stdlib.h");
 
 	printf("number of nodes   = %lu\n",g.num_node());
 	printf("number of edges   = %lu\n",g.num_edge());
 
-	printf("\n\n\n");
+	printf("\n");
 	printf("DEPTH FIRST TRAVERSAL:\n");
 	g.dfs();
 
+	printf("\n");
 	printf("g %s a DAG\n", g.is_dag() ? "IS" : "is NOT");
 
 	return 0;
