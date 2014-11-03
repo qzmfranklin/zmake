@@ -45,6 +45,7 @@ class dag_node {
 		{ _recipe = ::std::move(recipe); }
 
 		void print_node() const noexcept;
+		void print_node_debug() const noexcept;
 
 		/*
 		 * Return first white (not pushed, not visited) child

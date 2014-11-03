@@ -19,6 +19,21 @@ void dag_node::print_node() const noexcept
 	printf("\n");
 }
 
+void dag_node::print_node_debug() const noexcept
+{
+	printf("%s",_key.c_str());
+
+	printf(" :");
+	for (auto &tmp: _in_list)
+		printf(" %s",tmp->_key.c_str());
+
+	printf("      =>");
+	for (auto &tmp: _out_list)
+		printf(" %s",tmp->_key.c_str());
+
+	printf("\n");
+}
+
 dag_node *dag::add_node(string &&key)
 {
 	dag_node *p = get_node(::std::forward<string>(key));
@@ -118,6 +133,8 @@ static bool _is_dag_first_while(dag_node *p,
 		::std::stack<dag_node*> *s1,
 		::std::stack<dag_node*> *s2)
 {
+	if (!p)
+		return true;
 	while (!p->_out_list.empty()) {
 		s1->push(p);
 		p->_status = dag_node::GREY;
@@ -158,9 +175,8 @@ static bool _from_node_stack2(dag_node *p)
 	::std::stack<dag_node*> s1, s2;
 
 	while (1) {
-		if (p)
-			if (!_is_dag_first_while(p,&s1,&s2))
-				return false;
+		if (!_is_dag_first_while(p,&s1,&s2))
+			return false;
 
 		/*
 		 * s2 cannot be empty without first emptying s1
@@ -205,7 +221,8 @@ static bool _from_node_recursive(dag_node *u)
 
 static bool _from_node(dag_node *p)
 {
-	return _from_node_recursive(p);
+	return _from_node_stack2(p);
+	//return _from_node_recursive(p);
 }
 
 bool dag::is_dag()
