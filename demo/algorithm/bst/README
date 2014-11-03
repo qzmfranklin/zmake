@@ -1,4 +1,4 @@
-C-style implementation of AVL tree without parent pointers
+C-style implementation of AVL tree without parent pointers or recursions
 
 Supported operations:
 	search
@@ -7,9 +7,9 @@ Supported operations:
 	traverse:
 		recursive: pre/in/post order
 		stack    : pre/in/post order
+		stack2   : pre/in/post order
 		morris   : pre/in order
 		debug    : pre/in/post order, implemented using stack
 		level order, level order with debug information
 
-This implementation does not recursion in search/insert/delete. For traversal,
-insertion is only used when BST_RECURSIVE is specified.
+For more information, please refer to bst.h

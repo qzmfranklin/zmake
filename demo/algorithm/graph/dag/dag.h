@@ -17,7 +17,7 @@ using ::std::set;
 
 class dag;
 class dag_node {
-	private:
+	public:
 		int _status;    // WHITE, GREY, BLACK
 		int _dfs_order;
 		int _bfs_order;
@@ -25,6 +25,8 @@ class dag_node {
 		string _recipe;
 		set<dag_node*> _in_list;
 		set<dag_node*> _out_list;
+		set<dag_node*>::iterator _in_itr;
+		set<dag_node*>::iterator _out_itr;
 
 	public:
 		dag_node(string &&key, string &&recipe = ""):
@@ -72,7 +74,7 @@ class dag_node {
 };
 
 class dag {
-	private:
+	public:
 		int _status;
 		map<string, dag_node*> _node_list;
 
@@ -125,18 +127,17 @@ class dag {
 		 * Print graph in the Depth First Search (DFS)
 		 * Return true/false if the graph is/isn't a DAG
 		 */
-		bool dfs();
+		void dfs();
 
+		/*
+		 * Non-recursive O(V+E) implementation of verifying DAG using
+		 * DFS
+		 */
+		bool is_dag();
 	private:
-		/* Set all nodes to WHITE */
-		void _bleach() noexcept
-		{
-			for (auto &node: _node_list)
-				node.second->_status = dag_node::WHITE;
-		}
-
-		/* Auxilliary functions */
-		bool _dfs_one_node(dag_node *u, ::std::stack<dag_node*> *s);
+		void _bleach() noexcept;
+		void _reset_iterators() noexcept;
+		dag_node *_source_of(dag_node *p) const noexcept;
 
 	public:
 		enum {

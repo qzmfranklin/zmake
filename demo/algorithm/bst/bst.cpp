@@ -574,6 +574,7 @@ static void _bst_traverse_stack2(struct bst *t, const int mode)
 {
 	switch (mode) {
 	case BST_PREORDER:
+		printf("BST_STACK2 | BST_PREORDER = BST_STACK | BST_PREORDER\n");
 		_bst_traverse_stack_preorder(t);
 		break;
 	case BST_INORDER:
