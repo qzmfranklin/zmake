@@ -424,6 +424,11 @@ static void _bst_traverse_recursive(struct bst *t, const int mode)
 	}
 }
 
+static struct bst *_bst_peek_stack(::std::stack<struct bst*> *s)
+{
+	return (s->empty())  ?  NULL  :  s->top();
+}
+
 static void _bst_traverse_stack_preorder(struct bst *t)
 {
 	::std::stack<struct bst*> s;
@@ -439,6 +444,9 @@ static void _bst_traverse_stack_preorder(struct bst *t)
 	}
 }
 
+/*
+ * http://www.geeksforgeeks.org/inorder-tree-traversal-without-recursion/
+ */
 static void _bst_traverse_stack_inorder(struct bst *t)
 {
 	::std::stack<struct bst*> s;
@@ -457,14 +465,8 @@ static void _bst_traverse_stack_inorder(struct bst *t)
 		}
 }
 
-static struct bst *_bst_peek_stack(::std::stack<struct bst*> *s)
-{
-	return (s->empty())  ?  NULL  :  s->top();
-}
-
 /*
- * See http://www.geeksforgeeks.org/iterative-postorder-traversal-using-stack/
- * for details.
+ * http://www.geeksforgeeks.org/iterative-postorder-traversal-using-stack/
  */
 static void _bst_traverse_stack_postorder(struct bst *t)
 {
@@ -510,6 +512,82 @@ static void _bst_traverse_stack(struct bst *t, const int mode)
 	}
 }
 
+static void _bst_traverse_stack2_inorder(struct bst *t)
+{
+	::std::stack<struct bst*> s1;
+	::std::stack<struct bst*> s2;
+	struct bst *p = t;
+	while (1) {
+		while (p) {
+			if (p->right)
+				s2.push(p->right);
+			s1.push(p);
+			p = p->left;
+		}
+		if (s1.empty())
+			break;
+		p = s1.top();
+		s1.pop();
+		_bst_print_node(p);
+		if (p->right  &&  p->right == _bst_peek_stack(&s2)) {
+			s2.pop();
+			p = p->right;
+		} else {
+			p = NULL;
+		}
+	}
+}
+
+static void _bst_traverse_stack2_postorder(struct bst *t)
+{
+	::std::stack<struct bst*> s1;
+	::std::stack<struct bst*> s2;
+	struct bst *p = t;
+	while (1) {
+		while (p) {
+			if (p->right)
+				s2.push(p->right);
+			s1.push(p);
+			p = p->left;
+		}
+		if (s1.empty())
+			break;
+		p = s1.top();
+		s1.pop();
+		if (p->right  &&  p->right == _bst_peek_stack(&s2)) {
+			s2.pop();
+			s1.push(p);
+			p = p->right;
+		} else {
+			_bst_print_node(p);
+			p = NULL;
+		}
+	}
+}
+
+/*
+ * Implemented using two stacks for in/post-order:
+ * s1: always the same with the stack in the recursive method
+ * s2: auxilliary stack
+ */
+static void _bst_traverse_stack2(struct bst *t, const int mode)
+{
+	switch (mode) {
+	case BST_PREORDER:
+		_bst_traverse_stack_preorder(t);
+		break;
+	case BST_INORDER:
+		_bst_traverse_stack2_inorder(t);
+		break;
+	case BST_POSTORDER:
+		_bst_traverse_stack2_postorder(t);
+		break;
+	default:
+		fprintf(stderr,"_bst_traverse_stack: unknown mode %d\n",mode);
+		break;
+	}
+}
+
 static void _bst_traverse_morris_preorder(struct bst *t)
 {
 	struct bst *curr = t;
@@ -524,11 +602,11 @@ static void _bst_traverse_morris_preorder(struct bst *t)
 			prev = prev->right;
 		if (prev->right == NULL) {
 			_bst_print_node(curr);
-			prev->right = curr->right;
+			prev->right = curr;
 			curr = curr->left;
 		} else {
-			curr = prev->right;
 			prev->right = NULL;
+			curr = curr->right;
 		}
 	}
 }
@@ -550,8 +628,8 @@ static void _bst_traverse_morris_inorder(struct bst *t)
 			curr = curr->left;
 		} else {
 			_bst_print_node(curr);
-			curr = prev->right;
 			prev->right = NULL;
+			curr = curr->right;;
 		}
 	}
 }
@@ -711,6 +789,8 @@ void bst_traverse(struct bst *t, const int mode)
 		_bst_traverse_recursive(t,mode & BST_MASK);
 	else if (mode & BST_STACK)
 		_bst_traverse_stack(t,mode & BST_MASK);
+	else if (mode & BST_STACK2)
+		_bst_traverse_stack2(t,mode & BST_MASK);
 	else if (mode & BST_MORRIS)
 		_bst_traverse_morris(t,mode & BST_MASK);
 	else if (mode & BST_DEBUG)

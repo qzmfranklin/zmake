@@ -51,7 +51,7 @@ void bst_delete(struct bst **t, const int key);
  * 	( * = PRE/IN/POST )
  * 	BST_(*)ORDER (default to BST_STACK)
  * 	BST_(*)ORDER | BST_RECURSIVE
- * 	BST_(*)ORDER | BST_STACK
+ * 	BST_(*)ORDER | BST_STACK(2)
  * 	BST_(PRE/IN)ORDER | BST_MORRIS
  * 	BST_(*)ORDER | BST_DEBUG (use stack)
  * 	BST_LEVELORDER
@@ -69,8 +69,9 @@ enum {
 
 	BST_RECURSIVE = 0x1<<8, // default
 	BST_STACK     = 0x1<<9,
-	BST_MORRIS    = 0x1<<10,
-	BST_DEBUG     = 0x1<<11
+	BST_STACK2    = 0x1<<10,
+	BST_MORRIS    = 0x1<<11,
+	BST_DEBUG     = 0x1<<12
 };
 void bst_traverse(struct bst *t, const int mode);
 
