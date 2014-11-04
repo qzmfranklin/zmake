@@ -1,0 +1,13 @@
+Please read the LinuxKernelCodingStyle.txt first. If you do not believe it's
+right, please just convince yourself it's true.
+
+The Linux kernel coding style is restricted to the C programming language. It
+should be carried over to the C++ programming language without any doubt. I am
+here to lay out some rules that I found most useful for C++ programs as well.
+
+If your project uses some other coding style, follow that. Being a team player
+is more important to adhering to some nerdy doctrine, even when the doctrine is
+really better.
+
+
+			Chapter 1: Class Member
