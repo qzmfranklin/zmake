@@ -4,6 +4,9 @@ A new method of writing Makefiles.
 
 **NOTE**: We use `root/` to denote the directory where you cloned zmake.git on your own computer.
 
+**NOTE**: This README.md is outdated. Will update as soon as the changes are stablized and tested.
+
+**TODO**: So far, zmake is no more than a method and a script for writing Makefiles. The idea of using complete DAGs and having directory-specific pattern rules is restricted by the syntax and quirks and the time honored make program. A new make program that is built with easy specification of the DAG and directory-specific pattern rules is currently underway. As of 11/03/2014, only part of the DAG class is implemented, as in `demo/algorithm/graph/dag/`. Need a parser to parse the new Makefiles and a fully parallelized scheduler.
 
 # A Brief History of Makefiles
 

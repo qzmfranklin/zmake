@@ -1,10 +1,18 @@
 #include <stdio.h>
 #include <unordered_set>
+#include <stack>
 #include <vector>
+#include <queue>
 #include <stdlib.h>
 #include <assert.h>
-#include <stack>
 #include "dag.h"
+
+void dag_node::update() const noexcept
+{
+	if (_recipe.empty())
+		return;
+	printf("UPDATE %s:    %s\n", _key.c_str(), _recipe.c_str());
+}
 
 void dag_node::print_node() const noexcept
 {
@@ -37,6 +45,10 @@ void dag_node::print_node_debug() const noexcept
 				tmp->status_string().c_str());
 
 	fprintf(stderr,"\n");
+
+	if (_recipe.empty())
+		return;
+	printf("\t%s\n",_recipe.c_str());
 }
 
 string &&dag_node::status_string() const noexcept
@@ -102,6 +114,17 @@ dag_node *dag_node::sink_of() noexcept
 	return retval;
 }
 
+dag_node *dag_node::first_white_parent() const noexcept
+{
+	dag_node *retval = NULL;
+	for (auto &&v_itr: _in_list)
+		if (v_itr->_status == WHITE) {
+			retval = &(*v_itr);
+			break;
+		}
+	return retval;
+}
+
 dag_node *dag_node::first_white_child() const noexcept
 {
 	dag_node *retval = NULL;
@@ -160,6 +183,19 @@ void dag::add_edge(string &&from, string &&to)
 	v->_in_list.insert(u);
 }
 
+void dag::remove_node(string &&key)
+{
+	dag_node *p = get_node(::std::forward<string>(key));
+	if (!p)
+		return;
+	for (auto &parent: p->_in_list)
+		parent->_out_list.erase(p);
+	for (auto &child: p->_out_list)
+		child->_in_list.erase(p);
+	_node_list.erase(::std::forward<string>(key));
+	delete p;
+}
+
 void dag::remove_edge(string &&from, string &&to)
 {
 	dag_node *u = get_node(::std::forward<string>(from));
@@ -168,6 +204,14 @@ void dag::remove_edge(string &&from, string &&to)
 		return;
 	u->_out_list.erase(v);
 	v->_in_list.erase(u);
+}
+
+void dag::set_recipe(string &&key, string &&recipe)
+{
+	dag_node *p = get_node(::std::forward<string>(key));
+	if (!p)
+		return;
+	p->_recipe = ::std::move(recipe);
 }
 
 /*
@@ -343,18 +387,68 @@ bool dag::is_dag()
 /*
  * dag::schedule() assumes that the graph is a DAG but does not check it. The
  * user should call dag::is_dag() before calling dag::schedule(). Failing to do
- * so leads to undefined behavior.
+ * so might lead to undefined behavior.
+ *
+ * Impelmentation details:
+ *
+ * This is a two-pass implementation. The first pass does a post-order DFS and
+ * pushes the nodes to a queue (q). The second pass reads q and invoke recipes
+ * in the proper order.
+ *
+ * If the DAG is free of forward edges (edges that point to an indirect
+ * ancestor), recipes can be invoked in the order that they appear in q. But if
+ * there is any forward edges in the DAG, an extra validity check must be
+ * performed. If the node (p) in front of q has any outdated (WHITE) parent,
+ * then p is pushed to the end of q, awaiting updates on its parents.
+ *
+ * This is not the fast implementation of all times. But it works just fine.
  */
-::std::vector<dag_node*> &&dag::schedule(string &&key)
+void dag::schedule(string &&key)
 {
-	auto *ret = new ::std::vector<dag_node*>;
+	dag_node *p = get_node(::std::forward<string>(key));
+	if (!p)
+		return;
 
-	dag_node *dest = get_node(::std::forward<string>(key));
-	if (!dest)
-		goto exit_point;
+	_bleach();
+	auto *s = new ::std::stack<dag_node*>;
+	auto *q = new ::std::queue<dag_node*>;
 
-exit_point:
-	return ::std::move(*ret);
+	s->push(p);
+	p->_status = dag_node::BLACK;
+	while (1) {
+		if (p)
+			for (auto &u: p->_in_list)
+				if (u->_status == dag_node::WHITE) {
+					s->push(&(*u));
+					u->_status = dag_node::BLACK;
+				}
+		if (s->empty())
+			break;
+		p = s->top();
+		dag_node *tmp = p->first_white_parent();
+		if (!tmp) {
+			s->pop();
+			q->push(p);
+			p = NULL;
+		}
+	}
+
+	_bleach();
+	while (!q->empty()) {
+		p = q->front();
+		q->pop();
+		dag_node *tmp = p->first_white_parent();
+		if (!tmp) {
+			p->update();
+			//p->print_node_debug();
+			p->_status = dag_node::BLACK;
+		} else {
+			q->push(p);
+		}
+	}
+
+	delete q;
+	delete s;
 }
 
 void dag::_bleach() noexcept

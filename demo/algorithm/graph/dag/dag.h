@@ -26,18 +26,13 @@ class dag_node {
 		set<dag_node*> _out_list;
 
 	public:
-		dag_node(string &&key, string &&recipe = ""):
-			_status(OUTDATED),
-			_key(::std::move(key)),
-			_recipe(::std::move(recipe))
-			{}
+		/*
+		 * Do not create a dag_node on your own. It is designed to be
+		 * constructed by dag methods
+		 */
+		dag_node(string &&key): _key(::std::move(key)), _recipe("") {}
 
-		void print_recipe() const noexcept
-		{ printf("%s\n",_recipe.c_str()); }
-
-		void set_recipe(string &&recipe) noexcept
-		{ _recipe = ::std::move(recipe); }
-
+		void update() const noexcept;
 		void print_node() const noexcept;
 		void print_node_debug() const noexcept;
 
@@ -46,9 +41,10 @@ class dag_node {
 		string &&status_string() const noexcept;
 
 		/*
-		 * Return the pointer to first white/grey/non-black child if any
-		 * Return NULL if none
+		 * Return the pointer if a match was found
+		 * Return NULL if none was found
 		 */
+		dag_node *first_white_parent() const noexcept;
 		dag_node *first_white_child() const noexcept;
 		dag_node *first_grey_child() const noexcept;
 		dag_node *first_non_black_child() const noexcept;
@@ -104,6 +100,8 @@ class dag {
 		 */
 		void remove_edge(string &&from, string &&to);
 
+		void set_recipe(string &&key, string &&recipe);
+
 		size_t num_node() const noexcept { return _node_list.size(); }
 
 		size_t num_edge() const noexcept
@@ -122,11 +120,11 @@ class dag {
 
 		/*
 		 * Non-recursive O(V+E) implementation of verifying DAG using
-		 * DFS
+		 * 2 stacks for DFS
 		 */
 		bool is_dag();
 
-		::std::vector<dag_node*> &&schedule(string &&key);
+		void schedule(string &&key);
 
 	private:
 		void _bleach() noexcept;
