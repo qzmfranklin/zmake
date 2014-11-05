@@ -4,12 +4,6 @@ d       :=${ROOT}/gtest# this directory
 -include ${ROOT}/gtest/rules.mk
 -include ${DEP}
 
-.PHONY: all asm clean test
-all: ${OBJ}
-asm: ${ASM}
-clean:
-	rm -f *.exe ${OBJ} ${DEP} ${ASM}
-
 TESTS :=sample1_unittest.exe \
 	sample2_unittest.exe \
 	sample3_unittest.exe \
@@ -21,6 +15,15 @@ TESTS :=sample1_unittest.exe \
 	sample9_unittest.exe \
 	sample10_unittest.exe
 
+.PHONY: all asm clean test
+all: ${OBJ}
+asm: ${ASM}
+clean:
+	rm -f *.exe ${OBJ} ${DEP} ${ASM} ${TESTS}
+
+test: $(TESTS)
+	for t in $^ ; do ./"$$t" ; done
+
 sample1_unittest.exe:  ${d}/samples/sample1.o ${d}/samples/sample1_unittest.o ${d}/gtest_main.a
 sample2_unittest.exe:  ${d}/samples/sample2.o ${d}/samples/sample2_unittest.o ${d}/gtest_main.a
 sample3_unittest.exe:  ${d}/samples/sample3_unittest.o ${d}/gtest_main.a
@@ -31,6 +34,3 @@ sample7_unittest.exe:  ${d}/samples/sample7_unittest.o ${d}/gtest_main.a
 sample8_unittest.exe:  ${d}/samples/sample8_unittest.o ${d}/gtest_main.a
 sample9_unittest.exe:  ${d}/samples/sample9_unittest.o ${d}/gtest_main.a
 sample10_unittest.exe: ${d}/samples/sample10_unittest.o ${d}/gtest_main.a
-
-test: $(TESTS)
-	for t in $^ ; do ./"$$t" ; done

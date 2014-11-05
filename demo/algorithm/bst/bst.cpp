@@ -805,4 +805,18 @@ void bst_traverse(struct bst *t, const int mode)
 	printf("\n");
 }
 
-void bst_destroy(struct bst *t);
+static void _bst_destroy(struct bst *p)
+{
+	if (!p)
+		return;
+	if (p->left)
+		_bst_destroy(p->left);
+	if (p->right)
+		_bst_destroy(p->right);
+	free(p);
+}
+
+void bst_destroy(struct bst *t)
+{
+	_bst_destroy(t);
+}

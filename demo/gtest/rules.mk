@@ -12,14 +12,13 @@
 DIR_GTEST:=${ROOT}/gtest
 ${DIR_GTEST}CC:=$(wildcard ${DIR_GTEST}/src/*.cc) $(wildcard ${DIR_GTEST}/samples/*.cc)
 
-
 ${DIR_GTEST}CFLAGS:=${CFLAGS}
 ${DIR_GTEST}CXXFLAGS:=${CXXFLAGS}
 ${DIR_GTEST}INCS:=${INCS}
 ${DIR_GTEST}LIBS:=${LIBS}
 
 DEP+=${${DIR_GTEST}CC:%.cc=%.d}
-OBJ+=${${DIR_GTEST}CC:%.cc=%.o}
+#OBJ+=${${DIR_GTEST}CC:%.cc=%.o}
 ASM+=${${DIR_GTEST}CC:%.cc=%.s}
 
 ${DIR_GTEST}/%.o: ${DIR_GTEST}/%.cc

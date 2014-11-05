@@ -1,37 +1,14 @@
-#include "gtest/gtest.h"
 #include "dag.h"
+#include "gtest/gtest.h"
 
-static bool is_dag_true()
-{
+TEST(Dag, Trivial) {
 	dag g;
-
 	g.add_edge("utils.cpp", "utils.o"  );
 	g.add_edge("utils.h"  , "utils.o"  );
-	g.add_edge("utils.h"  , "utils.cpp");
-	g.add_edge("stdlib.h" , "utils.cpp");
-	g.add_edge("stdlib.h" , "utils.h"  );
-
-	g.add_edge("heapsort.cpp", "heapsort.o");
-	g.add_edge("heapsort.h"  , "heapsort.o");
-	g.add_edge("heapsort.h"  , "heapsort.cpp");
-	g.add_edge("utils.h"     , "heapsort.h");
-	g.add_edge("stdlib.h"    , "heapsort.h");
-
-	g.add_edge("test_heapsort.o"  , "test_heapsort.exe");
-	g.add_edge("heapsort.o"       , "test_heapsort.exe");
-	g.add_edge("utils.o"          , "test_heapsort.exe");
-	g.add_edge("test_heapsort.cpp", "test_heapsort.o"  );
-	g.add_edge("heapsort.h"       , "test_heapsort.o"  );
-	g.add_edge("utils.h"          , "test_heapsort.o"  );
-	g.add_edge("heapsort.h"       , "test_heapsort.cpp");
-	g.add_edge("utils.h"          , "test_heapsort.cpp");
-	g.add_edge("stdlib.h"         , "test_heapsort.cpp");
-
-	return g.is_dag();
+	EXPECT_TRUE(g.is_dag());
 }
 
-static bool is_dag_false()
-{
+TEST(Dag, IsDag) {
 	dag g;
 
 	g.add_edge("utils.cpp", "utils.o"  );
@@ -55,14 +32,8 @@ static bool is_dag_false()
 	g.add_edge("heapsort.h"       , "test_heapsort.cpp");
 	g.add_edge("utils.h"          , "test_heapsort.cpp");
 	g.add_edge("stdlib.h"         , "test_heapsort.cpp");
+	EXPECT_TRUE(g.is_dag());
 
-	// fail case
 	g.add_edge("utils.o","utils.cpp");
-
-	return g.is_dag();
-}
-
-TEST(DAG, IsDAG) {
-	EXPECT_TRUE(is_dag_true());
-	EXPECT_FALSE(is_dag_false());
+	EXPECT_FALSE(g.is_dag());
 }
