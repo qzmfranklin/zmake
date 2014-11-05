@@ -52,6 +52,15 @@ string &&dag_node::status_string() const noexcept
 	case BLACK:
 		*retval = "BLACK";
 		break;
+	case WHITE | OUTDATED:
+		*retval = "WHITE | OUTDATED";
+		break;
+	case GREY | OUTDATED:
+		*retval = "GREY | OUTDATED";
+		break;
+	case BLACK | OUTDATED:
+		*retval = "BLACK | OUTDATED";
+		break;
 	default:
 		*retval = "UNKNOWN STATUS";
 		break;
