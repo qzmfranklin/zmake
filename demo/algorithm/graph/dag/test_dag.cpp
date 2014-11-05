@@ -28,8 +28,8 @@ int main(int argc, char const* argv[])
 	g.add_edge("utils.h"          , "test_heapsort.cpp");
 	g.add_edge("stdlib.h"         , "test_heapsort.cpp");
 
-	// fail case 
-	g.add_edge("utils.o","utils.cpp");
+	// fail cases
+	//g.add_edge("utils.o","utils.cpp");
 	g.add_edge("test_heapsort.exe","stdlib.h");
 
 	printf("number of nodes   = %lu\n",g.num_node());
@@ -41,6 +41,15 @@ int main(int argc, char const* argv[])
 
 	printf("\n");
 	printf("g %s a DAG\n", g.is_dag() ? "IS" : "is NOT");
+
+	/*
+	 *printf("\n");
+	 *const char target[] = "test_heapsort.exe";
+	 *if (!g.is_dag())
+	 *        return 0;
+	 *printf("g.schedule(\"%s\")\n",target);
+	 *g.schedule(target);
+	 */
 
 	return 0;
 }

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <set>
 #include <stack>
+#include <vector>
 #include <map>
 #include <string>
 
@@ -19,8 +20,6 @@ class dag;
 class dag_node {
 	public:
 		int _status;    // [WHITE, GREY, BLACK] | (OUTDATED)
-		int _dfs_order;
-		int _bfs_order;
 		const string &_key;
 		string _recipe;
 		set<dag_node*> _in_list;
@@ -28,16 +27,13 @@ class dag_node {
 
 	public:
 		dag_node(string &&key, string &&recipe = ""):
+			_status(OUTDATED),
 			_key(::std::move(key)),
-			_recipe(::std::move(recipe)),
-			_dfs_order(0), _bfs_order(0),
-			_status(WHITE) { };
+			_recipe(::std::move(recipe))
+			{}
 
 		void print_recipe() const noexcept
 		{ printf("%s\n",_recipe.c_str()); }
-
-		string &get_recipe() noexcept
-		{ return _recipe; }
 
 		void set_recipe(string &&recipe) noexcept
 		{ _recipe = ::std::move(recipe); }
@@ -46,6 +42,7 @@ class dag_node {
 		void print_node_debug() const noexcept;
 
 		dag_node *source_of() noexcept;
+		dag_node *sink_of() noexcept;
 		string &&status_string() const noexcept;
 
 		/*
@@ -83,8 +80,7 @@ class dag {
 		}
 
 		/* Return NULL if no match was found */
-		dag_node *get_node(string &&key)
-		{ return _node_list.count(key) ? _node_list[key] : NULL; }
+		dag_node *get_node(string &&key);
 
 		/*
 		 * Return pointer to the node with key, allocate new node if
@@ -129,6 +125,9 @@ class dag {
 		 * DFS
 		 */
 		bool is_dag();
+
+		::std::vector<dag_node*> &&schedule(string &&key);
+
 	private:
 		void _bleach() noexcept;
 

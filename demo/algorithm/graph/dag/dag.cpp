@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unordered_set>
+#include <vector>
 #include <stdlib.h>
 #include <assert.h>
 #include <stack>
@@ -75,6 +76,23 @@ dag_node *dag_node::source_of() noexcept
 	return retval;
 }
 
+dag_node *dag_node::sink_of() noexcept
+{
+	::std::unordered_set<dag_node*> s;
+	s.insert(this);
+	dag_node *retval = this;
+	while (!retval->_out_list.empty()) {
+		dag_node *tmp = *(retval->_out_list.begin());
+		if (s.count(tmp))
+			return this;
+		else {
+			s.insert(retval);
+			retval = tmp;
+		}
+	}
+	return retval;
+}
+
 dag_node *dag_node::first_white_child() const noexcept
 {
 	dag_node *retval = NULL;
@@ -106,6 +124,12 @@ dag_node *dag_node::first_non_black_child() const noexcept
 			break;
 		}
 	return retval;
+}
+
+dag_node *dag::get_node(string &&key)
+{
+	return _node_list.count(::std::forward<string>(key))
+		? _node_list[::std::forward<string>(key)] : NULL;
 }
 
 dag_node *dag::add_node(string &&key)
@@ -158,6 +182,7 @@ static void _dag_dfs_from_node(dag_node *u, ::std::stack<dag_node*> *s)
 			}
 	}
 }
+
 void dag::dfs()
 {
 	//fprintf(stderr,"dag::dfs()\n");
@@ -256,7 +281,7 @@ static bool _from_node_stack2(dag_node *p)
 			p = s2->top();
 			s2->pop();
 		} else {
-			p->print_node();
+			//p->print_node_debug();
 			p->_status = dag_node::BLACK;
 			p = NULL;
 		}
@@ -304,6 +329,23 @@ bool dag::is_dag()
 		}
 
 	return true;
+}
+
+/*
+ * dag::schedule() assumes that the graph is a DAG but does not check it. The
+ * user should call dag::is_dag() before calling dag::schedule(). Failing to do
+ * so leads to undefined behavior.
+ */
+::std::vector<dag_node*> &&dag::schedule(string &&key)
+{
+	auto *ret = new ::std::vector<dag_node*>;
+
+	dag_node *dest = get_node(::std::forward<string>(key));
+	if (!dest)
+		goto exit_point;
+
+exit_point:
+	return ::std::move(*ret);
 }
 
 void dag::_bleach() noexcept

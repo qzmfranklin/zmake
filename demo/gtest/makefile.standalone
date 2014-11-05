@@ -1,7 +1,7 @@
+# Standalone Makefile that works just out-of-box
+# Not used or processed bythe zmake script
+
 GTEST_DIR:=.#no trailing spaces!
-# include dependency files
--include $($(wildcard $(GTEST_DIR)/src/*.cc):$(GTEST_DIR)/src/%.cc=%.d) \
-	$($(wildcard $(GTEST_DIR)/samples/*.cc):$(GTEST_DIR)/samples/%.cc=%.d)
 
 CXXFLAGS:=-isystem $(GTEST_DIR)/include -MMD -MP
 LDFLAGS :=-lpthread
@@ -52,3 +52,7 @@ gtest.a : gtest-all.o
 
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
+
+# include dependency files
+-include $($(wildcard $(GTEST_DIR)/src/*.cc):$(GTEST_DIR)/src/%.cc=%.d) \
+	$($(wildcard $(GTEST_DIR)/samples/*.cc):$(GTEST_DIR)/samples/%.cc=%.d)

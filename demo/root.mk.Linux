@@ -7,7 +7,7 @@ CXX		:=${CC}
 CXXFLAGS	:=${CFLAGS} -std=c++11
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=-iquote ${ROOT}
+INCS		:=-iquote ${ROOT} -isystem ${ROOT}/gtest/include -isystem ${ROOT}/gtest
 LIBS		:=-pthread
 
 #	INTERNAL VARIABLES
