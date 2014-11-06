@@ -1,5 +1,6 @@
 #include <sys/stat.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <unordered_set>
 #include <stack>
@@ -9,10 +10,22 @@
 #include <assert.h>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <time.h>
 #include <string.h>
 #include <list>
 #include "dag.h"
+
+void dag_node::update_last_modified_time()
+{
+	struct stat pstat;
+	memset(&pstat,0,sizeof(struct stat));
+	int ret = stat(_key.c_str(),&pstat);
+	if (!ret)
+		_lmt = pstat.st_mtime;
+	else
+		memset(&_lmt,0,sizeof(_lmt));
+}
 
 void dag_node::print_recipe() const noexcept
 {
@@ -385,7 +398,6 @@ bool dag::add_to_task_list(string &&key)
 			p = tmp;
 		} else {
 			s->pop();
-			p->print_node_debug();
 			_task_list.push_back(p);
 			p->_status = dag_node::BLACK;
 			p = NULL;
@@ -399,59 +411,110 @@ fail_exit:
 	return false;
 }
 
-/*
- * Return true if the last modified time (lmt) of lhs is newer than that of the rhs
- * Return false otherwise
- *
- * If lhs is not a file, return false
- * If rhs is not a file, return true
- * If neither lhs nor rhs is a file, return true
- */
-static bool _lmt_newer_than(const dag_node *restrict lhs, const dag_node *restrict rhs)
-{
-	struct stat lstat;
-	struct stat rstat;
-	memset(&lstat,0,sizeof(struct stat));
-	memset(&rstat,0,sizeof(struct stat));
-
-	if (stat(rhs->_key.c_str(),&rstat))
-		return true;
-	if (stat(lhs->_key.c_str(),&lstat))
-		return false;
-
-	const double diff = difftime(lstat.st_mtime,rstat.st_mtime);
-	return (diff > 0.0) ? true : false;
-}
-
-static time_t _last_modified_time(dag_node *p)
-{
-	struct stat pstat;
-	memset(&pstat,0,sizeof(struct stat));
-	if (stat(p->_key.c_str(),&pstat)) {
-		perror("dag.cpp: _last_modified_time");
-		fprintf(stderr,"stat(%p,%p) error\n",p->_key.c_str(),&pstat);
-		exit(1);
-	}
-	/* The field name might be architecture dependent */
-	return pstat.st_mtime;
-}
-
-/*
- * Preprocessing stage: (master thread only)
- *                 Iterate through _task_list with iterator &p
- *     * Use stat() to retrieve the last modified time (_lmt) of file (_key). If
- *       file does not exist, abort execution
- *     * If p has no parents, i.e., is a source, mark p as WHITE
- *     * If p has any non-white parents, mark p as BLACK, and set _wait_black to
- *       the number of non-white parents
- *     * If p only has white parents (at least one), but the last modified date
- *       of at least one of p's parents is newer than the last modified date of
- *       p, and p has a non-null recipe, then mark p as GREY
- *     * Otherwise, mark p as WHITE
- */
 static void _schedule_first_stage(::std::list<dag_node *> &list)
 {
-	for (auto &u: list) {
+	/*
+	 * Initial coloring
+	 */
+	for (auto &p: list) {
+		p->update_last_modified_time();
+		if (p->_in_list.empty()) {
+			p->_status = dag_node::WHITE;
+			continue;
+		}
+		if (p->_recipe.empty()) {
+			p->_status = dag_node::WHITE;
+			continue;
+		}
+		p->_wait_black = 0;
+		for (auto &u: p->_in_list)
+			if (u->_status != dag_node::WHITE)
+				p->_wait_black++;
+		if (p->_wait_black) {
+			p->_status = dag_node::BLACK;
+			continue;
+		}
+		bool is_grey = false;
+		for (auto &u: p->_in_list)
+			if (difftime(u->_lmt, p->_lmt)) {
+				is_grey = true;
+				break;
+			}
+		p->_status = is_grey ? dag_node::GREY : dag_node::WHITE;
+	}
+
+	/*
+	 * Remove WHITE nodes, bring GREY nodes to the top
+	 */
+	auto p = list.begin();
+	while (p != list.end() ) {
+		auto tmp = ::std::next(p);
+		if ((*p)->_status == dag_node::WHITE)
+			list.erase(p);
+		else if ((*p)->_status == dag_node::GREY) {
+			list.push_front(*p);
+			list.erase(p);
+		}
+		p = tmp;
+	}
+}
+
+/*
+ *                 worker threads (worker, consumer)
+ *     * Loop until both _task_list and q are empty
+ *           * Lock q_mtx
+ *           * Wait on q_cond for !q.empty()
+ *           * Let p = q.front()
+ *           * q.pop()
+ *           * Unlock q_mtx
+ *           * Invoke p's recipe
+ *           * Mark p as WHITE
+ *           * Iterate through p's children with u (note that u must be BLACK)
+ *                 * Lock u->_mtx
+ *                 * decrease u->_wait_black by 1
+ *                 * If u->_wait_black == 0
+ *                       * Mark u as GREY
+ *                       * Lock _task_list_mtx
+ *                       * Move u to the front of _task_list
+ *                       * Unlock _task_list_mtx
+ *                 * Unlock u->_mtx
+ */
+static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
+		::std::mutex *q_mtx, ::std::condition_variable *q_cond)
+{
+	using ::std::mutex;
+	using ::std::unique_lock;
+	while (!(g->_task_list.empty() && q->empty())) {
+		unique_lock<mutex> lock(*q_mtx);
+		//lock.lock();
+		while (q->empty())
+			q_cond->wait(lock);
+		dag_node *p = q->front();
+		q->pop();
+		lock.unlock();
+		//fprintf(stderr,"\n\t*****RECIPE***** for %s\n",p->_key.c_str());
+		if (!p->_recipe.empty()) {
+			fprintf(stderr,"%s\n",p->_recipe.c_str());
+			int ret = system(p->_recipe.c_str());
+			if (ret) {
+				perror("dag::schedule()");
+				exit(1);
+			}
+		}
+		p->_status = dag_node::WHITE;
+		for (auto &u: p->_out_list) {
+			u->_mtx.lock();
+			u->_wait_black--;
+			if (u->_wait_black == 0) {
+				u->_status = dag_node::GREY;
+				dag_node *tmp = u;
+				g->_task_list_mtx.lock();
+				g->_task_list.remove(u);
+				g->_task_list.push_front(tmp);
+				g->_task_list_mtx.unlock();
+			}
+			u->_mtx.unlock();
+		}
 	}
 }
 
@@ -460,7 +523,7 @@ static void _schedule_first_stage(::std::list<dag_node *> &list)
  *
  * Complexity:
  *         O(N) in memory
- *         o(N^2) in time
+ *         Almost (O) in time (need confirmation here)
  *
  * The flags WHITE, GREY, and BLACK are reused with different meaning:
  *         WHITE: up to date
@@ -469,40 +532,48 @@ static void _schedule_first_stage(::std::list<dag_node *> &list)
  *
  *
  * Preprocessing stage: (master thread only)
- *                 Iterate through _task_list with iterator &p
- *     * Use stat() to retrieve the last modified time (_lmt) of file (_key). If
- *       file does not exist, abort execution
- *     * If p has no parents, i.e., is a source, mark p as WHITE
- *     * If p has any non-white parents, mark p as BLACK, and set _wait_black to
- *       the number of non-white parents
- *     * If p only has white parents (at least one), but the last modified date
- *       of at least one of p's parents is newer than the last modified date of
- *       p, and p has a non-null recipe, then mark p as GREY
- *     * Otherwise, mark p as WHITE
+ *     * Iterate through _task_list with iterator &p
+ *           * Use stat() to retrieve the last modified time (_lmt) of file
+ *             (_key). If file does not exist, set _lmt to time zero
+ *           * If p's recipe is empty, mark p as WHITE
+ *           * If p has no parents, i.e., is a source, mark p as WHITE
+ *           * If p has any non-white parents, mark p as BLACK, and set
+ *             _wait_black to the number of non-white parents
+ *           * If p only has white parents (at least one), but the last
+ *             modified date of at least one of p's parents is newer than
+ *             the last modified date of p, and p has a non-null recipe,
+ *             then mark p as GREY
+ *           * Otherwise, mark p as WHITE
  *
- * After the first stage, the color of any node is at least as dark as its
- * darkest parent's color
+ * Note that as of now, the color of any node is at least as dark as its
+ * darkest parent's color.
+ *
+ *     * Remove WHITE nodes from _task_list
+ *     * Bring all GREY nodes in _task_list to top
+ *
  *
  *
  * Scheduling stage:
  *
  *                 master thread (scheduler, producer)
  *     * Initial setup:
- *           * Remove WHITE nodes from the top of _task_list
  *           * Allocate a task queue (q),a mutex (q_mtx), and a conditoinal
  *             variable (q_cond)
  *           * Spawn n worker threads
  *     * Iterate until both _task_list are empty
- *           * Lock _task_list_mtx
  *           * Iterate _task_list with p
  *                 * If p is GREY
  *                       * Lock q_mtx
  *                       * Push p onto q
  *                       * Unlock q_mtx
- *                       * Remove p from _task_list
  *                       * Signal q_cond to one worker thread
- *                 * If p is BLACK, break
- *           * Unlock _task_list_mtx
+ *                       * Lock _task_list_mtx
+ *                       * Remove p from _task_list
+ *                       * Unlock _task_list_mtx
+ *                 * If p is WHITE
+ *                       * Lock _task_list_mtx
+ *                       * Remove p from _task_list
+ *                       * Unlock _task_list_mtx
  *     * Join all worker threads
  *
  *                 worker threads (worker, consumer)
@@ -525,7 +596,8 @@ static void _schedule_first_stage(::std::list<dag_node *> &list)
  *                 * Unlock u->_mtx
  *
  * It is possible that a file exists during the first pass but is later deleted
- * during the second pass.
+ * during the second pass. But we do not check it and just assumes that this
+ * will not happen. Should add some checking mechanism later
  */
 void dag::schedule(const int n) noexcept
 {
@@ -533,7 +605,53 @@ void dag::schedule(const int n) noexcept
 		return;
 
 	_schedule_first_stage(_task_list);
-	::std::vector<::std::thread> worker_list(n);
+
+	::std::queue<dag_node*> q;
+	::std::mutex q_mtx;
+	::std::condition_variable q_cond;
+	auto *worker_list = new ::std::thread[10];
+	for (int i = 0; i < n; i++)
+		worker_list[i] = ::std::thread(_schedule_worker_function,
+				this, &q, &q_mtx, &q_cond);
+
+	while (!_task_list.empty()) {
+		/*
+		 *static int i = 0;
+		 *if (i++>15) {
+		 *        fprintf(stderr,"too many iterations\n");
+		 *        abort();
+		 *}
+		 */
+		_task_list_mtx.lock();
+		//fprintf(stderr,"\n");
+		auto p = _task_list.begin();
+		while (p != _task_list.end() ) {
+			//fprintf(stderr,"\t");
+			//(*p)->print_node_debug();
+			auto tmp = ::std::next(p);
+			if ((*p)->_status == dag_node::GREY) {
+				using ::std::mutex;
+				using ::std::unique_lock;
+				fprintf(stderr,"before lock\n");
+				unique_lock<mutex> lock(q_mtx);
+				fprintf(stderr,"after lock\n");
+				q.push(*p);
+				lock.unlock();
+				q_cond.notify_one();
+				_task_list.erase(p);
+			} else if ((*p)->_status == dag_node::WHITE) {
+				_task_list_mtx.lock();
+				_task_list.erase(p);
+				_task_list_mtx.unlock();
+			}
+			p = tmp;
+		}
+		_task_list_mtx.unlock();
+	}
+
+	for (int i = 0; i < n; i++)
+		worker_list[i].join();
+	//delete []worker_list;
 }
 
 void dag::_bleach() noexcept

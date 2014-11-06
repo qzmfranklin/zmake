@@ -65,6 +65,8 @@ class dag_node {
 		dag_node *first_grey_child() const noexcept;
 		dag_node *first_non_black_child() const noexcept;
 
+		void update_last_modified_time();
+
 		friend class dag;
 
 	public:
@@ -161,7 +163,7 @@ class dag {
 		 * NOTE: DAG task scheduling is an NP complete problem, no need
 		 * to find the optimal solution for all cases
 		 */
-		void schedule(const int n) noexcept;
+		void schedule(const int n = 1) noexcept;
 
 	private:
 		/*
