@@ -46,9 +46,11 @@ void dag_node::print_node_debug() const noexcept
 
 	fprintf(stderr,"\n");
 
-	if (_recipe.empty())
-		return;
-	printf("\t%s\n",_recipe.c_str());
+	/*
+	 *if (_recipe.empty())
+	 *        return;
+	 *printf("\t%s\n",_recipe.c_str());
+	 */
 }
 
 string &&dag_node::status_string() const noexcept
@@ -112,6 +114,17 @@ dag_node *dag_node::sink_of() noexcept
 		}
 	}
 	return retval;
+}
+
+bool dag_node::has_grey_child(const dag_node *p) const noexcept
+{
+	if (!p)
+		return false;
+	for (auto &u: _out_list)
+		if (u->_status == GREY)
+			if (&(*u) == p)
+				return true;
+	return false;
 }
 
 dag_node *dag_node::first_white_parent() const noexcept
@@ -253,96 +266,48 @@ static dag_node *_stack_peek(::std::stack<dag_node*> *s)
 	return (s->empty())  ?  NULL  :  s->top();
 }
 
-static bool _is_dag_first_while(dag_node *p,
-		::std::stack<dag_node*> *s1,
-		::std::stack<dag_node*> *s2)
-{
-	if (!p)
-		return true;
-	while (!p->_out_list.empty()) {
-		//fprintf(stderr,"\n");
-		//fprintf(stderr,"PUSH\t");
-		//p->print_node_debug();
-		s1->push(p);
-		p->_status = dag_node::GREY;
-		/*
-		 * Push the first non-black child of p to s1.
-		 * Note that if any child of p is GREY, the
-		 * graph is cyclic.
-		 */
-		/*
-		 * Push all but the first non-visited children
-		 * to s2. Also watch out for GREY children.
-		 */
-		for (auto &v: p->_out_list) {
-			if (v == *(p->_out_list.begin()))
-				continue;
-			//v->print_node_debug();
-			if (v->_status == dag_node::WHITE)
-				s2->push(&(*v));
-			else if (v->_status == dag_node::GREY) {
-				fprintf(stderr,"LOOP DETECTED\n");
-				v->print_node_debug();
-				return false;
-			}
-		}
-		dag_node *tmp = p->first_non_black_child();
-		if (!tmp)
-			break;
-		//fprintf(stderr,"FIRST NON-BLACK CHILD\n\t\t");
-		//tmp->print_node_debug();
-		if (tmp->_status == dag_node::WHITE)
-			p = tmp;
-		else if (tmp->_status == dag_node::GREY) {
-			fprintf(stderr,"LOOP DETECTED\n");
-			tmp->print_node_debug();
-			return false;
-		}
-	}
-	return true;
-}
-
 /*
  * Use two stacks s1 and s2 to do the DFS. At any time, s1 is the same as the
  * stack one sees in the naive recursive implementation. s1 is always GREY, s2
  * is always WHITE.
+ *
+ * This is an POST-ORDER traversal
  */
 static bool _from_node_stack2(dag_node *p)
 {
-	//::std::stack<dag_node*> ;
-	auto s1 = new ::std::stack<dag_node*>;
-	auto s2 = new ::std::stack<dag_node*>;
+	auto s = new ::std::stack<dag_node*>;
 	while (1) {
-		if (!_is_dag_first_while(p,s1,s2)) {
-			delete s1;
-			delete s2;
-			return false;
+		while (p) {
+			s->push(p);
+			p->_status = dag_node::GREY;
+			for (auto &u: p->_out_list)
+				if (u->_status == dag_node::GREY) {
+					fprintf(stderr,"LOOP DETECTED\n");
+					p->print_node_debug();
+					goto fail_exit;
+				}
+			p = p->first_white_child();
 		}
 
-		if (s1->empty())
+		if (s->empty())
 			break;
 
-		p = s1->top();
-		s1->pop();
-		dag_node *tmp = p->first_grey_child();
-		/*
-		 * If p has a GREY child that is on top of s2, push that
-		 * child to s1 and pop it from s2
-		 */
-		if (tmp  &&  tmp == _stack_peek(s2)) {
-			s1->push(p);
-			p = s2->top();
-			s2->pop();
+		p = s->top();
+		dag_node *tmp = p->first_white_child();
+		if (tmp) {
+			p = tmp;
 		} else {
-			//p->print_node_debug();
+			s->pop();
 			p->_status = dag_node::BLACK;
 			p = NULL;
 		}
 	}
-
-	delete s1;
-	delete s2;
+	delete s;
 	return true;
+
+fail_exit:
+	delete s;
+	return false;
 }
 
 static bool _from_node_recursive(dag_node *u)
@@ -385,70 +350,85 @@ bool dag::is_dag()
 }
 
 /*
- * dag::schedule() assumes that the graph is a DAG but does not check it. The
- * user should call dag::is_dag() before calling dag::schedule(). Failing to do
- * so might lead to undefined behavior.
+ * Helper routine for dag::schedule()
  *
- * Impelmentation details:
- *
- * This is a two-pass implementation. The first pass does a post-order DFS and
- * pushes the nodes to a queue (q). The second pass reads q and invoke recipes
- * in the proper order.
- *
- * If the DAG is free of forward edges (edges that point to an indirect
- * ancestor), recipes can be invoked in the order that they appear in q. But if
- * there is any forward edges in the DAG, an extra validity check must be
- * performed. If the node (p) in front of q has any outdated (WHITE) parent,
- * then p is pushed to the end of q, awaiting updates on its parents.
- *
- * This is not the fast implementation of all times. But it works just fine.
+ * The similar helper routine for dag::is_dag() is _is_dag_first_while()
  */
-void dag::schedule(string &&key)
+static bool _schedule_first_while(dag_node *p,
+		::std::stack<dag_node*> *s1,
+		::std::stack<dag_node*> *s2)
+{
+	if (!p)
+		return true;
+	while (!p->_in_list.empty()) {
+		s1->push(p);
+		p->_status = dag_node::GREY;
+		int num_white_children = 0;
+		for (auto &v: p->_in_list) {
+			if (v->_status == dag_node::WHITE) {
+				if (num_white_children++)
+					s2->push(&(*v));
+				else {
+					p = &(*v);
+					break;
+				}
+			} else if (v->_status == dag_node::GREY) {
+				fprintf(stderr,"LOOP DETECTED\n");
+				v->print_node_debug();
+				return false;
+			}
+		}
+		if (!num_white_children)
+			break;
+	}
+	return true;
+}
+
+/*
+ * Post order traversal of this DAG from the target point. When a node is ready
+ * for update, issue its recipe to a queue and wake up one worker thread.
+ */
+bool dag::schedule(string &&key)
 {
 	dag_node *p = get_node(::std::forward<string>(key));
 	if (!p)
-		return;
+		return false;
 
 	_bleach();
-	auto *s = new ::std::stack<dag_node*>;
-	auto *q = new ::std::queue<dag_node*>;
-
-	s->push(p);
-	p->_status = dag_node::BLACK;
+	auto s = new ::std::stack<dag_node*>;
 	while (1) {
-		if (p)
+		while (p) {
+			s->push(p);
+			p->_status = dag_node::GREY;
 			for (auto &u: p->_in_list)
-				if (u->_status == dag_node::WHITE) {
-					s->push(&(*u));
-					u->_status = dag_node::BLACK;
+				if (u->_status == dag_node::GREY) {
+					fprintf(stderr,"LOOP DETECTED\n");
+					u->print_node_debug();
+					goto fail_exit;
 				}
+			p = p->first_white_parent();
+		}
+
 		if (s->empty())
 			break;
+
 		p = s->top();
 		dag_node *tmp = p->first_white_parent();
-		if (!tmp) {
+		if (tmp) {
+			p = tmp;
+		} else {
 			s->pop();
-			q->push(p);
+			p->print_node_debug();
+			p->_status = dag_node::BLACK;
 			p = NULL;
 		}
 	}
-
-	_bleach();
-	while (!q->empty()) {
-		p = q->front();
-		q->pop();
-		dag_node *tmp = p->first_white_parent();
-		if (!tmp) {
-			p->update();
-			//p->print_node_debug();
-			p->_status = dag_node::BLACK;
-		} else {
-			q->push(p);
-		}
-	}
-
-	delete q;
 	delete s;
+	return true;
+
+fail_exit:
+	delete s;
+	return false;
 }
 
 void dag::_bleach() noexcept

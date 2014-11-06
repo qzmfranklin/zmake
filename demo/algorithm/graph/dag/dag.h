@@ -40,6 +40,7 @@ class dag_node {
 		dag_node *sink_of() noexcept;
 		string &&status_string() const noexcept;
 
+		bool has_grey_child(const dag_node *p) const noexcept;
 		/*
 		 * Return the pointer if a match was found
 		 * Return NULL if none was found
@@ -57,7 +58,7 @@ class dag_node {
 			GREY,  // put on stack/queue
 			BLACK, // visited
 
-			OUTDATED = 0x1<<8 // bit mask, if not, up to date
+			OUTDATED = 0x1<<8
 		};
 };
 
@@ -100,6 +101,10 @@ class dag {
 		 */
 		void remove_edge(string &&from, string &&to);
 
+		/*
+		 * Remove a node's recipe by
+		 *         set_recipe(key,"")
+		 */
 		void set_recipe(string &&key, string &&recipe);
 
 		size_t num_node() const noexcept { return _node_list.size(); }
@@ -119,19 +124,32 @@ class dag {
 		void dfs();
 
 		/*
-		 * Non-recursive O(V+E) implementation of verifying DAG using
-		 * 2 stacks for DFS
+		 * Non-recursive O(V+E) implementation of verifying DAG
 		 */
 		bool is_dag();
 
-		void schedule(string &&key);
+		/*
+		 * Invoke recipes in the proper order to update the node with
+		 * key
+		 *
+		 * Return true upon successful update
+		 *
+		 * Return false if key is not in the graph or if a cyclic
+		 * dependence if detected
+		 */
+		bool schedule(string &&key);
 
 	private:
+		/*
+		 * Set all nodes' _status to dag_node::WHITE
+		 */
 		void _bleach() noexcept;
 
 	public:
 		enum {
-			INIT = 0
+			INIT,
+			IS_DAG,
+			NOT_DAG,
 		};
 };
 
