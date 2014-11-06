@@ -2,11 +2,13 @@
 #define _DAG_H_
 
 #include <assert.h>
+#include <list>
 #include <set>
 #include <stack>
 #include <vector>
 #include <map>
 #include <string>
+#include <mutex>
 
 /*
  * Adjacency list representation of directed acyclic graph
@@ -19,11 +21,15 @@ using ::std::set;
 class dag;
 class dag_node {
 	public:
-		int _status;    // [WHITE, GREY, BLACK] | (OUTDATED)
+		// TODO: change orders to optimize storage
+		int _status;         // [WHITE, GREY, BLACK] | (OUTDATED)
+		int _wait_black;     // used in schedule()
 		const string &_key;
 		string _recipe;
 		set<dag_node*> _in_list;
 		set<dag_node*> _out_list;
+		::std::mutex _mtx;   // used in schedule()
+		time_t _lmt;         // last modified time
 
 	public:
 		/*
@@ -32,15 +38,24 @@ class dag_node {
 		 */
 		dag_node(string &&key): _key(::std::move(key)), _recipe("") {}
 
-		void update() const noexcept;
+		/*
+		 * If _recipe == "", do not print anything
+		 */
+		void print_recipe() const noexcept;
+
 		void print_node() const noexcept;
 		void print_node_debug() const noexcept;
 
+		/*
+		 * Return this if loop is detected
+		 */
 		dag_node *source_of() noexcept;
 		dag_node *sink_of() noexcept;
+
 		string &&status_string() const noexcept;
 
 		bool has_grey_child(const dag_node *p) const noexcept;
+
 		/*
 		 * Return the pointer if a match was found
 		 * Return NULL if none was found
@@ -54,11 +69,10 @@ class dag_node {
 
 	public:
 		enum {
-			WHITE   = 0x0, // untouched
-			GREY,  // put on stack/queue
-			BLACK, // visited
-
-			OUTDATED = 0x1<<8
+			//        traversal                task scheduling
+			WHITE, // untouched                up to date
+			GREY,  // put on stack/queue       outdated, ready for update
+			BLACK, // visited/ outdated        outdated, pending dependence
 		};
 };
 
@@ -66,6 +80,8 @@ class dag {
 	public:
 		int _status;
 		map<string, dag_node*> _node_list;
+		::std::list<dag_node*> _task_list;
+		::std::mutex _task_list_mtx;
 
 	public:
 		dag(): _status(INIT) {}
@@ -101,11 +117,10 @@ class dag {
 		 */
 		void remove_edge(string &&from, string &&to);
 
-		/*
-		 * Remove a node's recipe by
-		 *         set_recipe(key,"")
-		 */
 		void set_recipe(string &&key, string &&recipe);
+
+		void remove_recipe(string &&key)
+		{ set_recipe(::std::forward<string>(key),""); }
 
 		size_t num_node() const noexcept { return _node_list.size(); }
 
@@ -132,12 +147,21 @@ class dag {
 		 * Invoke recipes in the proper order to update the node with
 		 * key
 		 *
-		 * Return true upon successful update
-		 *
 		 * Return false if key is not in the graph or if a cyclic
 		 * dependence if detected
+		 *
+		 * Pushes nodes into _task_list for use in schedule()
 		 */
-		bool schedule(string &&key);
+		void clear_task_list() noexcept { _task_list.clear(); }
+		bool add_to_task_list(string &&key);
+
+		/*
+		 * Schedule _task_list with n threads
+		 *
+		 * NOTE: DAG task scheduling is an NP complete problem, no need
+		 * to find the optimal solution for all cases
+		 */
+		void schedule(const int n) noexcept;
 
 	private:
 		/*

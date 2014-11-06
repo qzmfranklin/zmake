@@ -78,5 +78,5 @@ TEST(Dag, Schedule) {
 	g.set_recipe("heapsort.o", "g++ -o heapsort.o heapsort.cpp");
 	g.set_recipe("utils.o", "g++ -o utils.o utils.cpp");
 
-	EXPECT_TRUE(g.schedule("test_heapsort.exe"));
+	EXPECT_TRUE(g.add_to_task_list("test_heapsort.exe"));
 }
