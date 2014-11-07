@@ -1,0 +1,54 @@
+dag.h and dag.cpp implements a directed graph class. This class is supposed to
+be used as the directed acyclic graph (DAG) class in my new make program. It
+only provides some basic functionalities and tries to do best at them:
+	add/remove node/edge
+	detect loops
+	dynamic multi-threaded task scheduling with multiple targets
+
+The following text explains the algorithm and some design choices of the
+scheduling mechanism implemented by dag::schedule().
+
+Traditional solutions to the problem of dynamic and parallel task scheduling
+of DAG usually adopts the smart-master-dumb-worker model. That is, the master
+manages the task queue and issues tasks to different workers. A worker starts
+working when he receives a task from the master. Some models have the workers
+signal the master when they are done with their current jobs. Some models have
+the master poll the workers to know when the tasks are finished.
+
+In such models, the master is heavily burdened with the need to frequently
+update the global task queue and find tasks that are ready to be issued.
+Usually, as the master iterate over the task queue, it cannot accept interrupts
+from the workers, nor can it poll the workers at the same time. Worker messages
+are suspended until the master finishes the current iteration. As a result, the
+task may still be outdated even just after having been searched exhaustively.
+
+Worse, the task queue are almost never ordered. That is, tasks that are already
+finished, ready to be issued, and not ready to be issued can appear anywhere.
+There is no way to sort them without an exhaustive search. But, just as
+explained earlier, you can never guarantee that the task queue is up to date
+even after an exhaustive search.
+
+Yeah, we are trapped. The root of this trap lies in the fact that we put too
+much burden on the master. Such a system is not scalable. We have to distribute
+the workload more evenly among the master and the workers to avoid the
+bottlenecks. To be specific, the workers must to do something more than just
+finishing the tasks issued by the master.
+
+The workers should help the master update the global task queue.
+
+For convenience, let's denote
+	the k-th worker as #k, #0 as the master, and
+	the set of all tasks as _task_list, and
+	the task issued to #k as $k.
+
+I will use the term node (as the node in the DAG) and the term task (as the
+task in _task_list) interchangeably. I also assume that the DAG and _task_list
+stores nodes by pointers (or references in C++ terminology), so that allocating
+and freeing a node are very cheap operations. Last, I assume that _task_list has
+the following methods (using C++ terminologies):
+	begin()                iterator to the first node
+	erase(itr)             remove the node pointed to by itr (iterator)
+	push_front(node)       attach the node to the front of list
+
+In the C++ Standard Template Library (STL), std::list<node> is the best
+container for theses three operations.
