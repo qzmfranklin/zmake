@@ -65,7 +65,7 @@ class dag_node {
 		dag_node *first_grey_child() const noexcept;
 		dag_node *first_non_black_child() const noexcept;
 
-		void update_last_modified_time();
+		bool update_last_modified_time();
 
 		friend class dag;
 

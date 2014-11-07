@@ -16,7 +16,7 @@
 #include <list>
 #include "dag.h"
 
-void dag_node::update_last_modified_time()
+bool dag_node::update_last_modified_time()
 {
 	struct stat pstat;
 	memset(&pstat,0,sizeof(struct stat));
@@ -25,6 +25,7 @@ void dag_node::update_last_modified_time()
 		_lmt = pstat.st_mtime;
 	else
 		memset(&_lmt,0,sizeof(_lmt));
+	return !ret;
 }
 
 void dag_node::print_recipe() const noexcept
@@ -59,12 +60,15 @@ void dag_node::print_node_debug() const noexcept
 		fprintf(stderr," %s(%s)",tmp->_key.c_str(),
 				tmp->status_string().c_str());
 
-	fprintf(stderr,"      =>");
+	if (!_out_list.empty())
+		fprintf(stderr,"      =>");
 	for (auto &tmp: _out_list)
 		fprintf(stderr," %s(%s)",tmp->_key.c_str(),
 				tmp->status_string().c_str());
-
 	fprintf(stderr,"\n");
+
+	if (!_recipe.empty())
+		fprintf(stderr,"        %s\n",_recipe.c_str());
 }
 
 string &&dag_node::status_string() const noexcept
@@ -361,12 +365,22 @@ bool dag::is_dag()
 }
 
 /*
- * The problem of DAG task scheduling with multiple workders is NP complete.
+ * The problem of DAG task scheduling with multiple workers is NP complete.
  * There is no need to find the best scheduler for all cases. This method
  * does a post-order depth first traversal from the target node and pushes the
  * output nodes into _task_list. _task_list is a feasible queue for a single
  * worker thread and should serve as the starting point for multi worker
  * scheduling methods
+ *
+ * In a fully distributed computing system where message passing has significant
+ * latency, multitask scheduling of DAG is very difficult. The bottleneck is
+ * that the master thread has to update the task list every time a worker node
+ * finishes a task
+ *
+ * However, on a single machine, message passing is no so costly an operation
+ * any more. We can rely on the worker threads to update the task list in a
+ * local manner, thus freeing the master thread. This idea is already
+ * implemented in dag::schedule()
  */
 bool dag::add_to_task_list(string &&key)
 {
@@ -411,17 +425,45 @@ fail_exit:
 	return false;
 }
 
-static void _schedule_first_stage(::std::list<dag_node *> &list)
+/*
+ *
+ * Preprocessing stage: (master thread only)
+ *     * Iterate through _task_list with iterator &p
+ *           * If file does not exist
+ *                 * If p has a recipe, set _lmt to time zero
+ *                 * Otherwise report 'no recipe to build nonexistent
+ *                   target' and exit(1)
+ *
+ *             (Hereafter, the file exists)
+ *           * Store the last modified time of file in _lmt
+ *           * If p has no parents, i.e., is a source, mark p as WHITE
+ *
+ *             (Hereafter, p has at least on parent)
+ *           * If p has any non-white parent
+ *                 * If p has a recipe, mark p as BLACK, and set
+ *                   _wait_black to the number of non-white parents
+ *                 * If p does not have a recipe, report 'no recipe for
+ *                   outdated target' and exit(1)
+ *
+ *             (Hereafter, p only has white parent)
+ *           * If p only has white parent(s)
+ *                 * If p does not have a recipe, mark p as WHITE
+ *                 * If p has a recipe
+ *                       * If the last modified time of any of p's parents
+ *                         is newer than p's last modified time, mark p as
+ *                         GREY
+ *                       * Otherwise, mark p as WHITE
+ */
+static void _schedule_preprocessing(::std::list<dag_node *> &list)
 {
-	/*
-	 * Initial coloring
-	 */
+	//fprintf(stderr,"_schedule_preprocessing(%p)\n",&list);
 	for (auto &p: list) {
-		p->update_last_modified_time();
-		if (p->_recipe.empty()) {
-			p->_status = dag_node::WHITE;
-			continue;
-		}
+		if (!p->update_last_modified_time())
+			if (p->_recipe.empty()) {
+				fprintf(stderr,"No recipe to build non-existing"
+						" target: %s\n",p->_key.c_str());
+				exit(1);
+			}
 		if (p->_in_list.empty()) {
 			p->_status = dag_node::WHITE;
 			continue;
@@ -431,21 +473,28 @@ static void _schedule_first_stage(::std::list<dag_node *> &list)
 			if (u->_status != dag_node::WHITE)
 				p->_wait_black++;
 		if (p->_wait_black) {
-			p->_status = dag_node::BLACK;
+			if (!p->_recipe.empty()) {
+				p->_status = dag_node::BLACK;
+				continue;
+			} else {
+				fprintf(stderr,"No recipe to build outdated"
+						" target: %s\n",p->_key.c_str());
+				exit(1);
+			}
+		}
+		if (p->_recipe.empty()) {
+			p->_status = dag_node::WHITE;
 			continue;
 		}
 		bool is_grey = false;
 		for (auto &u: p->_in_list)
-			if (difftime(u->_lmt, p->_lmt)) {
+			if (difftime(u->_lmt, p->_lmt) > 0.0) {
 				is_grey = true;
 				break;
 			}
 		p->_status = is_grey ? dag_node::GREY : dag_node::WHITE;
 	}
 
-	/*
-	 * Remove WHITE nodes, bring GREY nodes to the top
-	 */
 	auto p = list.begin();
 	while (p != list.end() ) {
 		auto tmp = ::std::next(p);
@@ -477,7 +526,7 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
 		q->pop();
 		lock.unlock();
 		if (!p->_recipe.empty()) {
-			fprintf(stderr,"[%d] %s\n",id,p->_recipe.c_str());
+			fprintf(stderr,"[%u] %s\n",id,p->_recipe.c_str());
 			int ret = system(p->_recipe.c_str());
 			if (ret) {
 				perror("dag::schedule()");
@@ -506,7 +555,7 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
 	}
 
 normal_exit:
-	fprintf(stderr,"Worker thread %d finished\n",id);
+	fprintf(stderr,"Worker thread %u finished\n",id);
 }
 
 /*
@@ -523,23 +572,36 @@ normal_exit:
  *
  * Preprocessing stage: (master thread only)
  *     * Iterate through _task_list with iterator &p
- *           * Use stat() to retrieve the last modified time (_lmt) of file
- *             (_key). If file does not exist, set _lmt to time zero
- *           * If p's recipe is empty, mark p as WHITE
+ *           * If file does not exist
+ *                 * If p has a recipe, set _lmt to time zero
+ *                 * Otherwise report 'no recipe to build nonexistent
+ *                   target' and abort
+ *
+ *             (Hereafter, the file exists)
+ *           * Store the last modified time of file in _lmt
  *           * If p has no parents, i.e., is a source, mark p as WHITE
- *           * If p has any non-white parents, mark p as BLACK, and set
- *             _wait_black to the number of non-white parents
- *           * If p only has white parents (at least one), but the last
- *             modified date of at least one of p's parents is newer than
- *             the last modified date of p, and p has a non-null recipe,
- *             then mark p as GREY
- *           * Otherwise, mark p as WHITE
+ *
+ *             (Hereafter, p has at least on parent)
+ *           * If p has any non-white parent
+ *                 * If p has a recipe, mark p as BLACK, and set
+ *                   _wait_black to the number of non-white parents
+ *                 * If p does not have a recipe, report 'no recipe for
+ *                   outdated target' and abort
+ *           * If p only has white parent(s)
+ *                 * If p does not have a recipe, mark p as WHITE
+ *                 * If p has a recipe
+ *                       * If the last modified time of any of p's parents
+ *                         is newer than p's last modified time, mark p as
+ *                         GREY
+ *                       * Otherwise, mark p as WHITE
  *
  * Note that as of now, the color of any node is at least as dark as its
  * darkest parent's color.
  *
+ *       (preprocessing stage continued, master thread only)
  *     * Remove WHITE nodes from _task_list
- *     * Bring all GREY nodes in _task_list to top
+ *     * Bring GREY nodes in _task_list to top
+ *     * If _task_list is empty, print 'everything is up to date' and exit(0)
  *
  * Scheduling stage:
  *
@@ -598,21 +660,21 @@ void dag::schedule(const int n) noexcept
 {
 	if (_task_list.size() == 0)
 		return;
+	_schedule_preprocessing(_task_list);
 
-	_schedule_first_stage(_task_list);
+	if (_task_list.empty()) {
+		printf("Everything is already up to date\n");
+		return;
+	}
 
 	::std::queue<dag_node*> q;
 	::std::mutex q_mtx;
 	::std::condition_variable q_cond;
 	bool flag_finish = false;
-	auto *worker_list = new ::std::thread[10];
-	fprintf(stderr,"before spawning threads\n");
-	for (int i = 0; i < n; i++) {
-		fprintf(stderr,"spawning thread %d\n",i);
+	auto *worker_list = new ::std::thread[n];
+	for (int i = 0; i < n; i++)
 		worker_list[i] = ::std::thread(_schedule_worker_function,
 				this, &q, &q_mtx, &q_cond, &flag_finish);
-	}
-	fprintf(stderr,"after spawning threads\n");
 
 	while (!_task_list.empty()) {
 		_task_list_mtx.lock();
