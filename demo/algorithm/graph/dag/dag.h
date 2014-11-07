@@ -18,11 +18,11 @@ using ::std::string;
 using ::std::map;
 using ::std::set;
 
-class dag;
 class dag_node {
 	public:
 		// TODO: change orders to optimize storage
-		int _status;         // [WHITE, GREY, BLACK] | (OUTDATED)
+		int _type;           // NORMAL | PHONY
+		int _status;         // WHITE  | GREY  | BLACK
 		int _wait_black;     // used in schedule()
 		const string &_key;
 		string _recipe;
@@ -70,6 +70,11 @@ class dag_node {
 		friend class dag;
 
 	public:
+		enum {
+			NORMAL, // normal target
+			PHONY   // phony target
+		};
+
 		enum {
 			//        traversal                task scheduling
 			WHITE, // untouched                up to date
@@ -146,30 +151,34 @@ class dag {
 		bool is_dag();
 
 		/*
-		 * Invoke recipes in the proper order to update the node with
-		 * key
+		 * Pushes nodes into _task_list in a proper order for use in
+		 * schedule()
 		 *
 		 * Return false if key is not in the graph or if a cyclic
 		 * dependence if detected
 		 *
-		 * Pushes nodes into _task_list for use in schedule()
+		 * Must call bleach() before the first call to
+		 * add_to_task_list()
+		 *
+		 * You can add multiple targets by having multiple calls to
+		 * add_to_task_list(). schedule() will figure out a most
+		 * efficient way for building all targets using potentially
+		 * multiple threads
 		 */
-		void clear_task_list() noexcept { _task_list.clear(); }
 		bool add_to_task_list(string &&key);
+		void clear_task_list() noexcept { _task_list.clear(); }
 
 		/*
-		 * Schedule _task_list with n threads
-		 *
-		 * NOTE: DAG task scheduling is an NP complete problem, no need
-		 * to find the optimal solution for all cases
+		 * Schedule tasks in _task_list with n threads in a most
+		 * efficient way. Must call add_to_task_list() at least once
+		 * before calling schedule()
 		 */
 		void schedule(const int n = 1) noexcept;
 
-	private:
 		/*
 		 * Set all nodes' _status to dag_node::WHITE
 		 */
-		void _bleach() noexcept;
+		void bleach() noexcept;
 
 	public:
 		enum {

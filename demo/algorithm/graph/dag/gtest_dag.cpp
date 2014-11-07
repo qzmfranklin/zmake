@@ -80,7 +80,8 @@ TEST(Dag, Schedule) {
 	g.set_recipe("utils.o", "g++ -c -o utils.o utils.cpp"
 			" -Drestrict=__restrict__");
 
+	g.bleach();
 	EXPECT_TRUE(g.add_to_task_list("test_heapsort.exe"));
 
-	g.schedule(10);
+	g.schedule(50);
 }

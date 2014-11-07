@@ -267,7 +267,7 @@ static void _dag_dfs_from_node(dag_node *u, ::std::stack<dag_node*> *s)
 
 void dag::dfs()
 {
-	_bleach();
+	bleach();
 	::std::stack<dag_node*> s;
 	for (auto &u: _node_list)
 		if (u.second->_status == dag_node::WHITE) {
@@ -347,7 +347,7 @@ static bool _from_node(dag_node *p)
 
 bool dag::is_dag()
 {
-	_bleach();
+	bleach();
 
 	/*
 	 * Find a white node. Locate node's root source p. Do a DFS from p.
@@ -388,7 +388,6 @@ bool dag::add_to_task_list(string &&key)
 	if (!p)
 		return false;
 
-	_bleach();
 	auto s = new ::std::stack<dag_node*>;
 	while (1) {
 		while (p) {
@@ -425,39 +424,22 @@ fail_exit:
 	return false;
 }
 
-/*
- *
- * Preprocessing stage: (master thread only)
- *     * Iterate through _task_list with iterator &p
- *           * If file does not exist
- *                 * If p has a recipe, set _lmt to time zero
- *                 * Otherwise report 'no recipe to build nonexistent
- *                   target' and exit(1)
- *
- *             (Hereafter, the file exists)
- *           * Store the last modified time of file in _lmt
- *           * If p has no parents, i.e., is a source, mark p as WHITE
- *
- *             (Hereafter, p has at least on parent)
- *           * If p has any non-white parent
- *                 * If p has a recipe, mark p as BLACK, and set
- *                   _wait_black to the number of non-white parents
- *                 * If p does not have a recipe, report 'no recipe for
- *                   outdated target' and exit(1)
- *
- *             (Hereafter, p only has white parent)
- *           * If p only has white parent(s)
- *                 * If p does not have a recipe, mark p as WHITE
- *                 * If p has a recipe
- *                       * If the last modified time of any of p's parents
- *                         is newer than p's last modified time, mark p as
- *                         GREY
- *                       * Otherwise, mark p as WHITE
- */
 static void _schedule_preprocessing(::std::list<dag_node *> &list)
 {
-	//fprintf(stderr,"_schedule_preprocessing(%p)\n",&list);
+	/*
+	 * The seeminly messy logic here is fully documented in the comments of
+	 * the dag::schedule() function
+	 */
 	for (auto &p: list) {
+		if (p->_type == dag_node::PHONY) {
+			memset(&p->_lmt,0,sizeof(p->_lmt));
+			p->_wait_black = 0;
+			for (auto &u: p->_in_list)
+				if (u->_status != dag_node::WHITE)
+					p->_wait_black++;
+			p->_status = p->_wait_black  ?  dag_node::BLACK  : dag_node::GREY;
+			continue;
+		}
 		if (!p->update_last_modified_time())
 			if (p->_recipe.empty()) {
 				fprintf(stderr,"No recipe to build non-existing"
@@ -508,6 +490,25 @@ static void _schedule_preprocessing(::std::list<dag_node *> &list)
 	}
 }
 
+/*
+ * Print:
+ *         mm/dd/yy hh:mm:ss [thread_id] terminated
+ */
+static void _worker_time_stamp()
+{
+	time_t now;
+	time(&now);
+	struct tm *localinfo = localtime(&now);
+	char buf[100];
+	strftime(buf,99,"%x %X",localinfo);
+	fprintf(stderr,"%s: [%u] terminated\n",buf,::std::this_thread::get_id());
+}
+
+/*
+ * This is the worker function, i.e., the function to be called to start the
+ * worker threads, for dag::schedule(). Please go there for full documentation
+ * of this function
+ */
 static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
 		::std::mutex *q_mtx, ::std::condition_variable *q_cond,
 		bool *flag_finish)
@@ -555,7 +556,8 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
 	}
 
 normal_exit:
-	fprintf(stderr,"Worker thread %u finished\n",id);
+	_worker_time_stamp();
+	return;
 }
 
 /*
@@ -563,7 +565,7 @@ normal_exit:
  *
  * Complexity:
  *         O(N) in memory
- *         Almost (O) in time (need confirmation here)
+ *         Very fast in time
  *
  * The flags WHITE, GREY, and BLACK are reused with different meaning:
  *         WHITE: up to date
@@ -572,21 +574,31 @@ normal_exit:
  *
  * Preprocessing stage: (master thread only)
  *     * Iterate through _task_list with iterator &p
+ *           If p is a PHONY target, go to PHONY TARGET
+ *           If p is a NORMAL target, go to NORMAL TARGET
+ *
+ *                 PHONY TARGET ( GREY | BLACK )
+ *           * Set _lmt to time zero
+ *           * If p has no parents or only has WHITE parents, mark p as GREY
+ *           * If p has any non-WHITE parent, mark p as BLACK and set
+ *             _wait_black to the number of non-WHITE parent(s)
+ *
+ *                 NORMAL TARGET ( WHITE | GREY | BLACK )
  *           * If file does not exist
  *                 * If p has a recipe, set _lmt to time zero
  *                 * Otherwise report 'no recipe to build nonexistent
- *                   target' and abort
+ *                   target' and exit(1)
  *
  *             (Hereafter, the file exists)
  *           * Store the last modified time of file in _lmt
  *           * If p has no parents, i.e., is a source, mark p as WHITE
  *
  *             (Hereafter, p has at least on parent)
- *           * If p has any non-white parent
+ *           * If p has any non-WHITE parent
  *                 * If p has a recipe, mark p as BLACK, and set
- *                   _wait_black to the number of non-white parents
+ *                   _wait_black to the number of non-WHITE parents
  *                 * If p does not have a recipe, report 'no recipe for
- *                   outdated target' and abort
+ *                   outdated target' and exit(1)
  *           * If p only has white parent(s)
  *                 * If p does not have a recipe, mark p as WHITE
  *                 * If p has a recipe
@@ -607,20 +619,21 @@ normal_exit:
  *
  *                 master thread (scheduler, producer)
  *     * Initial setup:
- *           * Allocate a task queue (q),a mutex (q_mtx), and a conditoinal
+ *           * Allocate a task queue (q), a mutex (q_mtx), and a conditional
  *             variable (q_cond)
  *           * Set flag_finish = false
  *           * Spawn n worker threads
- *     * Iterate until both _task_list are empty
+ *     * Iterate until _task_list is empty
+ *       (_task_list has no WHITE nodes and has all of GREY nodes on the top)
+ *           * Lock _task_list_mtx
  *           * Iterate _task_list with p
- *                 * If p is GREY
+ *                 * If p is BLACK, break, otherwise (p must be GREY):
  *                       * Lock q_mtx
  *                       * Push p onto q
  *                       * Unlock q_mtx
  *                       * Signal q_cond to one worker thread
- *                       * Lock _task_list_mtx
  *                       * Remove p from _task_list
- *                       * Unlock _task_list_mtx
+ *            * Unlock _task_list_mtx
  *     * Set flag_finish = true
  *     * Keeping signaling on q_cond until q is empty
  *     * Join all worker threads
@@ -632,7 +645,8 @@ normal_exit:
  *           * Let p = q.front()
  *           * q.pop()
  *           * Unlock q_mtx
- *           * Invoke p's recipe
+ *             (Preprocessing guarantees recipes for NORMAL targets)
+ *           * Invoke p's recipe, if any
  *           * Mark p as WHITE
  *           * Lock _task_list_mtx
  *           * Remove p from _task_list
@@ -641,20 +655,17 @@ normal_exit:
  *                 * Lock u->_mtx
  *                 * decrease u->_wait_black by 1
  *                 * If u->_wait_black != 0, then unlock u->_mtx, otherwise
- *                       * Mark u as GREY
+ *                       * Mark u as GREY (u must be outdated because one of its
+ *                         parents, p, is just updated)
  *                       * Unlock u->_mtx
  *                       * Lock _task_list_mtx
  *                       * Move u to the front of _task_list
  *                       * Unlock _task_list_mtx
  *
  * Known problems:
- *
- * It is possible that a file exists during the first pass but is later deleted
- * during the second pass. But we do not check it and just assumes that this
- * will not happen. Should add some checking mechanism later
- *
- * Test passed with up to 10 threads. Using more than 10 threads on Yosemite
- * MacBookPro results in the following fail message: 'Abort trap: 6'
+ *       * It is possible that a file exists during the first pass but is later
+ *         de during the second pass. But we do not check it and just assumes
+ *         that this will not happen. Should add some checking mechanism later
  */
 void dag::schedule(const int n) noexcept
 {
@@ -680,16 +691,16 @@ void dag::schedule(const int n) noexcept
 		_task_list_mtx.lock();
 		auto p = _task_list.begin();
 		while (p != _task_list.end() ) {
+			if ((*p)->_status == dag_node::BLACK)
+				break;
 			auto tmp = ::std::next(p);
-			if ((*p)->_status == dag_node::GREY) {
-				using ::std::mutex;
-				using ::std::unique_lock;
-				unique_lock<mutex> lock(q_mtx);
-				q.push(*p);
-				lock.unlock();
-				q_cond.notify_one();
-				_task_list.erase(p);
-			}
+			using ::std::mutex;
+			using ::std::unique_lock;
+			unique_lock<mutex> lock(q_mtx);
+			q.push(*p);
+			lock.unlock();
+			q_cond.notify_one();
+			_task_list.erase(p);
 			p = tmp;
 		}
 		_task_list_mtx.unlock();
@@ -702,12 +713,9 @@ void dag::schedule(const int n) noexcept
 	for (int i = 0; i < n; i++)
 		worker_list[i].join();
 	delete []worker_list;
-
-	fprintf(stderr,"master thread ends here, _task_list.size = %lu\n\n",
-			_task_list.size());
 }
 
-void dag::_bleach() noexcept
+void dag::bleach() noexcept
 {
 	for (auto &node: _node_list)
 		node.second->_status = dag_node::WHITE;
