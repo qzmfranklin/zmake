@@ -84,5 +84,5 @@ TEST(Dag, Schedule) {
 
 	EXPECT_TRUE(g.add_to_task_list("test_heapsort.exe"));
 
-	g.schedule();
+	g.schedule(10);
 }

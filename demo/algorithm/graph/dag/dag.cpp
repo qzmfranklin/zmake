@@ -459,42 +459,25 @@ static void _schedule_first_stage(::std::list<dag_node *> &list)
 	}
 }
 
-/*
- *                 worker threads (worker, consumer)
- *     * Loop until both _task_list and q are empty
- *           * Lock q_mtx
- *           * Wait on q_cond for !q.empty()
- *           * Let p = q.front()
- *           * q.pop()
- *           * Unlock q_mtx
- *           * Invoke p's recipe
- *           * Mark p as WHITE
- *           * Iterate through p's children with u (note that u must be BLACK)
- *                 * Lock u->_mtx
- *                 * decrease u->_wait_black by 1
- *                 * If u->_wait_black == 0
- *                       * Mark u as GREY
- *                       * Lock _task_list_mtx
- *                       * Move u to the front of _task_list
- *                       * Unlock _task_list_mtx
- *                 * Unlock u->_mtx
- */
 static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
-		::std::mutex *q_mtx, ::std::condition_variable *q_cond)
+		::std::mutex *q_mtx, ::std::condition_variable *q_cond,
+		bool *flag_finish)
 {
 	using ::std::mutex;
 	using ::std::unique_lock;
-	while (!(g->_task_list.empty() && q->empty())) {
+	auto id = ::std::this_thread::get_id();
+	while ( !(*flag_finish)    ||    !q->empty() ) {
 		unique_lock<mutex> lock(*q_mtx);
-		//lock.lock();
-		while (q->empty())
+		while( q->empty() ) {
+			if (*flag_finish)
+				goto normal_exit;
 			q_cond->wait(lock);
+		}
 		dag_node *p = q->front();
 		q->pop();
 		lock.unlock();
-		//fprintf(stderr,"\n\t*****RECIPE***** for %s\n",p->_key.c_str());
 		if (!p->_recipe.empty()) {
-			fprintf(stderr,"%s\n",p->_recipe.c_str());
+			fprintf(stderr,"[%d] %s\n",id,p->_recipe.c_str());
 			int ret = system(p->_recipe.c_str());
 			if (ret) {
 				perror("dag::schedule()");
@@ -502,20 +485,28 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
 			}
 		}
 		p->_status = dag_node::WHITE;
+		g->_task_list_mtx.lock();
+		g->_task_list.remove(p);
+		g->_task_list_mtx.unlock();
 		for (auto &u: p->_out_list) {
 			u->_mtx.lock();
 			u->_wait_black--;
-			if (u->_wait_black == 0) {
+			if (u->_wait_black) {
+				u->_mtx.unlock();
+			} else {
 				u->_status = dag_node::GREY;
+				u->_mtx.unlock();
 				dag_node *tmp = u;
 				g->_task_list_mtx.lock();
 				g->_task_list.remove(u);
 				g->_task_list.push_front(tmp);
 				g->_task_list_mtx.unlock();
 			}
-			u->_mtx.unlock();
 		}
 	}
+
+normal_exit:
+	fprintf(stderr,"Worker thread %d finished\n",id);
 }
 
 /*
@@ -529,7 +520,6 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
  *         WHITE: up to date
  *         GREY:  outdated, ready for update
  *         BLACK: outdated, has pending dependence
- *
  *
  * Preprocessing stage: (master thread only)
  *     * Iterate through _task_list with iterator &p
@@ -551,14 +541,13 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
  *     * Remove WHITE nodes from _task_list
  *     * Bring all GREY nodes in _task_list to top
  *
- *
- *
  * Scheduling stage:
  *
  *                 master thread (scheduler, producer)
  *     * Initial setup:
  *           * Allocate a task queue (q),a mutex (q_mtx), and a conditoinal
  *             variable (q_cond)
+ *           * Set flag_finish = false
  *           * Spawn n worker threads
  *     * Iterate until both _task_list are empty
  *           * Iterate _task_list with p
@@ -570,14 +559,12 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
  *                       * Lock _task_list_mtx
  *                       * Remove p from _task_list
  *                       * Unlock _task_list_mtx
- *                 * If p is WHITE
- *                       * Lock _task_list_mtx
- *                       * Remove p from _task_list
- *                       * Unlock _task_list_mtx
+ *     * Set flag_finish = true
+ *     * Keeping signaling on q_cond until q is empty
  *     * Join all worker threads
  *
  *                 worker threads (worker, consumer)
- *     * Loop until both _task_list and q are empty
+ *     * Loop when either flag_finish == false or q is not empty
  *           * Lock q_mtx
  *           * Wait on q_cond for !q.empty()
  *           * Let p = q.front()
@@ -585,19 +572,27 @@ static void _schedule_worker_function(dag *g, ::std::queue<dag_node*> *q,
  *           * Unlock q_mtx
  *           * Invoke p's recipe
  *           * Mark p as WHITE
+ *           * Lock _task_list_mtx
+ *           * Remove p from _task_list
+ *           * Unlock _task_list_mtx
  *           * Iterate through p's children with u (note that u must be BLACK)
  *                 * Lock u->_mtx
  *                 * decrease u->_wait_black by 1
- *                 * If u->_wait_black == 0
+ *                 * If u->_wait_black != 0, then unlock u->_mtx, otherwise
  *                       * Mark u as GREY
+ *                       * Unlock u->_mtx
  *                       * Lock _task_list_mtx
  *                       * Move u to the front of _task_list
  *                       * Unlock _task_list_mtx
- *                 * Unlock u->_mtx
+ *
+ * Known problems:
  *
  * It is possible that a file exists during the first pass but is later deleted
  * during the second pass. But we do not check it and just assumes that this
  * will not happen. Should add some checking mechanism later
+ *
+ * Test passed with up to 10 threads. Using more than 10 threads on Yosemite
+ * MacBookPro results in the following fail message: 'Abort trap: 6'
  */
 void dag::schedule(const int n) noexcept
 {
@@ -609,49 +604,41 @@ void dag::schedule(const int n) noexcept
 	::std::queue<dag_node*> q;
 	::std::mutex q_mtx;
 	::std::condition_variable q_cond;
+	bool flag_finish = false;
 	auto *worker_list = new ::std::thread[10];
 	for (int i = 0; i < n; i++)
 		worker_list[i] = ::std::thread(_schedule_worker_function,
-				this, &q, &q_mtx, &q_cond);
+				this, &q, &q_mtx, &q_cond, &flag_finish);
 
 	while (!_task_list.empty()) {
-		/*
-		 *static int i = 0;
-		 *if (i++>15) {
-		 *        fprintf(stderr,"too many iterations\n");
-		 *        abort();
-		 *}
-		 */
 		_task_list_mtx.lock();
-		//fprintf(stderr,"\n");
 		auto p = _task_list.begin();
 		while (p != _task_list.end() ) {
-			//fprintf(stderr,"\t");
-			//(*p)->print_node_debug();
 			auto tmp = ::std::next(p);
 			if ((*p)->_status == dag_node::GREY) {
 				using ::std::mutex;
 				using ::std::unique_lock;
-				fprintf(stderr,"before lock\n");
 				unique_lock<mutex> lock(q_mtx);
-				fprintf(stderr,"after lock\n");
 				q.push(*p);
 				lock.unlock();
 				q_cond.notify_one();
 				_task_list.erase(p);
-			} else if ((*p)->_status == dag_node::WHITE) {
-				_task_list_mtx.lock();
-				_task_list.erase(p);
-				_task_list_mtx.unlock();
 			}
 			p = tmp;
 		}
 		_task_list_mtx.unlock();
 	}
 
+	flag_finish = true;
+	while (!q.empty())
+		q_cond.notify_all();
+
 	for (int i = 0; i < n; i++)
 		worker_list[i].join();
-	//delete []worker_list;
+	delete []worker_list;
+
+	fprintf(stderr,"master thread ends here, _task_list.size = %lu\n\n",
+			_task_list.size());
 }
 
 void dag::_bleach() noexcept
