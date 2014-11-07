@@ -418,11 +418,11 @@ static void _schedule_first_stage(::std::list<dag_node *> &list)
 	 */
 	for (auto &p: list) {
 		p->update_last_modified_time();
-		if (p->_in_list.empty()) {
+		if (p->_recipe.empty()) {
 			p->_status = dag_node::WHITE;
 			continue;
 		}
-		if (p->_recipe.empty()) {
+		if (p->_in_list.empty()) {
 			p->_status = dag_node::WHITE;
 			continue;
 		}
@@ -606,9 +606,13 @@ void dag::schedule(const int n) noexcept
 	::std::condition_variable q_cond;
 	bool flag_finish = false;
 	auto *worker_list = new ::std::thread[10];
-	for (int i = 0; i < n; i++)
+	fprintf(stderr,"before spawning threads\n");
+	for (int i = 0; i < n; i++) {
+		fprintf(stderr,"spawning thread %d\n",i);
 		worker_list[i] = ::std::thread(_schedule_worker_function,
 				this, &q, &q_mtx, &q_cond, &flag_finish);
+	}
+	fprintf(stderr,"after spawning threads\n");
 
 	while (!_task_list.empty()) {
 		_task_list_mtx.lock();
