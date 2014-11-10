@@ -1,0 +1,39 @@
+			Context Free Grammar of the New Makefile
+
+
+assignment -> var := rhs | var += rhs | var -= rhs
+
+rhs -> fnames | vars | rhs [vars fnames]
+
+vars -> var | vars var
+
+var -> $(string) | ${string}
+
+fnames -> (empty) | fname | fnames fname
+
+fname -> (\w|\/\/)[\w\d\.\/]
+
+letter -> [a-z] | [A-Z]
+
+digit -> [0-9]
+
+rule -> fname : rhs recipe
+      | fname : recipe
+      | fname : rhs
+
+pattern_rule -> pattern : patterns
+	| pattern : patterns recipe
+	| pattern : recipe
+
+pattern -> .*%.*
+
+recipe -> ^\t.*
+
+Line extension using backslash '/' is done in the preprocessing stage. The
+preprocessor removes the backslash, any trailing spaces, tabs, and the newline
+character '\n', concatenate the ensuring line with all spaces and tabs removed
+
+
+			Rationale
+
+Makefile

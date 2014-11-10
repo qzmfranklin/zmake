@@ -6,7 +6,7 @@ A new method of writing Makefiles.
 
 **NOTE**: This README.md is outdated. Will update as soon as the changes are stablized and tested.
 
-**TODO**: So far, zmake is no more than a method and a script for writing Makefiles. The idea of using complete DAGs and having directory-specific pattern rules is restricted by the syntax and quirks and the time honored make program. A new make program that is built with easy specification of the DAG and directory-specific pattern rules is currently underway. As of 11/03/2014, only part of the DAG class is implemented, as in `demo/algorithm/graph/dag/`. Need a parser to parse the new Makefiles and a fully parallelized scheduler.
+**TODO**: So far, zmake is no more than a method and a script for writing Makefiles. The idea of using complete DAGs and having directory-specific pattern rules is restricted by the syntax and quirks and the time honored make program. A new make program that is built with easy specification of the DAG and directory-specific pattern rules is currently underway. As of 11/09/2014, only part of the DAG class is implemented, as in `demo/algorithm/graph/dag/`. Need a parser to parse the new Makefiles. A Nearly fully parallelized scheduler is already implemented in dag::schedule().
 
 # A Brief History of Makefiles
 
@@ -90,16 +90,15 @@ The actions from step 2 through 5 can be collectively called a build, or a **mak
 In the Makefile's syntax, dependencies between targets and prerequisites can be expressed in two ways.
 
 * Explicit listing:
-
-
-    target: prerequisite1 prerequisite2 ...(possibly more)
+```
+target: prerequisite1 prerequisite2 ...
         recipe
-
+```
 * Pattern rules: such as the following
-
-
-    %.o: %.c
+```
+%.o: %.c
         gcc -o $@ $^ ${CFLAGS}
+```
 
 Exhaustive listing of all dependencies would result in gigantic Makefiles that are impossible to maintain. Pattern rules, in their primitive format, do not support directory-specific compiling options.
 
@@ -400,7 +399,17 @@ The global variable `ROOT:=path/to/project` is hardcoded into Makefiles. When yo
 zmake --renew
 ```
 
-to update all Makefiles.
+to update the Makefile in the current directory `./`. Or you can use
+
+```
+zmake --renew path/to/another/dir
+```
+to update the Makefile in any directory.
+
+If you want to update all Makefiles searchable by zmake, add `-R` to --renew:
+```
+zmake --renew -R
+```
 
 The way the `--renew` flag works is
 

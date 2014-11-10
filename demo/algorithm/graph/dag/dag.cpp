@@ -501,7 +501,8 @@ static void _worker_time_stamp()
 	struct tm *localinfo = localtime(&now);
 	char buf[100];
 	strftime(buf,99,"%x %X",localinfo);
-	fprintf(stderr,"%s: [%u] terminated\n",buf,::std::this_thread::get_id());
+	fprintf(stderr,"%s: [%u] terminated\n", buf,
+			::std::this_thread::get_id());
 }
 
 /*

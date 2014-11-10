@@ -18,3 +18,7 @@
 *.s
 *.S
 *.exe
+
+# Flex and Bison
+*.yy.c
+*.tab.c

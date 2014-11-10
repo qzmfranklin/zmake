@@ -34,7 +34,10 @@ the workload more evenly among the master and the workers to avoid the
 bottlenecks. To be specific, the workers must to do something more than just
 finishing the tasks issued by the master.
 
-The workers should help the master update the global task queue.
+The workers should help the master update the global task queue without
+resorting to excessive locking.
+
+(not complete yet...)
 
 For convenience, let's denote
 	the k-th worker as #k, #0 as the master, and
