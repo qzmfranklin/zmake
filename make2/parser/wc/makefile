@@ -14,7 +14,7 @@ EXE:=wc.exe
 all: ${EXE}
 
 clean:
-	rm -f *.o *.exe
+	rm -f *.o *.exe Scanner* Parser** lex.cc parse.cc
 
 test: ${EXE}
 	cp $< demo/$<
@@ -22,14 +22,14 @@ test: ${EXE}
 	./$<
 	cd ..
 
-wc.exe: wc.cc wc.lex
-	${FLEX} wc.lex
-	${CXX} -c wc.cc ${CXXFLAGS} ${CPPFLAGS}
-	${CXX} -c wc_lex.cc ${CXXFLAGS} ${CPPFLAGS}
-	${CXX} -o $@ wc.o wc_lex.o ${LDFLAGS}
-
-lex.o: wc.lex
-	flexc++
+wc.exe: wc.cc wc.l wc.y
+	${BISON} wc.y
+	${FLEX} wc.l
+	echo "#include \"Parserbase.h\"" >> Scanner.ih
+	${CXX} -c wc.cc ${CPPFLAGS} ${CXXFLAGS}
+	${CXX} -c lex.cc ${CPPFLAGS} ${CXXFLAGS}
+	${CXX} -c parse.cc ${CPPFLAGS} ${CXXFLAGS}
+	${CXX} -o $@ *.o ${LDFLAGS}
 
 %.o: %.cc
 	${CXX} -c $< ${CXXFLAGS} ${CPPFLAGS}

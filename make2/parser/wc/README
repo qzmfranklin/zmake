@@ -1,0 +1,7 @@
+This scanner and parse generator pair used here is the C++ version of flex and
+bion, namely, flexc++ and bisonc++. As of 11/11/2014, flexc++ and bisonc++ are
+not available on MacOSX.
+
+Due to the complexity involved in generating the scanner and parser, the 'make
+clean' command just deletes everything. It is also highly recommended that you
+'make clean' before 'make all' even with the slightest modification.
