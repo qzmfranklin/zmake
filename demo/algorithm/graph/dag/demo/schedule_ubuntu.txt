@@ -1,0 +1,16 @@
+Running main() from gtest_main.cc
+[==========] Running 3 tests from 1 test case.
+[----------] Global test environment set-up.
+[----------] 3 tests from Dag
+[ RUN      ] Dag.Trivial
+[       OK ] Dag.Trivial (0 ms)
+[ RUN      ] Dag.Construct
+[       OK ] Dag.Construct (0 ms)
+[ RUN      ] Dag.Schedule
+Everything is already up to date
+[       OK ] Dag.Schedule (1 ms)
+[----------] 3 tests from Dag (1 ms total)
+
+[----------] Global test environment tear-down
+[==========] 3 tests from 1 test case ran. (1 ms total)
+[  PASSED  ] 3 tests.

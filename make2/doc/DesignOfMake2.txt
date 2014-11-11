@@ -1,5 +1,17 @@
 			Context Free Grammar of the New Makefile
 
+digit			[0-9]
+fchar			[A-Za-z0-9._-] // filename char
+fchar0			[A-Za-z0-9._]  // first char of filename
+
+"\0"			NULL
+"\t"			TAB
+"\n"			EOL
+"\"			CAT // concatenate two lines, i.e., ignore the next EOL
+{fchar0}{fchar}+	FNAME // POSIX fully compatible char set
+-?{digit}+		NUM // only support C int
+\(.+\)			LVAR // local variable
+\{.+\}			GVAR // global variable
 
 assignment -> var := rhs | var += rhs | var -= rhs
 
@@ -9,13 +21,11 @@ vars -> var | vars var
 
 var -> $(string) | ${string}
 
-fnames -> (empty) | fname | fnames fname
+fnames -> fname | fnames fname
 
-fname -> (\w|\/\/)[\w\d\.\/]
+fname -> [A-Za-z0-9._](fname_char)+
 
-letter -> [a-z] | [A-Z]
-
-digit -> [0-9]
+fname_char -> [A-Za-z0-9._-]
 
 rule -> fname : rhs recipe
       | fname : recipe
@@ -29,10 +39,11 @@ pattern -> .*%.*
 
 recipe -> ^\t.*
 
-Line extension using backslash '/' is done in the preprocessing stage. The
+
+
+Line extension using backslash '\' is done in the preprocessing stage. The
 preprocessor removes the backslash, any trailing spaces, tabs, and the newline
 character '\n', concatenate the ensuring line with all spaces and tabs removed
-
 
 			Rationale
 

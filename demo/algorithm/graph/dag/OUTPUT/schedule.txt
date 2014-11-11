@@ -1,4 +1,0 @@
-UPDATE utils.o:    g++ -o utils.o utils.cpp
-UPDATE test_heapsort.o:    g++ -o test_heapsort.o test_heapsort.cpp
-UPDATE heapsort.o:    g++ -o heapsort.o heapsort.cpp
-UPDATE test_heapsort.exe:    g++ -o test_heapsort.exe test_heapsort.o heapsort.o utils.o
