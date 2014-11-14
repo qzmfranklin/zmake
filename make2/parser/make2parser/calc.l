@@ -1,38 +1,32 @@
 %%
 "+"		{
-	printf("ADD ");
-	return Parser::ADD;
+	/*printf("ADD ");*/
+	return '+';
 }
 
 "-"		{
-	printf("SUB ");
-	return Parser::SUB;
+	/*printf("SUB ");*/
+	return '-';
 }
 
 "*"		{
-	printf("MUL ");
-	return Parser::MUL;
+	/*printf("MUL ");*/
+	return '*';
 }
 
 "/"		{
-	printf("DIV ");
-	return Parser::DIV;
+	/*printf("DIV ");*/
+	return '/';
 }
 
-"\n" 		{
-	printf("EOL ");
-	return Parser::EOL;
+"\n"		{
+	/*printf("EOL ");*/
+	return '\n';
 }
 
-[0-9]+		{
-	printf("INT(%d) ",stoi(matched()));
-	return Parser::INT;
+[0-9]+(\.[0-9]*)?	{
+	/*printf("NUM(%.3f) ",::std::stod(matched()));*/
+	return Parser::NUM;
 }
-
-[0-9]+\.[0-9]*	{
-	printf("FLT(%lf) ",stod(matched()));
-	return Parser::INT;
-}
-
 
 [\t\s]+  // skip white space chars.

@@ -1,6 +1,5 @@
 CXX:=g++-4.9
-CXXFLAGS:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
-	-DNDEBUG -pthread -fdiagnostics-color=always -std=c++11
+CXXFLAGS:=-O3 -Wno-unused-result -fdiagnostics-color=always -std=c++11
 FLEX:=flexc++
 BISON=bisonc++
 
@@ -22,10 +21,12 @@ test: ${EXE}
 	./$<
 	cd ..
 
-calc.exe: calc.cc calc.l calc.y
-	${BISON} calc.y
+gen: calc.l calc.y
 	${FLEX} calc.l
+	${BISON} calc.y
 	echo "#include \"Parserbase.h\"" >> Scanner.ih
+
+calc.exe: calc.cc lex.cc parse.cc
 	${CXX} -c calc.cc ${CPPFLAGS} ${CXXFLAGS}
 	${CXX} -c lex.cc ${CPPFLAGS} ${CXXFLAGS}
 	${CXX} -c parse.cc ${CPPFLAGS} ${CXXFLAGS}

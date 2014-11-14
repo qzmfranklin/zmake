@@ -1,27 +1,52 @@
 %scanner Scanner.h
-%token INT
-%token FLT
-%token ADD
-%token SUB
-%token MUL
-%token DIV
-%token EOL
+%baseclass-preinclude <cmath>
+
+%stype double
+%token INT FLT
+
+%left '+' '-'
+%left '*' '/'
 
 %%
 
-line:
-	| line exp EOL			{ std::cout << $2 << std::endl; }
+input:    
+| 
+        input line
+;
+
+line:   
+        '\n'
+| 
+        exp '\n'  
+        { 
+            std::cout << "\t" << $1 << std::endl;
+        }
 	;
 
-exp: factor { $$ = $1; }
-	| exp ADD factor		{ $$ = $1 + $3; }
-	| exp SUB factor		{ $$ = $1 - $3; }
+exp:      
+        number             
+| 
+        exp '+' exp
+        { 
+            $$ = $1 + $3;
+        }
+| 
+        exp '-' exp
+        { 
+            $$ = $1 - $3;
+        }
+| 
+        exp '*' exp
+        { 
+            $$ = $1 * $3;
+        }
+| 
+        exp '/' exp
+        { 
+            $$ = $1 / $3;
+        }
 	;
 
-factor: number
-	| factor MUL number		{ $$ = $1 * $3; }
-	| factor DIV number		{ $$ = $1 / $3; }
-	;
-
-number: INT | FLT
+number:
+	INT | FLT
 	;
