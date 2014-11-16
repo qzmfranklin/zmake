@@ -1,50 +1,43 @@
 			Context Free Grammar of the New Makefile
 
-digit			[0-9]
-fchar			[A-Za-z0-9._-] // filename char
-fchar0			[A-Za-z0-9._]  // first char of filename
+inclusion :
+	'include' string_list
 
-"\0"			NULL
-"\t"			TAB
-"\n"			EOL
-"\"			CAT // concatenate two lines, i.e., ignore the next EOL
-{fchar0}{fchar}+	FNAME // POSIX fully compatible char set
--?{digit}+		NUM // only support C int
-\(.+\)			LVAR // local variable
-\{.+\}			GVAR // global variable
+integral_assignment :
+	'extern' integer_assignment
+|	string '=' integral_expression
+|	string '+=' integral_expression
+|	string '-=' integral_expression
 
-assignment -> var := rhs | var += rhs | var -= rhs
+integral_expression :
+	integral_item
+|	integral_expression '+' integral item
+|	integral_expression '-' integral item
 
-rhs -> fnames | vars | rhs [vars fnames]
+integral_item :
+	integral_atom
+|	integral_item '*' integral_atom
+|	integral_item '/' integral_atom
 
-vars -> var | vars var
+integral_atom :
+	INT | '${' string '}'
 
-var -> $(string) | ${string}
+string_assignment :
+	'extern' string_assignment  // define/modify global variable
+|	string '=' string_list
+|	string '+=' string_list
+|	string '-=' string_list
 
-fnames -> fname | fnames fname
+string_list :
+	string string_list
+|	string
+|	(empty)
 
-fname -> [A-Za-z0-9._](fname_char)+
+string :
+	string_atom
+|	string_atom string
 
-fname_char -> [A-Za-z0-9._-]
-
-rule -> fname : rhs recipe
-      | fname : recipe
-      | fname : rhs
-
-pattern_rule -> pattern : patterns
-	| pattern : patterns recipe
-	| pattern : recipe
-
-pattern -> .*%.*
-
-recipe -> ^\t.*
-
-
-
-Line extension using backslash '\' is done in the preprocessing stage. The
-preprocessor removes the backslash, any trailing spaces, tabs, and the newline
-character '\n', concatenate the ensuring line with all spaces and tabs removed
-
-			Rationale
-
-Makefile
+string_atom :
+	STRING
+|	'$(' string ')'
+|	'$(' CMD string ')'
