@@ -1,4 +1,35 @@
-			Context Free Grammar of the New Makefile
+			Lex and Grammar of the New Makefile
+
+				LEX
+
+-?[0-9]+	INTEGER
+
+"include"	INCLUDE
+
+"extern"	EXTERN
+
+"="		'='
+"+"		'+'
+"-"		'-'
+
+"$"		'$'
+
+"("		'('
+")"		')'
+
+"["		'['
+"]"		']'
+.*		STRING
+
+%\d?		HOLDER
+"$^" | "$<" | "$@" | "$?" 	AUTOVAR
+
+[\s(\\\s*\n)]*	(ignore white space and trailing backslash)
+
+
+
+
+				GRAMMAR
 
 inclusion :
 	'include' string_list
@@ -20,7 +51,9 @@ integral_item :
 |	integral_item '/' integral_atom
 
 integral_atom :
-	INT | '${' string '}'
+	INTEGER
+|	'(' string ')' // local integral variable
+|	'[' string ']' // global integral variable
 
 string_assignment :
 	'extern' string_assignment  // define/modify global variable
@@ -35,9 +68,10 @@ string_list :
 
 string :
 	string_atom
-|	string_atom string
+|	string_atom '+' string
 
 string_atom :
 	STRING
-|	'$(' string ')'
 |	'$(' CMD string ')'
+|	'$(' string ')'  // local string variable
+|	'$[' string ']'  // global string variable
