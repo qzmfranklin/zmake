@@ -1,5 +1,5 @@
-CXX:=g++-4.9
-CXXFLAGS:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
+CXX:=g++
+CXXFLAGS:=-O3 -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -pthread -fdiagnostics-color=always -std=c++11
 FLEX:=flexc++
 BISON=bisonc++

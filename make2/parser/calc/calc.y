@@ -2,7 +2,7 @@
 %baseclass-preinclude <cmath>
 
 %stype double
-%token INT FLT
+%token NUM
 
 %left '+' '-'
 %left '*' '/'
@@ -19,12 +19,12 @@ line:
 | 
         exp '\n'  
         { 
-            std::cout << "\t" << $1 << std::endl;
+		printf(" = %.3f\n",$1);
         }
 	;
 
 exp:      
-        number             
+	NUM
 | 
         exp '+' exp
         { 
@@ -45,8 +45,4 @@ exp:
         { 
             $$ = $1 / $3;
         }
-	;
-
-number:
-	INT | FLT
 	;

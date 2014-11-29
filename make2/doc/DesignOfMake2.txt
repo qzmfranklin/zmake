@@ -1,50 +1,77 @@
-			Context Free Grammar of the New Makefile
+			Lex and Grammar of the New Makefile
 
-digit			[0-9]
-fchar			[A-Za-z0-9._-] // filename char
-fchar0			[A-Za-z0-9._]  // first char of filename
+				LEX
 
-"\0"			NULL
-"\t"			TAB
-"\n"			EOL
-"\"			CAT // concatenate two lines, i.e., ignore the next EOL
-{fchar0}{fchar}+	FNAME // POSIX fully compatible char set
--?{digit}+		NUM // only support C int
-\(.+\)			LVAR // local variable
-\{.+\}			GVAR // global variable
+-?[0-9]+	INTEGER
 
-assignment -> var := rhs | var += rhs | var -= rhs
+"include"	INCLUDE
 
-rhs -> fnames | vars | rhs [vars fnames]
+"extern"	EXTERN
 
-vars -> var | vars var
+"="		'='
+"+"		'+'
+"-"		'-'
 
-var -> $(string) | ${string}
+"$"		'$'
 
-fnames -> fname | fnames fname
+"("		'('
+")"		')'
 
-fname -> [A-Za-z0-9._](fname_char)+
+"["		'['
+"]"		']'
+.*		STRING
 
-fname_char -> [A-Za-z0-9._-]
+%\d?		HOLDER
+"$^" | "$<" | "$@" | "$?" 	AUTOVAR
 
-rule -> fname : rhs recipe
-      | fname : recipe
-      | fname : rhs
-
-pattern_rule -> pattern : patterns
-	| pattern : patterns recipe
-	| pattern : recipe
-
-pattern -> .*%.*
-
-recipe -> ^\t.*
+[\s(\\\s*\n)]*	(ignore white space and trailing backslash)
 
 
 
-Line extension using backslash '\' is done in the preprocessing stage. The
-preprocessor removes the backslash, any trailing spaces, tabs, and the newline
-character '\n', concatenate the ensuring line with all spaces and tabs removed
 
-			Rationale
+				GRAMMAR
 
-Makefile
+inclusion :
+	'include' string_list
+
+integral_assignment :
+	'extern' integer_assignment
+|	string '=' integral_expression
+|	string '+=' integral_expression
+|	string '-=' integral_expression
+
+integral_expression :
+	integral_item
+|	integral_expression '+' integral item
+|	integral_expression '-' integral item
+
+integral_item :
+	integral_atom
+|	integral_item '*' integral_atom
+|	integral_item '/' integral_atom
+
+integral_atom :
+	INTEGER
+|	'(' string ')' // local integral variable
+|	'[' string ']' // global integral variable
+
+string_assignment :
+	'extern' string_assignment  // define/modify global variable
+|	string '=' string_list
+|	string '+=' string_list
+|	string '-=' string_list
+
+string_list :
+	string string_list
+|	string
+|	(empty)
+
+string :
+	string_atom
+|	string_atom '+' string
+
+string_atom :
+	STRING
+|	'$(' CMD string ')'
+|	'$(' string ')'  // local string variable
+|	'$[' string ']'  // global string variable
