@@ -11,3 +11,5 @@ clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 hist_max_area.exe: ${d}/hist_max_area.o
+max_rectangle.exe: ${d}/max_rectangle.o
+max_diff.exe: ${d}/max_diff.o

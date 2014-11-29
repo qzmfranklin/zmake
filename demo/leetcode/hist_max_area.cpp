@@ -1,7 +1,7 @@
 #include <stack>
 #include <limits.h>
 
-int hist_max_area(const int *a, const int n)
+static int hist_max_area(const int *a, const int n)
 {
 	::std::stack<int> s;
 	int retval = -INT_MAX;

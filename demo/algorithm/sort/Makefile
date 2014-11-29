@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/sort# this directory
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/sort#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/utils/rules.mk
 -include ${ROOT}/algorithm/sort/rules.mk
