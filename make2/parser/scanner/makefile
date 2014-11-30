@@ -7,7 +7,7 @@ LDFLAGS:=-pthread
 FLEX:=flexc++
 
 clean:
-	rm -f lex.cc Scanner.ih *.o *.exe
+	rm -f lex.cc Scanner.ih *.o parse.cc Parser.ih *.exe
 
 test_scanner.exe: test_scanner.o lex.o
 	$(CXX) -o $@ $^ $(LDFLAGS)

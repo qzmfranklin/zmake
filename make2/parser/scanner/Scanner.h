@@ -5,24 +5,7 @@
 
 // $insert baseclass_h
 #include "Scannerbase.h"
-
-enum {
-	INTEGER = 257,
-	INCLUDE,
-	EXTERN,
-	ASSIGN,
-	ASSIGN_ADD,
-	ASSIGN_SUB,
-	OP_LOCAL,
-	ED_LOCAL,
-	BACKSLASH,
-	OP_GLOBAL,
-	ED_GLOBAL,
-	STRING,
-	TAB,
-	SPACE,
-	EOL,
-};
+#include "Parser.h"
 
 // $insert classHead
 class Scanner: public ScannerBase
@@ -83,4 +66,3 @@ inline void Scanner::print()
 
 
 #endif // Scanner_H_INCLUDED_
-

@@ -1,15 +1,15 @@
-var = var1 var2
+var = str1 str2
 var3 += $(var)
 
-var4 -= var_local $[var3]
+extern var4 -= str_local $[var3] $[var5]
 
 include git/zmake/demo/Parser-v3.0.++.d git/job/v1/resume.pdf $[var_global]
 
 damn_long_line = this is a very very very long line it is so long that it has \
 		  to be concatenated using backslash
 
-$(this_dir)/%.o : ../$(this_dir)/%.cc
-	$[CXX] -c $< $[CXXFLAGS]
+$(this_dir)&%.o : ..&$(this_dir)&%.cc
+	${CXX} -c $< ${CXXFLAGS}
 
-$[root_dir]/%.exe : $[root_dir]/build/obj/%.o
-	$[CXX] -o $@ $^ $[LDFLAGS]
+${root_dir}&%.exe : ${root_dir}&build/obj/%.o
+	${CXX} -o $@ $^ ${LDFLAGS}

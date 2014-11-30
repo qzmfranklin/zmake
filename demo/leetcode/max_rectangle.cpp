@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stack>
+#include <time.h>
 #include <limits.h>
 
 // @a: m x n, row major
