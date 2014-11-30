@@ -68,6 +68,7 @@ static int max_rectangle(const bool *a, const int m, const int n)
 
 int main(int argc, char const* argv[])
 {
+	srand(time(NULL));
 	const int m = 12;
 	const int n = 12;
 	bool a[m*n];
