@@ -1,7 +1,7 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/heap# this directory
+d       :=${ROOT}/algorithm/heap/fib_heap# this directory
 -include ${ROOT}/root.mk
--include ${ROOT}/algorithm/heap/rules.mk
+-include ${ROOT}/algorithm/heap/fib_heap/rules.mk
 -include ${DEP}
 
 .PHONY: all asm clean test
@@ -10,4 +10,4 @@ asm: ${ASM}
 clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
-test_heap.exe: ${d}/heap.o ${d}/test_heap.o
+test_fib_heap.exe: ${d}/test_fib_heap.o
