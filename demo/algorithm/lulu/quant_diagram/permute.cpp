@@ -18,8 +18,6 @@ public:
 	public:
 		node(): edge_list(0), group_list(0) {}
 
-		void sort() { ::std::sort(group_list.begin(), group_list.end(), cmp); }
-
 		void print()
 		{
 			if (!edge_list.empty()) {
@@ -121,6 +119,7 @@ public:
 				auto *tmp = new node;
 				tmp->edge_list = p->edge_list;
 				tmp->edge_list.push_back(make_pair(start0, start));
+				tmp->group_list.reserve(gl.size() + 1);
 				if (end0 - start0)
 					tmp->group_list.push_back(make_pair(start0+1, end0));
 				for (int k = 1; k < i; k++)
@@ -135,6 +134,7 @@ public:
 				auto *tmp = new node;
 				tmp->edge_list = p->edge_list;
 				tmp->edge_list.push_back(make_pair(start0, j));
+				tmp->group_list.reserve(gl.size() + 1);
 				if (end0 - start0)
 					tmp->group_list.push_back(make_pair(start0+1, end0));
 				for (int k = 1; k < i; k++)
