@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/lulu/quant_diagram# this directory
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/lulu/quant_diagram#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/lulu/quant_diagram/rules.mk
 -include ${DEP}
@@ -11,3 +11,4 @@ clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 permute.exe: ${d}/permute.o
+permute_threaded.exe: ${d}/permute_threaded.o
