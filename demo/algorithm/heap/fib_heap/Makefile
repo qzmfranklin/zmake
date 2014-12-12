@@ -4,7 +4,7 @@ d       :=${ROOT}/algorithm/heap/fib_heap# this directory
 -include ${ROOT}/algorithm/heap/fib_heap/rules.mk
 -include ${DEP}
 
-.PHONY: all asm clean test
+.PHONY: all asm clean
 all: ${OBJ}
 asm: ${ASM}
 clean:

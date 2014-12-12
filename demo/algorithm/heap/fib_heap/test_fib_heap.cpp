@@ -8,7 +8,7 @@ int main(int argc, char const* argv[])
 	int a[n];
 	for (int i = 0; i < n; i++)
 		a[i] = rand() % (10 * n);
-	fib_heap<int> h(10);
+	fib_heap<int> h;
 	for (int i = 0; i < n; i++)
 		h.push(a[i]);
 	for (int i = 0; i < n; i++) {

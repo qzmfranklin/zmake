@@ -31,11 +31,11 @@ public:
 			free(data);
 	}
 
-	virtual T top() const { return data[0]; }
+	virtual T &top() const { return data[0]; }
 
 	virtual void pop();
 
-	virtual void push(const T val);
+	virtual void push(const T &val);
 
 	void resize(const int n);
 
@@ -94,7 +94,7 @@ inline void binary_heap<T>::rise(int k)
 }
 
 template<typename T> 
-inline void binary_heap<T>::push(const T val)
+inline void binary_heap<T>::push(const T &val)
 {
 	if (numitem == size) {
 		size = size * 1.3 + 1;
