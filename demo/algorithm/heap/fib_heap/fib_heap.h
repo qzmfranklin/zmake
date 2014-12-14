@@ -11,7 +11,7 @@
 #include <cmath>
 #include "../heap.h"
 
-#define fprintf(stderr,...)
+//#define fprintf(stderr,...)
 
 using ::std::make_pair;
 using ::std::pair;
@@ -31,9 +31,14 @@ public:
 				parent(NULL), child(NULL), left(this), right(this) {}
 		void print_debug() const
 		{
-			fprintf(stderr,"\tleft = %d, child = %d, parent = %d, right = %d\n",
-					left->key, child ? child->key : 0,
-					parent ? parent->key : 0, right->key);
+			fprintf(stderr, "\t[%3d] degree = %d, left = %d, "
+					"right = %d, parent = %d, child = %d\n",
+					key,
+					degree,
+					left->key, 
+					right->key,
+					parent ? parent->key : 0,
+					child ? child->key : 0);
 		}
 		friend class fib_heap<T>;
 	};
@@ -55,14 +60,21 @@ public:
 
 	virtual void pop()
 	{
+		fprintf(stderr,"before:\n");
+		print_debug();
 		if (!_min)
 			return;
 		node *z = _min;
 		//_hash.erase(z->key);
 		if (z->child) {
-			for (node *x = z->child->left; x != z->child; x = x->left)
+			node *x = z->child->left;
+			while (x != z) {
+				node *tmp = x->left;
 				_insert_left(z,x);
+				x = tmp;
+			}
 			_insert_left(z,z->child);
+			print_debug();
 		}
 		_remove_root(z);
 		if (z == z->right)
@@ -73,6 +85,8 @@ public:
 		}
 		delete z;
 		_size--;
+		fprintf(stderr,"after:\n");
+		print_debug();
 	}
 
 	virtual void push(const T &key)
@@ -88,6 +102,7 @@ public:
 			_min = tmp;
 		_size++;
 		_last = tmp;
+		//print_debug();
 	}
 
 	node *last() { return _last; }
@@ -120,6 +135,13 @@ public:
 	size_t degree() const 
 	{ return (size_t) (::std::log(1.0*_size) / ::std::log(1.618) + 1.0E-6) + 1; }
 
+	void print_debug() const
+	{
+		_min->print_debug();
+		for( node *p = _min->right; p != _min; p = p->right )
+			p->print_debug();
+	}
+
 private:
 	void _free()
 	{
@@ -130,13 +152,11 @@ private:
 	{
 		fprintf(stderr,"\t_insert_left([%3d] %p, [%3d] %p)\n",p->key,p,x->key,x);
 
-		/*
-		 *static int i = 0;
-		 *if (i++ > 40) {
-		 *        fprintf(stderr,"too many iterations, abort...\n");
-		 *        abort();
-		 *}
-		 */
+		static int i = 0;
+		if (i++ > 20) {
+			fprintf(stderr,"too many iterations, abort...\n");
+			abort();
+		}
 
 		node *q = p->left;
 		q->right = x;
@@ -145,8 +165,8 @@ private:
 		x->right = p;
 		x->parent = p->parent;
 
-		p->print_debug();
-		x->print_debug();
+		//p->print_debug();
+		//x->print_debug();
 	}
 
 	// cut the tree rooted at @x and add it to the root list
@@ -181,13 +201,19 @@ private:
 		// Maintenaince
 		node *w = _min;
 		while (1) {
+			fprintf(stderr,"\nw = ");
+			w->print_debug();
 			node *x = w;
 			int d = x->degree;
 			while (A[d]) {
 				node *y = A[d];
+				fprintf(stderr,"y = ");
+				y->print_debug();
 				if (y->key < x->key)
 					::std::swap(x,y);
 				_attach_heap(x,y);
+				fprintf(stderr,"x = ");
+				x->print_debug();
 				A[d] = NULL;
 				d++;
 			}
@@ -201,6 +227,7 @@ private:
 		for (int i = 0; i < A_size; i++) {
 			if (!A[i])
 				continue;
+			A[i]->print_debug();
 			if (!_min)
 				_min = A[i];
 			else {

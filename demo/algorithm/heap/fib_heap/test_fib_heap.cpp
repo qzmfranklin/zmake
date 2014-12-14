@@ -8,7 +8,7 @@ int main(int argc, char const* argv[])
 	const int n = 10;
 	int a[n];
 	for (int i = 0; i < n; i++)
-		a[i] = rand() % (10 * n);
+		a[i] = rand() % (11 * n);
 	fib_heap<int> h;
 	for (int i = 0; i < n; i++)
 		h.push(a[i]);
@@ -21,7 +21,7 @@ int main(int argc, char const* argv[])
 
 	printf("fib_heap output:\n");
 	for (int i = 0; i < n; i++) {
-		printf("%d\n",h.top());
+		fprintf(stderr,"%d\n",h.top());
 		h.pop();
 	}
 	return 0;
