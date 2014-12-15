@@ -19,7 +19,8 @@ using ::std::pair;
 template<typename T>
 class fib_heap: public heap<T> {
 public:
-	struct node {
+	class node {
+	public:
 		T key;
 		bool mark;
 		int degree;
@@ -29,6 +30,37 @@ public:
 		node *right;
 		node(const T &_key): key(_key), mark(false), degree(0),
 				parent(NULL), child(NULL), left(this), right(this) {}
+
+		// insert to the left
+		void insert(node *p)
+		{
+			p->left  = this->left;
+			p->right = this;
+			p->parent= this->parent;
+			left->right = p;
+			left = p;
+		}
+
+		// cut from parent a subtree rooted at this
+		void remove()
+		{
+			if (parent)
+				if (parent->child == this)
+					parent->child = (this == right) ? NULL : right;
+			right->left = left;
+			left->right = right;
+		}
+
+		void add_child(node *p)
+		{
+			p->remove();
+			if (child)
+				child->insert(p);
+			else
+				child = p;
+			p->parent = this;
+		}
+
 		void print_debug() const
 		{
 			fprintf(stderr, "\t[%3d] degree = %d, left = %d, "
@@ -49,7 +81,6 @@ private:
 	node *_last;
 	node **A; // auxilliary array used in _consolidate()
 	size_t A_size;
-	//::std::unordered_map<T,node*> _hash;
 
 public:
 	fib_heap():_size(0), _min(NULL), _last(NULL), A(NULL), A_size(0) { }
@@ -65,18 +96,17 @@ public:
 		if (!_min)
 			return;
 		node *z = _min;
-		//_hash.erase(z->key);
 		if (z->child) {
 			node *x = z->child->left;
 			while (x != z) {
 				node *tmp = x->left;
-				_insert_left(z,x);
+				z->insert(x);
 				x = tmp;
 			}
-			_insert_left(z,z->child);
+			z->insert(z->child);
 			print_debug();
 		}
-		_remove_root(z);
+		z->remove();
 		if (z == z->right)
 			_min = NULL;
 		else {
@@ -93,16 +123,14 @@ public:
 	{
 		fprintf(stderr,"\tpush(%d)\n",key);
 		auto *tmp = new fib_heap<T>::node(key);
-		//_hash.insert({{key,tmp}});
 		if (!_min)
 			_min = tmp;
 		else
-			_insert_left(_min,tmp);
+			_min->insert(tmp);
 		if (key < _min->key)
 			_min = tmp;
 		_size++;
 		_last = tmp;
-		//print_debug();
 	}
 
 	node *last() { return _last; }
@@ -147,28 +175,6 @@ private:
 	{
 	}
 
-	// insert x to p's left
-	void _insert_left(node *p, node *x)
-	{
-		fprintf(stderr,"\t_insert_left([%3d] %p, [%3d] %p)\n",p->key,p,x->key,x);
-
-		static int i = 0;
-		if (i++ > 20) {
-			fprintf(stderr,"too many iterations, abort...\n");
-			abort();
-		}
-
-		node *q = p->left;
-		q->right = x;
-		p->left = x;
-		x->left = q;
-		x->right = p;
-		x->parent = p->parent;
-
-		//p->print_debug();
-		//x->print_debug();
-	}
-
 	// cut the tree rooted at @x and add it to the root list
 	void _cut_subtree(node *x)
 	{
@@ -211,7 +217,7 @@ private:
 				y->print_debug();
 				if (y->key < x->key)
 					::std::swap(x,y);
-				_attach_heap(x,y);
+				x->add_child(y);
 				fprintf(stderr,"x = ");
 				x->print_debug();
 				A[d] = NULL;
@@ -231,25 +237,11 @@ private:
 			if (!_min)
 				_min = A[i];
 			else {
-				_insert_left(_min, A[i]);
+				_min->insert(A[i]);
 				if (A[i]->key < _min->key)
 					_min = A[i];
 			}
 		}
-	}
-
-	// x->key <= y->key, attach y to x
-	void _attach_heap(node *x, node *y)
-	{
-		_remove_root(y);
-		if (x->child)
-			_insert_left(x->child, y);
-		else {
-			x->child = y;
-			y->parent = x;
-		}
-		x->degree++;
-		y->mark = false;
 	}
 
 	void _remove_root(node *p)

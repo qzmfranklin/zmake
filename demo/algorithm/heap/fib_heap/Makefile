@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/heap/fib_heap# this directory
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/heap/fib_heap#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/heap/fib_heap/rules.mk
 -include ${DEP}

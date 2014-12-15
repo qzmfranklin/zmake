@@ -65,46 +65,55 @@ public:
 
 	~permute() {}
 
-	bool empty() const { return _queue.empty(); }
-
-	void run(const int nthread)
+	/*
+	 * recommend: @granularity <= 4
+	 */
+	void run(const int nthread, const int granularity)
 	{
 		::std::list<node*> task_list;
-		_init_task_list(&task_list);
+		_insert_first_node(&task_list);
+		while (task_list.top()->edge_list.size() < granularity)
+			_add_to_task_list(&task_list);
 
-		::std::mutex q_mtx;
-		::std::condition_variable q_cond;
-		auto *worker_list = new ::std::thread[n];
-		for (int i = 0; i < n; i++)
-			worker_list[i] = ::std::thread(_run_worker_function,
-					&q_mtx, &q_cond, &_queue);
+		::std::queue<node*> q;
+		::std::mutex mtx;
+		::std::condition_variable cond;
+		auto *worker_list = new ::std::thread[nthread];
+		for (int i = 0; i < nthread; i++)
+			worker_list[i] = ::std::thread(_worker_function,
+					&q, &mtx, &cond);
 
 		while (1) {
+			using ::std::unique_lock;
+			using ::std::mutex;
+			unique_lock<mutex> lock(mtx);
+			lock.unlock();
 		}
 
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < nthread; i++)
 			worker_list[i].join();
 		delete []worker_list;
 	}
 
 private:
-	void _init_task_list(::std::list<node*> *task_list)
+	void _worker_function(::std::mutex *mtx,
+			::std::condition_variable *cond,
+			::std::list<node*> *q)
 	{
-		{
-		node *tmp = new node;
-		tmp->group_list.push_back(make_pair(0, _size - 1));
-		task_list->push_back(tmp);
-		}
-		const int TASK_LIST_MIN = 100;
-		while (1) {
-		}
 	}
 
-	void _add_to_task_list(::std::list<node*> *task_list)
+	void _insert_first_node(::std::list<node*> *q)
+	{
+		node *tmp = new node;
+		tmp->group_list.push_back(make_pair(0, _size - 1));
+		q->push_back(tmp);
+	}
+
+	void _add_to_task_list(::std::list<node*> *q)
 	{
 		assert(q->size());
 		node *p = q->front();
-		q->pop();
+		q->pop_front();
 
 		auto &gl = p->group_list;
 
@@ -127,7 +136,7 @@ private:
 			tmp->group_list.push_back(make_pair(i+1, end0));
 			for (int j = 1; j < gl.size(); j++)
 				tmp->group_list.push_back(gl[j]);
-			q->push(tmp);
+			q->push_back(tmp);
 		}
 		// edge case of the first group
 		if (end0 - start0 > 1) {
@@ -136,7 +145,7 @@ private:
 			tmp->edge_list.push_back(make_pair(start0, end0));
 			tmp->group_list = p->group_list;
 			tmp->group_list[0] = make_pair(start0+1, end0-1);
-			q->push(tmp);
+			q->push_back(tmp);
 		}
 
 		// branch the remaining groups, if any
@@ -158,7 +167,7 @@ private:
 					tmp->group_list.push_back(gl[k]);
 				for (int k = i+1; k < gl.size(); k++)
 					tmp->group_list.push_back(gl[k]);
-				q->push(tmp);
+				q->push_back(tmp);
 				continue;
 			}
 			// end > start
@@ -183,7 +192,7 @@ private:
 
 				for (int k = i+1; k < gl.size(); k++)
 					tmp->group_list.push_back(gl[k]);
-				q->push(tmp);
+				q->push_back(tmp);
 			}
 		}
 		delete p;
