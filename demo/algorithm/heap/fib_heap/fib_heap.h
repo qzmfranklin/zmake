@@ -28,10 +28,12 @@ public:
 		node *child;
 		node *left;
 		node *right;
+
 		node(const T &_key): key(_key), mark(false), degree(0),
 				parent(NULL), child(NULL), left(this), right(this) {}
 
-		// insert to the left
+		friend class fib_heap<T>;
+
 		void insert(node *p)
 		{
 			p->left  = this->left;
@@ -49,11 +51,12 @@ public:
 					parent->child = (this == right) ? NULL : right;
 			right->left = left;
 			left->right = right;
+			left = this;
+			right = this;
 		}
 
 		void add_child(node *p)
 		{
-			p->remove();
 			if (child)
 				child->insert(p);
 			else
@@ -72,7 +75,6 @@ public:
 					parent ? parent->key : 0,
 					child ? child->key : 0);
 		}
-		friend class fib_heap<T>;
 	};
 
 private:
@@ -91,8 +93,6 @@ public:
 
 	virtual void pop()
 	{
-		fprintf(stderr,"before:\n");
-		print_debug();
 		if (!_min)
 			return;
 		node *z = _min;
@@ -104,19 +104,16 @@ public:
 				x = tmp;
 			}
 			z->insert(z->child);
-			print_debug();
 		}
-		z->remove();
 		if (z == z->right)
 			_min = NULL;
 		else {
 			_min = z->right;
+			z->remove();
 			_consolidate();
 		}
 		delete z;
 		_size--;
-		fprintf(stderr,"after:\n");
-		print_debug();
 	}
 
 	virtual void push(const T &key)
@@ -175,18 +172,6 @@ private:
 	{
 	}
 
-	// cut the tree rooted at @x and add it to the root list
-	void _cut_subtree(node *x)
-	{
-		x->left->right = x->right;
-		x->right->left = x->left;
-		x->mark = false;
-		if (x->parent->child == x)
-			x->parent->child = (x == x->right)  ?  NULL  :  x->right;
-		x->parent->degree--;
-		_insert_left(_min, x);
-	}
-
 	void _alloc_A()
 	{
 		if (A_size >= this->degree())
@@ -207,19 +192,21 @@ private:
 		// Maintenaince
 		node *w = _min;
 		while (1) {
-			fprintf(stderr,"\nw = ");
-			w->print_debug();
+			//fprintf(stderr,"\nw = ");
+			//w->print_debug();
 			node *x = w;
 			int d = x->degree;
 			while (A[d]) {
 				node *y = A[d];
-				fprintf(stderr,"y = ");
-				y->print_debug();
+				//fprintf(stderr,"y = ");
+				//y->print_debug();
 				if (y->key < x->key)
 					::std::swap(x,y);
 				x->add_child(y);
-				fprintf(stderr,"x = ");
-				x->print_debug();
+				// TODO: mark, degree
+				x->degree++;
+				//fprintf(stderr,"x = ");
+				//x->print_debug();
 				A[d] = NULL;
 				d++;
 			}
@@ -233,7 +220,7 @@ private:
 		for (int i = 0; i < A_size; i++) {
 			if (!A[i])
 				continue;
-			A[i]->print_debug();
+			//A[i]->print_debug();
 			if (!_min)
 				_min = A[i];
 			else {
@@ -243,13 +230,6 @@ private:
 			}
 		}
 	}
-
-	void _remove_root(node *p)
-	{
-		p->left->right = p->right;
-		p->right->left = p->left;
-	}
-
 };
 
 #endif /* end of include guard */
