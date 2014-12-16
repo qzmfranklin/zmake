@@ -140,7 +140,7 @@ public:
 
 	void decrease_key(node *x, const T &key)
 	{
-		if (!(x->key < key))
+		if (x->key < key)
 			return;
 		node *z = x;
 		x->key = key;
