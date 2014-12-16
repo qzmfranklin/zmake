@@ -11,10 +11,10 @@
 #include <cmath>
 #include "../heap.h"
 
-//#define fprintf(stderr,...)
-
 using ::std::make_pair;
 using ::std::pair;
+
+#define fprintf(stderr,...)
 
 template<typename T>
 class fib_heap: public heap<T> {
@@ -36,9 +36,9 @@ public:
 
 		void insert(node *p)
 		{
-			p->left  = this->left;
+			p->left  = left;
 			p->right = this;
-			p->parent= this->parent;
+			p->parent= parent;
 			left->right = p;
 			left = p;
 		}
@@ -53,6 +53,7 @@ public:
 			left->right = right;
 			left = this;
 			right = this;
+			parent = NULL;
 		}
 
 		void add_child(node *p)
@@ -62,18 +63,20 @@ public:
 			else
 				child = p;
 			p->parent = this;
+			degree++;
+			p->mark = false;
 		}
 
 		void print_debug() const
 		{
-			fprintf(stderr, "\t[%3d] degree = %d, left = %d, "
-					"right = %d, parent = %d, child = %d\n",
-					key,
-					degree,
-					left->key, 
-					right->key,
-					parent ? parent->key : 0,
-					child ? child->key : 0);
+			fprintf(stderr,"\t[%3d] %d", key, degree);
+			if (this != right)
+				fprintf(stderr,", l = %d, r = %d", left->key, right->key);
+			if (parent)
+				fprintf(stderr,", parent = %d", parent->key);
+			if (child)
+				fprintf(stderr,", child = %d", child->key);
+			fprintf(stderr,"\n");
 		}
 	};
 
@@ -97,13 +100,16 @@ public:
 			return;
 		node *z = _min;
 		if (z->child) {
-			node *x = z->child->left;
-			while (x != z) {
-				node *tmp = x->left;
+			node *x = z->child->right;
+			while (x->right != x) {
+				fprintf(stderr,"hello1 %d\n", x->key);
+				node *tmp = x->right;
+				x->remove();
 				z->insert(x);
 				x = tmp;
 			}
-			z->insert(z->child);
+			x->remove();
+			z->insert(x);
 		}
 		if (z == z->right)
 			_min = NULL;
@@ -139,19 +145,20 @@ public:
 		node *z = x;
 		x->key = key;
 		node *y = x->parent;
-		if (y  &&  x->key < y->key) {
-			while (1) {
-				_cut_subtree(x);
-				x = y;
-				y = y->parent;
-				if (!y)
-					break;
-				if (!x->mark) {
-					x->mark = true;
-					break;
+		if (y)
+			if (x->key < y->key)
+				while (1) {
+					x->remove();
+					_min->insert(x);
+					x = y;
+					y = y->parent;
+					if (!y)
+						break;
+					if (!x->mark) {
+						x->mark = true;
+						break;
+					}
 				}
-			}
-		}
 		if (z->key < _min->key)
 			_min = z;
 	}
@@ -189,33 +196,34 @@ private:
 		// Initialization
 		_alloc_A();
 		memset(A, 0, sizeof(node*) * A_size);
+
 		// Maintenaince
+		fprintf(stderr,"maintenaince\n");
 		node *w = _min;
-		while (1) {
-			//fprintf(stderr,"\nw = ");
+		while (A[w->degree] != w) {
+			//fprintf(stderr,"w = ");
 			//w->print_debug();
+			node *tmp = w->right;
+			w->remove();
 			node *x = w;
 			int d = x->degree;
 			while (A[d]) {
 				node *y = A[d];
-				//fprintf(stderr,"y = ");
+				//fprintf(stderr,"A[%d] = ", d);
 				//y->print_debug();
 				if (y->key < x->key)
 					::std::swap(x,y);
 				x->add_child(y);
-				// TODO: mark, degree
-				x->degree++;
 				//fprintf(stderr,"x = ");
 				//x->print_debug();
 				A[d] = NULL;
 				d++;
 			}
 			A[d] = x;
-			w = w->right;
-			if (A[w->degree] == w)
-				break;
+			w = tmp;
 		}
 		// Termination
+		fprintf(stderr,"termination\n");
 		_min = NULL;
 		for (int i = 0; i < A_size; i++) {
 			if (!A[i])
