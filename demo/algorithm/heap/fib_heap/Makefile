@@ -11,3 +11,4 @@ clean:
 	rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 test_fib_heap.exe: ${d}/test_fib_heap.o
+min_spanning_tree.exe: ${d}/min_spanning_tree.o
