@@ -35,7 +35,7 @@ public:
 
 	virtual void pop();
 
-	virtual void push(const T &val);
+	virtual void push(T &&val);
 
 	void resize(const int n);
 
@@ -84,7 +84,7 @@ template<typename T>
 inline void binary_heap<T>::rise(int k)
 {
 	while (k) {
-		int j = (k - 1) / 2;
+		const int j = (k - 1) / 2;
 		if (data[j] > data[k])
 			::std::swap(data[j], data[k]);
 		else
@@ -94,13 +94,13 @@ inline void binary_heap<T>::rise(int k)
 }
 
 template<typename T> 
-inline void binary_heap<T>::push(const T &val)
+inline void binary_heap<T>::push(T &&val)
 {
 	if (numitem == size) {
 		size = size * 1.3 + 1;
 		resize(size);
 	}
-	data[numitem] = val;
+	data[numitem] = ::std::move(val);
 	rise(numitem);
 	numitem++;
 }

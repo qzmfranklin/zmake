@@ -1,5 +1,5 @@
 ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/heap/binary_heap# this directory
+d       :=${ROOT}/algorithm/heap/binary_heap#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/heap/binary_heap/rules.mk
 -include ${DEP}

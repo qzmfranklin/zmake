@@ -29,7 +29,7 @@ public:
 		node *left;
 		node *right;
 
-		node(const T &_key): key(_key), mark(false), degree(0),
+		node(T &&_key): key(::std::move(_key)), mark(false), degree(0),
 				parent(NULL), child(NULL), left(this), right(this) {}
 
 		friend class fib_heap<T>;
@@ -82,13 +82,12 @@ public:
 
 private:
 	node *_min;
-	node *_last;
-	size_t A_size;
 	node **A; // auxilliary array used in _consolidate()
+	size_t A_size;
 	::std::unordered_set<node*> _node_list;
 
 public:
-	fib_heap():_min(NULL), _last(NULL), A(NULL), A_size(0) { }
+	fib_heap():_min(NULL), A(NULL), A_size(0) { }
 
 	virtual ~fib_heap() { _free(); }
 
@@ -121,23 +120,20 @@ public:
 		delete z;
 	}
 
-	virtual void push(const T &key)
+	virtual void push(T &&key)
 	{
-		auto *tmp = new fib_heap<T>::node(key);
+		auto *tmp = new fib_heap<T>::node( ::std::forward<T>(key) );
 		if (!_min)
 			_min = tmp;
 		else
 			_min->insert(tmp);
 		if (key < _min->key)
 			_min = tmp;
-		_last = tmp;
 		_node_list.insert(tmp);
 	}
 
 	typename ::std::unordered_set<node*>::iterator begin() { return _node_list.begin(); }
 	typename ::std::unordered_set<node*>::iterator end() { return _node_list.end(); }
-
-	node *last() { return _last; }
 
 	void decrease_key(node *x, const T &key)
 	{
@@ -170,15 +166,20 @@ public:
 
 	void print_debug() const
 	{
-		_min->print_debug();
-		for( node *p = _min->right; p != _min; p = p->right )
+		for (auto &p: _node_list)
 			p->print_debug();
 	}
 
 private:
 	void _free()
 	{
-		fprintf(stderr,"fib_heap::_free():  impelment me!\n");
+		for (auto &p: _node_list)
+			delete p;
+		if (A)
+			delete A;
+		A = NULL;
+		A_size = 0;
+		_min = NULL;
 	}
 
 	void _alloc_A()
@@ -200,7 +201,6 @@ private:
 		memset(A, 0, sizeof(node*) * A_size);
 
 		// Maintenaince
-		//fprintf(stderr,"maintenaince\n");
 		node *w = _min;
 		while (A[w->degree] != w) {
 			//fprintf(stderr,"w = ");

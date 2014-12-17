@@ -10,7 +10,7 @@ int main(int argc, char const* argv[])
 		a[i] = rand() % (10 * n);
 	binary_heap<int> h(10);
 	for (int i = 0; i < n; i++)
-		h.push(a[i]);
+		h.push(::std::move(a[i]));
 	for (int i = 0; i < n; i++) {
 		printf("%d\n",h.top());
 		h.pop();

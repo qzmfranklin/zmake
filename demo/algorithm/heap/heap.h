@@ -11,7 +11,7 @@ public:
 
 	virtual void pop() = 0;
 
-	virtual void push(const T &val) = 0;
+	virtual void push(T &&val) = 0;
 };
 
 #endif /* end of include guard */
