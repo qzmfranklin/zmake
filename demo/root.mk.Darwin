@@ -4,7 +4,7 @@ CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -fpermissive -pthread
 
 CXX		:=${CC}
-CXXFLAGS	:=${CFLAGS} -std=c++11
+CXXFLAGS	:=${CFLAGS} -std=c++1y
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote ${ROOT} -isystem ${ROOT}/gtest/include -isystem ${ROOT}/gtest

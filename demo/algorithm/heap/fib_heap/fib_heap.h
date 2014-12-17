@@ -7,14 +7,14 @@
 #include <limits.h>
 #include <string.h>
 #include <vector>
-#include <unordered_map>
+#include <unordered_set>
 #include <cmath>
 #include "../heap.h"
 
 using ::std::make_pair;
 using ::std::pair;
 
-#define fprintf(stderr,...)
+//#define fprintf(stderr,...)
 
 template<typename T>
 class fib_heap: public heap<T> {
@@ -81,14 +81,14 @@ public:
 	};
 
 private:
-	size_t _size;
 	node *_min;
 	node *_last;
-	node **A; // auxilliary array used in _consolidate()
 	size_t A_size;
+	node **A; // auxilliary array used in _consolidate()
+	::std::unordered_set<node*> _node_list;
 
 public:
-	fib_heap():_size(0), _min(NULL), _last(NULL), A(NULL), A_size(0) { }
+	fib_heap():_min(NULL), _last(NULL), A(NULL), A_size(0) { }
 
 	virtual ~fib_heap() { _free(); }
 
@@ -102,7 +102,6 @@ public:
 		if (z->child) {
 			node *x = z->child->right;
 			while (x->right != x) {
-				fprintf(stderr,"hello1 %d\n", x->key);
 				node *tmp = x->right;
 				x->remove();
 				z->insert(x);
@@ -118,13 +117,12 @@ public:
 			z->remove();
 			_consolidate();
 		}
+		_node_list.erase(z);
 		delete z;
-		_size--;
 	}
 
 	virtual void push(const T &key)
 	{
-		fprintf(stderr,"\tpush(%d)\n",key);
 		auto *tmp = new fib_heap<T>::node(key);
 		if (!_min)
 			_min = tmp;
@@ -132,9 +130,12 @@ public:
 			_min->insert(tmp);
 		if (key < _min->key)
 			_min = tmp;
-		_size++;
 		_last = tmp;
+		_node_list.insert(tmp);
 	}
+
+	typename ::std::unordered_set<node*>::iterator begin() { return _node_list.begin(); }
+	typename ::std::unordered_set<node*>::iterator end() { return _node_list.end(); }
 
 	node *last() { return _last; }
 
@@ -165,7 +166,7 @@ public:
 
 	// See Introduction to Algorithms 3rd Edition P523 for the max degree
 	size_t degree() const 
-	{ return (size_t) (::std::log(1.0*_size) / ::std::log(1.618) + 1.0E-6) + 1; }
+	{ return (size_t) (::std::log(1.0 * _node_list.size()) / ::std::log(1.618) + 1.0E-6) + 1; }
 
 	void print_debug() const
 	{
@@ -177,6 +178,7 @@ public:
 private:
 	void _free()
 	{
+		fprintf(stderr,"fib_heap::_free():  impelment me!\n");
 	}
 
 	void _alloc_A()
@@ -198,7 +200,7 @@ private:
 		memset(A, 0, sizeof(node*) * A_size);
 
 		// Maintenaince
-		fprintf(stderr,"maintenaince\n");
+		//fprintf(stderr,"maintenaince\n");
 		node *w = _min;
 		while (A[w->degree] != w) {
 			//fprintf(stderr,"w = ");
@@ -223,7 +225,7 @@ private:
 			w = tmp;
 		}
 		// Termination
-		fprintf(stderr,"termination\n");
+		//fprintf(stderr,"termination\n");
 		_min = NULL;
 		for (int i = 0; i < A_size; i++) {
 			if (!A[i])
