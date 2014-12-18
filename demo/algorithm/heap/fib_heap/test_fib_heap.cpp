@@ -6,15 +6,15 @@
 
 int main(int argc, char const* argv[])
 {
-	const int n = 10;
+	const int n = 30;
 	int a[n];
 	for (int i = 0; i < n; i++)
 		a[i] = rand() % (13 * n);
 	fib_heap<int> h;
 	printf("Origianl input:\n");
 	for (int i = 0; i < n; i++) {
-		printf("[%3d] %d\n",i,a[i]);
-		h.push(a[i]);
+		//printf("[%3d] %d\n",i,a[i]);
+		h.push(::std::move(a[i]));
 	}
 	printf("\n");
 

@@ -5,7 +5,8 @@
 #include <cmath>
 #include <complex>
 #include <vector>
-#include "fib_heap.h"
+#include "algorithm/heap/fib_heap/fib_heap.h"
+#include "../geo_utils.h"
 
 using ::std::pair;
 using ::std::make_pair;
@@ -24,28 +25,23 @@ struct node {
 
 int main(int argc, char const* argv[])
 {
-	const int n = 30;
-	auto *v = new ::std::complex<double>[n];
-	for (int i = 0; i < n; i++)
-		v[i] = ::std::complex<double>(
-				10.0 * rand() / RAND_MAX,
-				10.0 * rand() / RAND_MAX
-				);
+	if (argc < 2) {
+		fprintf(stderr,"Usage: mst.exe [infile]\n");
+		exit(1);
+	}
+	FILE *fp = fopen(argv[1],"r");
+	size_t n;
+	::std::complex<double> *v;
+	read_ascii(fp, &n, (void**)&v);
+	fclose(fp);
 
 	fib_heap<node> h;
 	for (int i = 0; i < n; i++)
 		h.push( node(DBL_MAX, i) );
 
-	::std::vector<int> node_list;
-	node_list.reserve(n);
-	::std::vector< pair<int,int> > edge_list;
-	edge_list.reserve(n - 1);
-
-	node_list[0] = h.top().index;
+	int prev = h.top().index;
 	h.pop();
-
 	for (int i = 1; i < n; i++) {
-		const int prev = node_list[i-1];
 		for (auto &u: h) {
 			node &p = u->key;
 			const int curr = p.index;
@@ -57,8 +53,8 @@ int main(int argc, char const* argv[])
 			}
 		}
 		node &tmp = h.top();
-		node_list[i] = tmp.index;
-		edge_list[i-1] = make_pair( tmp.index, tmp.connect );
+		printf("%8d %8d\n", tmp.index, tmp.connect);
+		prev = tmp.index;
 		h.pop();
 	}
 

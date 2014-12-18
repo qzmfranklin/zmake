@@ -12,7 +12,7 @@ if argc<1:
     print("Usage: plot_hull.py [fname]")
     exit(1)
 
-raw = np.genfromtxt(argv[1],skiprows=1)
+raw = np.genfromtxt(argv[1], skip_header=1)
 x  = raw[:,0]
 y  = raw[:,1]
 plt.plot(x,y,'ro-')
