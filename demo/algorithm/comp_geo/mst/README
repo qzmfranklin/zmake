@@ -1,0 +1,5 @@
+Usage of minimal spanning tree calculator:
+
+../gen2dpts.exe 0 10 0 10 17 > nodes
+cat nodes | ./mst.exe > edges
+./plot_mst.py nodes edges

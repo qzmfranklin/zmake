@@ -25,15 +25,9 @@ struct node {
 
 int main(int argc, char const* argv[])
 {
-	if (argc < 2) {
-		fprintf(stderr,"Usage: mst.exe [infile]\n");
-		exit(1);
-	}
-	FILE *fp = fopen(argv[1],"r");
 	size_t n;
 	::std::complex<double> *v;
-	read_ascii(fp, &n, (void**)&v);
-	fclose(fp);
+	read_ascii(stdin, &n, (void**)&v);
 
 	fib_heap<node> h;
 	for (int i = 0; i < n; i++)
