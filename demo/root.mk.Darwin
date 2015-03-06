@@ -4,11 +4,14 @@ CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -fpermissive -pthread
 
 CXX		:=${CC}
-CXXFLAGS	:=${CFLAGS} -std=c++1y
+CXXFLAGS	:=${CFLAGS} -std=c++11
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=-iquote ${ROOT} -isystem ${ROOT}/gtest/include -isystem ${ROOT}/gtest
-LIBS		:=
+INCS		:=-iquote ${ROOT} \
+			-isystem ${ROOT}/gtest/include \
+			-isystem ${ROOT}/gtest \
+			`pkg-config libgvc --cflags`
+LIBS		:=`pkg-config libgvc --libs`
 
 #	INTERNAL VARIABLES
 OBJ		:=# .o files
