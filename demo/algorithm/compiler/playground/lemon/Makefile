@@ -1,31 +1,32 @@
-LEMON:=lemon
+LEMON:=./lemon.exe
 CXX:=g++
-CXXFLAG:=-O3
+CXXFLAG:=-O3 -std=c++11 -pedantic
 
-EXE:=ex1.exe
+EXE:=lemon.exe ex1.exe
 
 .SUFFIXES:
 
 
-clean:
-	rm -f *.o ex1.cpp ex1.c ex1.h ex1.out $(EXE)
-
 all: $(EXE)
 
+clean:
+	rm -f *.o ex1.cpp ex1.c ex1.h ex1.out $(EXE)
 
 test: all
 	./ex1.exe
 
 ex1.exe: ex1.o main.o
 
-ex1.c ex1.h: ex1.y
+$(LEMON): lemon.o
+
+ex1.c ex1.h:  ex1.y $(LEMON)
 	$(LEMON) $<
 
 %.exe: %.o
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $^ $(CXXFLAG)
 
 %.o: %.cpp
-	$(CXX) -c $<
+	$(CXX) -c $< $(CXXFLAG)
 
 %.o: %.c
-	$(CXX) -c $<
+	$(CXX) -c $< $(CXXFLAG)
