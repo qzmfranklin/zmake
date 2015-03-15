@@ -1,10 +1,10 @@
 #include "ex1.h"
+#include "ex1.hh"
 #include <stdlib.h>
 
-// TODO: Move these to ex1.h
-void *ParseAlloc(void* (*allocProc)(size_t));
-void ParseFree(void*, void(*freeProc)(void*));
-void Parse(void *parser, int token_id, int token_value);
+//void *ParseAlloc(void* (*allocProc)(size_t));
+//void ParseFree(void*, void(*freeProc)(void*));
+//void Parse(void *parser, int token_id, int token_value);
 
 int main()
 {
