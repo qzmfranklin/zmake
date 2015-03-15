@@ -5,39 +5,32 @@
 
 int main(const int argc, const char *argv[])
 {
-	using namespace ::boost;
-	// Vertex properties
-	typedef property <vertex_name_t, std::string,
-		property <vertex_color_t, float>> vertex_p;  
-	// Edge properties
-	typedef property <edge_weight_t, double> edge_p;
-	// Graph properties
-	typedef property <graph_name_t, std::string> graph_p;
-	// adjacency_list-based type
-	typedef adjacency_list <vecS, vecS, directedS, vertex_p, edge_p, graph_p> graph_t;
+	typedef boost::property<boost::vertex_name_t, std::string,
+		boost::property<boost::vertex_color_t, float>> vProperty;
+	typedef boost::property<boost::edge_weight_t, double> eProperty;
+	typedef boost::property<boost::graph_name_t, std::string> gProperty;
+	typedef boost::adjacency_list<boost::vecS, boost::vecS,
+		boost::directedS, vProperty, eProperty, gProperty> Graph;
 
 	// Construct an empty graph and prepare the dynamic_property_maps.
-	graph_t graph(0);
-	dynamic_properties dp;
+	Graph g(0);
+	boost::dynamic_properties dp;
 
-	property_map<graph_t, vertex_name_t>::type name = get(vertex_name, graph);
-	dp.property("node_id",name);
+	boost::property_map<Graph, boost::vertex_name_t>::type name = get(boost::vertex_name, g);
+	dp.property("node_id", name);
 
-	property_map<graph_t, vertex_color_t>::type mass = get(vertex_color, graph);
-	dp.property("mass",mass);
+	//boost::property_map<Graph, boost::vertex_color_t>::type mass = get(boost::vertex_color, g);
+	//dp.property("mass", mass);
 
-	property_map<graph_t, edge_weight_t>::type weight = get(edge_weight, graph);
-	dp.property("weight",weight);
+	//boost::property_map<Graph, boost::edge_weight_t>::type weight = get(boost::edge_weight, g);
+	//dp.property("weight", weight);
 
-	// Use ref_property_map to turn a graph property into a property map
-	boost::ref_property_map<graph_t*,std::string> gname(get_property(graph,graph_name));
-	dp.property("name",gname);
+	// Use ref_property_map to turn a g property into a property map
+	boost::ref_property_map<Graph*, std::string> gname(boost::get_property(g, boost::graph_name));
+	dp.property("name", gname);
 
-	bool status = read_graphviz(std::cin, graph, dp, "node_id");
-
-	if (status) {
-		  write_graphviz(std::cout, graph);
-	}
+	if (boost::read_graphviz(std::cin, g, dp, "node_id"))
+		  boost::write_graphviz(std::cout, g);
 
 	return 0;
 }
