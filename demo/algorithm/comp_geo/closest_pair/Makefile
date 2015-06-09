@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/comp_geo/closest_pair# this directory
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/comp_geo/closest_pair#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/comp_geo/rules.mk
 -include ${ROOT}/algorithm/comp_geo/closest_pair/rules.mk

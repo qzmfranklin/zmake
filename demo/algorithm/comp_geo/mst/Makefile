@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/comp_geo/mst# this directory
+ROOT    :=/Users/qzmfrank/git/zmake/demo
+d       :=${ROOT}/algorithm/comp_geo/mst#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/comp_geo/rules.mk
 -include ${ROOT}/algorithm/comp_geo/mst/rules.mk
