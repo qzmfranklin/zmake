@@ -1,5 +1,5 @@
-ROOT    :=/Users/qzmfrank/git/zmake/demo
-d       :=${ROOT}/algorithm/bst#this directory
+ROOT    :=/Volumes/SourceCode/git/zmake/demo
+d       :=$(ROOT)/algorithm/bst#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/algorithm/bst/rules.mk
 -include ${ROOT}/gtest/rules.mk

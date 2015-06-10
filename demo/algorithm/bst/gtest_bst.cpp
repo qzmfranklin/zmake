@@ -1,5 +1,5 @@
-#include "gtest/gtest.h"
 #include "bst.h"
+#include <gtest/gtest.h>
 
 TEST(Traversal, Recursive) {
 	const int keys[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};

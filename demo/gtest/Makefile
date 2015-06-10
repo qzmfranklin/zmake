@@ -1,5 +1,5 @@
-ROOT    :=/home/qzmfrank/git/zmake/demo
-d       :=${ROOT}/gtest#this directory
+ROOT    :=/Volumes/SourceCode/git/zmake/demo
+d       :=$(ROOT)/gtest#this directory
 -include ${ROOT}/root.mk
 -include ${ROOT}/gtest/rules.mk
 -include ${DEP}

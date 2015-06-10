@@ -8,6 +8,6 @@ d       :=${ROOT}/algorithm/diffpar#this directory
 all: ${OBJ}
 asm: ${ASM}
 clean:
-	rm -f *.exe ${OBJ} ${DEP} ${ASM}
+	${QUIET}rm -f *.exe ${OBJ} ${DEP} ${ASM}
 
 diffpar.exe: ${d}/diffpar.o

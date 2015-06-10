@@ -5,7 +5,7 @@ import shutil
 import os
 import glob
 import fnmatch
-import sys 
+import sys
 import argparse
 
 parser=argparse.ArgumentParser(description=
@@ -15,7 +15,7 @@ parser=argparse.ArgumentParser(description=
 parser.add_argument('dir',action='store',nargs='?',default='.',
                    help='directory of source files (%(default)s)')
 parser.add_argument('-R','--recursive',action='store_true',default=False,
-                 help='combined with -b/--renew, recursively (%(default)s)') 
+                 help='combined with -b/--renew, recursively (%(default)s)')
 
 # group_general, mutually exlusive
 group_general=parser.add_mutually_exclusive_group()
@@ -26,104 +26,114 @@ group_general.add_argument('-s','--skip',action='store_true',default=False,
 
 group_mk=parser.add_mutually_exclusive_group()
 group_mk.add_argument('-d','--delete',action='store_true',default=False,
-                 help='recursively delete all .mk files in [dir] (%(default)s)') 
+                 help='recursively delete all .mk files in [dir] (%(default)s)')
 group_mk.add_argument('-b','--branch-only',action='store_true',default=False,
-                 help='generate rules.mk for a single directory (%(default)s)') 
+                 help='generate rules.mk for a single directory (%(default)s)')
 group_mk.add_argument('-r','--root-only',action='store_true',default=False,
                  help='generate [dir]/root.mk (%(default)s)')
 
 # group_makefile
 group_makefile=parser.add_mutually_exclusive_group()
 #=parser.add_argument_group('Makefile')
-group_makefile.add_argument('-g','--makefile',action='store_true',default=False, 
+group_makefile.add_argument('-g','--makefile',action='store_true',default=False,
         help='generate a Makefile (%(default)s)')
 #group_makefile.add_argument('-o',dest='target',action='store',default='Makefile',
-        #help='output the Makefile to TARGET (%(default)s)') 
+        #help='output the Makefile to TARGET (%(default)s)')
 target='Makefile'
 group_makefile.add_argument('--renew',action='store_true',default=False,
-        help='renew ${ROOT} in one Makefile, with -R, renew all (%(default)s)')
+        help='renew $(ROOT) in one Makefile, with -R, renew all (%(default)s)')
 
 
 
 #parser.set_defaults(verbose=False)
 
-args = parser.parse_args() 
+args = parser.parse_args()
 
 rootmk="""\
-#	PROJECT-WIDE COMMON COMPILING FLAGS 
+#	PROJECT-WIDE COMMON COMPILING FLAGS
 CC		:=g++
 CFLAGS 		:=-O3 -Wall -Drestrict=__restrict__ -DNDEBUG
 
-CXX		:=${CC}
-CXXFLAGS	:=${CFLAGS}
+CXX		:=$(CC)
+CXXFLAGS	:=$(CFLAGS)
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=-iquote ${ROOT}
+INCS		:=-iquote $(ROOT)
 LIBS		:=
+
+#       SUPPRESS LENGTHY COMMANDLINE ECHOS
+QUIET           :=@
 
 #	INTERNAL VARIABLES
 OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
-ASMFLAGS	:=-S# source code commented assembly code 
+ASMFLAGS	:=-S# source code commented assembly code
 .SUFFIXES:
 """
 
 branchmk="""\
 #  THIS DIRECTORY
-DIR_RANDOM_NUM:=${ROOT}#RELATIVE_PATH_FROM_ROOT#
+DIR_RANDOM_NUM:=$(ROOT)#RELATIVE_PATH_FROM_ROOT#
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR_RANDOM_NUM}C:=#LIST_C_SOURCE_FILES#
-${DIR_RANDOM_NUM}CPP:=#LIST_CPP_SOURCE_FILES# 
+$(DIR_RANDOM_NUM)C:=$(wildcard *.c)
+$(DIR_RANDOM_NUM)CPP:=$(wildcard *.cpp)
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR_RANDOM_NUM}CFLAGS:=${CFLAGS}
-${DIR_RANDOM_NUM}CXXFLAGS:=${CXXFLAGS}
-${DIR_RANDOM_NUM}INCS:=${INCS}
-${DIR_RANDOM_NUM}LIBS:=${LIBS}
+$(DIR_RANDOM_NUM)CFLAGS:=$(CFLAGS)
+$(DIR_RANDOM_NUM)CXXFLAGS:=$(CXXFLAGS)
+$(DIR_RANDOM_NUM)INCS:=$(INCS)
+$(DIR_RANDOM_NUM)LIBS:=$(LIBS)
 
-DEP+=${${DIR_RANDOM_NUM}CPP:%.cpp=${DIR_RANDOM_NUM}/%.d} ${${DIR_RANDOM_NUM}C:%.c=${DIR_RANDOM_NUM}/%.d} 
-OBJ+=${${DIR_RANDOM_NUM}CPP:%.cpp=${DIR_RANDOM_NUM}/%.o} ${${DIR_RANDOM_NUM}C:%.c=${DIR_RANDOM_NUM}/%.o} 
-ASM+=${${DIR_RANDOM_NUM}CPP:%.cpp=${DIR_RANDOM_NUM}/%.s} ${${DIR_RANDOM_NUM}C:%.c=${DIR_RANDOM_NUM}/%.s} 
+DEP+=$($(DIR_RANDOM_NUM)CPP:%.cpp=$(DIR_RANDOM_NUM)/%.d) $($(DIR_RANDOM_NUM)C:%.c=$(DIR_RANDOM_NUM)/%.d)
+OBJ+=$($(DIR_RANDOM_NUM)CPP:%.cpp=$(DIR_RANDOM_NUM)/%.o) $($(DIR_RANDOM_NUM)C:%.c=$(DIR_RANDOM_NUM)/%.o)
+ASM+=$($(DIR_RANDOM_NUM)CPP:%.cpp=$(DIR_RANDOM_NUM)/%.s) $($(DIR_RANDOM_NUM)C:%.c=$(DIR_RANDOM_NUM)/%.s)
 
-${DIR_RANDOM_NUM}/%.o: ${DIR_RANDOM_NUM}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOM_NUM}CFLAGS} ${${DIR_RANDOM_NUM}INCS}
-${DIR_RANDOM_NUM}/%.s: ${DIR_RANDOM_NUM}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOM_NUM}CFLAGS} ${${DIR_RANDOM_NUM}INCS}
+$(DIR_RANDOM_NUM)/%.o: $(DIR_RANDOM_NUM)/%.c
+	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($(DIR_RANDOM_NUM)CFLAGS) $($(DIR_RANDOM_NUM)INCS)
+	$(QUIET)echo "Compiling $(notdir $<) ..."
+$(DIR_RANDOM_NUM)/%.s: $(DIR_RANDOM_NUM)/%.c
+	$(QUIET)$(CC) -o $@ $< $(ASMFLAGS) $($(DIR_RANDOM_NUM)CFLAGS) $($(DIR_RANDOM_NUM)INCS)
+	$(QUIET)echo "Assembly listing $(notdir $<) ..."
 
-${DIR_RANDOM_NUM}/%.o: ${DIR_RANDOM_NUM}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR_RANDOM_NUM}CXXFLAGS} ${${DIR_RANDOM_NUM}INCS}
-${DIR_RANDOM_NUM}/%.s: ${DIR_RANDOM_NUM}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR_RANDOM_NUM}CXXFLAGS} ${${DIR_RANDOM_NUM}INCS}
+$(DIR_RANDOM_NUM)/%.o: $(DIR_RANDOM_NUM)/%.cpp
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) $($(DIR_RANDOM_NUM)CXXFLAGS) $($(DIR_RANDOM_NUM)INCS)
+	$(QUIET)echo "Compiling $(notdir $<) ..."
+$(DIR_RANDOM_NUM)/%.s: $(DIR_RANDOM_NUM)/%.cpp
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) $($(DIR_RANDOM_NUM)CXXFLAGS) $($(DIR_RANDOM_NUM)INCS)
+	$(QUIET)echo "Assembly listing $(notdir $<) ..."
 
 # Linking pattern rule for this directory
-%.exe: ${DIR_RANDOM_NUM}/%.o
-	${CXX} -o $@ $^ ${${DIR_RANDOM_NUM}LIBS}
+%.exe: $(DIR_RANDOM_NUM)/%.o
+	$(QUIET)$(CXX) -o $@ $^ $($(DIR_RANDOM_NUM)LIBS)
+	$(QUIET)echo "Linking $(notdir $@) ..."
 """
 
 makefile="""\
 ROOT    :=#ABSOLUTE_ROOT_OF_SOURCE_FILES#
 d       :=#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY## this directory
--include ${ROOT}/root.mk
--include ${ROOT}#INCLUDE_ALL_BRANCHES_HERE#
--include ${DEP}
+-include $(ROOT)/root.mk
+-include $(ROOT)#INCLUDE_ALL_BRANCHES_HERE#
+-include $(DEP)
 
-# List all the executables you want to run when you type `make test` in ${TESTS}
-# Note that you need to -include ${ROOT}/gtest/rules.mk to actually build those
+# List all the executables you want to run when you type `make test` in $(TESTS)
+# Note that you need to -include $(ROOT)/gtest/rules.mk to actually build those
 # executables
 TESTS:=
 
 .PHONY: all asm clean test
-all: ${OBJ}
-asm: ${ASM}
+all: $(OBJ)
+asm: $(ASM)
 clean:
-	rm -f *.exe ${OBJ} ${DEP} ${ASM}
-test: ${TESTS}
-	for t in $^ ; do ./"$$t" ; done
+	$(QUIET)rm -f *.exe $(OBJ) $(DEP) $(ASM)
+        $(QUIET)echo "Cleaning ..."
+test: $(TESTS)
+	$(QUIET)for t in $^ ; do ./"$$t" ; done
+        $(QUIET)echo "Running tests ..."
 
 # Sample linking rules for building executables:
-#test_heapsort.exe: ${d}/heapsort.o ${d}/test_heapsort.o ${ROOT}/utils/utils.o
-#gtest_dag.exe: ${d}/gtest_dag.o ${d}/dag.o ${ROOT}/gtest/gtest_main.a
+#test_heapsort.exe: $(d)/heapsort.o $(d)/test_heapsort.o $(ROOT)/utils/utils.o
+#gtest_dag.exe: $(d)/gtest_dag.o $(d)/dag.o $(ROOT)/gtest/gtest_main.a
 """
 texts=dict()
 texts['root']=rootmk
@@ -143,10 +153,10 @@ def check_overwrite(fname):
                                  'already exists, overwrite (y/n/q)? ']))
         raw=rawinput[0].lower()
         if raw=='y':
-            flag=False 
+            flag=False
         elif raw=='n':
             flag=True
-        elif raw=='q': 
+        elif raw=='q':
             print('abort')
             exit(1)
         else:
@@ -159,7 +169,7 @@ def check_overwrite(fname):
 #print(check_overwrite('/Users/qzmfrank/.vimrc'))
 
 def strfile(fname,str):
-    """create file, copy string into it""" 
+    """create file, copy string into it"""
     fd=open(fname,'w')
     fd.write(str)
     fd.close()
@@ -170,7 +180,7 @@ def strfile2(fname,str):
     if args.force:
         strfile(fname,str)
     elif check_overwrite(fname)==False:
-        strfile(fname,str) 
+        strfile(fname,str)
 
 #strfile2('rootnew.mk',rootmk)
 
@@ -178,7 +188,7 @@ def find_abspath(dir):
     """return the absolute path of dir"""
     if dir[0]=='/':
         root=dir
-    else: 
+    else:
         root=os.path.normpath(os.path.join(os.getcwd(),dir))
     return root
 
@@ -201,9 +211,9 @@ def find_root(dir):
             else:
                 if os.path.isfile(os.path.join(root,'root.mk')):
                     flag=True
-                    break 
+                    break
     if flag:
-        return root 
+        return root
     else:
         print('root.mk not found')
         exit(1)
@@ -223,16 +233,12 @@ def gen_branch(root,path,text,files):
     cpp_src=fnmatch.filter(files,'*.cpp')
     if len(c_src)+len(cpp_src)<=0: return
 
-    fname=os.path.join(path,'rules.mk') 
+    fname=os.path.join(path,'rules.mk')
     relative_path=path.replace(os.path.normpath(root),'')
     hashstr=hashlib.md5(relative_path.encode('utf-8')).hexdigest()
     #print(hashstr)
     tmp=text.replace('#RELATIVE_PATH_FROM_ROOT#',relative_path)
     tmp=tmp.replace('DIR_RANDOM_NUM','DIR'+hashstr)
-    c_str=' '.join(c_src)
-    tmp=tmp.replace('#LIST_C_SOURCE_FILES#',c_str) 
-    cpp_str=' '.join(cpp_src)
-    tmp=tmp.replace('#LIST_CPP_SOURCE_FILES#',cpp_str)
     strfile2(fname,tmp)
 
 def gen_branch_only(dir,text):
@@ -254,7 +260,7 @@ def rwalk(dir,texts):
 def rwalk_skip(dir,texts):
     """recursively generate rules.mk's, skip any existing file"""
     root=find_root(dir)
-    for path,dirs,files in os.walk(root): 
+    for path,dirs,files in os.walk(root):
         if os.path.isfile(os.path.join(path,'rules.mk'))==False:
             gen_branch(root,path,texts['branch'],files)
     return True
@@ -276,9 +282,9 @@ def gen_makefile(dir,target,text):
     tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#',root)
     dirlist=collect_branch(root)
     tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
-                    '\n-include ${ROOT}'.join(dirlist)) 
+                    '\n-include $(ROOT)'.join(dirlist))
     tmp=tmp.replace('#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY#',
-                    find_abspath(dir).replace(root,'${ROOT}'))
+                    find_abspath(dir).replace(root,'$(ROOT)'))
 
     strfile2(target,tmp)
 
@@ -295,7 +301,7 @@ def delete_all(dir):
         fname=os.path.join(path,'root.mk')
         if os.path.isfile(fname):
             os.remove(fname)
-            print('deleted',fname) 
+            print('deleted',fname)
 
 
 def replace_1stline(fname,root):
@@ -335,7 +341,7 @@ def replace_2ndline(fname,root):
             break
         ln_num=ln_num+1
     lines[ln_num]=lines[ln_num][0:index] \
-                    +'d       :=${ROOT}/' \
+                    +'d       :=$(ROOT)/' \
                     +os.path.relpath(dir,root) \
                     +'#this directory\n'
     fout=open(fname,'w')
@@ -343,7 +349,7 @@ def replace_2ndline(fname,root):
     fout.close()
 
 def renew_makefile(dir,target):
-    """renew ${ROOT} in one Makefile"""
+    """renew $(ROOT) in one Makefile"""
     root=find_root(dir)
     fname=os.path.join(os.path.abspath(dir),target)
     if os.path.isfile(fname):
@@ -352,7 +358,7 @@ def renew_makefile(dir,target):
         replace_2ndline(fname,root)
 
 def renew_makefiles(dir,target):
-    """renew ${ROOT} in all Makefiles"""
+    """renew $(ROOT) in all Makefiles"""
     root=find_root(dir)
     for path,dirs,files in os.walk(root):
         fname=os.path.join(path,target)
@@ -367,7 +373,7 @@ if args.delete:
 if args.branch_only:
     if args.recursive:
         rwalk(args.dir,texts)
-    else: 
+    else:
         gen_branch_only(args.dir,texts['branch'])
     exit(0)
 

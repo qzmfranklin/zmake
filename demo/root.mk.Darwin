@@ -1,4 +1,4 @@
-#	PROJECT-WIDE COMMON COMPILING FLAGS 
+#	PROJECT-WIDE COMMON COMPILING FLAGS
 CC		:=clang++
 CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -fpermissive -pthread
@@ -13,10 +13,12 @@ INCS		:=-iquote ${ROOT} \
 			`pkg-config libgvc --cflags`
 LIBS		:=`pkg-config libgvc --libs`
 
+QUIET		:=@
+
 #	INTERNAL VARIABLES
 OBJ		:=# .o files
 DEP		:=# .d files
 ASM		:=# .s files
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
-ASMFLAGS	:=-S# source code commented assembly code 
+ASMFLAGS	:=-S# source code commented assembly code
 .SUFFIXES:
