@@ -71,9 +71,7 @@ ASM		:=# .s files
 DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
 ASMFLAGS	:=-S# source code commented assembly code
 .SUFFIXES:
-"""
 
-root_internal="""\
 #	INTERNAL VARIABLES
 OBJ		:=# .o files
 DEP		:=# .d files
@@ -164,7 +162,7 @@ $(DIR_RANDOM_NUM)/%.s: $(DIR_RANDOM_NUM)/%.cpp
 # Linking pattern rule for this directory
 %.exe: $(DIR_RANDOM_NUM)/%.o
 	$(QUIET)$(CXX) -o $@ $^ $($(DIR_RANDOM_NUM)LIBS)
-	$(QUIET)echo "Linking $(RED)$(notdir $@) $(NONE)..."
+	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
 """
 
 makefile="""\
