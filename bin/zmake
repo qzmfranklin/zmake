@@ -167,7 +167,7 @@ $(DIR_RANDOM_NUM)/%.s: $(DIR_RANDOM_NUM)/%.cpp
 """
 
 makefile="""\
-ROOT    :=$(abspath #ABSOLUTE_ROOT_OF_SOURCE_FILES#)
+ROOT    :=$(realpath #ABSOLUTE_ROOT_OF_SOURCE_FILES#)
 d       :=#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY## this directory
 -include $(ROOT)/root.mk
 -include $(ROOT)#INCLUDE_ALL_BRANCHES_HERE#
@@ -182,11 +182,11 @@ TESTS:=
 all: $(OBJ)
 asm: $(ASM)
 clean:
+	$(QUIET)echo "\t\t\t======== CLEANUP ========"
 	$(QUIET)rm -f *.exe $(OBJ) $(DEP) $(ASM)
-	$(QUIET)echo "Cleaning ..."
 test: $(TESTS)
+	$(QUIET)echo "\t\t\t======== TESTS ========"
 	$(QUIET)for t in $^ ; do ./"$$t" ; done
-	$(QUIET)echo "Running tests ..."
 
 # Sample linking rules for building executables:
 #test_heapsort.exe: $(d)/heapsort.o $(d)/test_heapsort.o $(ROOT)/utils/utils.o
