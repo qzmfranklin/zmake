@@ -3,13 +3,13 @@ CC		:=clang++
 CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -fpermissive -pthread
 
-CXX		:=${CC}
-CXXFLAGS	:=${CFLAGS} -std=c++11
+CXX		:=$(CC)
+CXXFLAGS	:=$(CFLAGS) -std=c++11
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=-iquote ${ROOT} \
-			-isystem ${ROOT}/gtest/include \
-			-isystem ${ROOT}/gtest \
+INCS		:=-iquote $(ROOT) \
+			-isystem $(ROOT)/gtest/include \
+			-isystem $(ROOT)/gtest \
 			`pkg-config libgvc --cflags`
 LIBS		:=`pkg-config libgvc --libs`
 

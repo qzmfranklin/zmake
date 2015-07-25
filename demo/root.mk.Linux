@@ -3,11 +3,11 @@ CC		:=g++-4.9
 CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -pthread -fdiagnostics-color=always -fext-numeric-literals
 
-CXX		:=${CC}
-CXXFLAGS	:=${CFLAGS} -std=c++11
+CXX		:=$(CC)
+CXXFLAGS	:=$(CFLAGS) -std=c++11
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS		:=-iquote ${ROOT} -isystem ${ROOT}/gtest/include -isystem ${ROOT}/gtest
+INCS		:=-iquote $(ROOT) -isystem $(ROOT)/gtest/include -isystem $(ROOT)/gtest
 LIBS		:=-pthread
 
 #	INTERNAL VARIABLES
