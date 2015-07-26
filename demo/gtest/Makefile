@@ -1,4 +1,4 @@
-ROOT    :=/Volumes/SourceCode/git/zmake/demo
+ROOT    :=$(realpath ..)
 d       :=$(ROOT)/gtest#this directory
 -include $(ROOT)/root.mk
 -include $(ROOT)/gtest/rules.mk
@@ -19,10 +19,11 @@ TESTS :=sample1_unittest.exe \
 all: $(OBJ)
 asm: $(ASM)
 clean:
-	rm -f *.exe $(OBJ) $(DEP) $(ASM) $(TESTS)
+	$(QUIET)rm -f $(OBJ) $(DEP) $(ASM) $(TESTS:%.exe=$(d)/%.exe)
+	$(QUIET)rm -f $(d)/samples/*.o $(d)/src/gtest-all.o $(d)/src/gtest_main.o $(d)/gtest_main.a
 
 test: $(TESTS)
-	for t in $^ ; do ./"$$t" ; done
+	$(QUIET)for t in $^ ; do ./"$$t" ; done
 
 sample1_unittest.exe:  $(d)/samples/sample1.o $(d)/samples/sample1_unittest.o $(d)/gtest_main.a
 sample2_unittest.exe:  $(d)/samples/sample2.o $(d)/samples/sample2_unittest.o $(d)/gtest_main.a

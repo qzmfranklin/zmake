@@ -22,15 +22,20 @@ DEP+=${$(DIR_GTEST)CC:%.cc=%.d}
 ASM+=${$(DIR_GTEST)CC:%.cc=%.s}
 
 $(DIR_GTEST)/%.o: $(DIR_GTEST)/%.cc
-	$(CXX) -o $@ -c $< $(DEPFLAGS) ${$(DIR_GTEST)CXXFLAGS} ${$(DIR_GTEST)INCS}
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$(DIR_GTEST)CXXFLAGS} ${$(DIR_GTEST)INCS}
+	$(QUIET)echo "Compiling $(GREEN)$(notdir $<) $(NONE)..."
 $(DIR_GTEST)/%.s: $(DIR_GTEST)/%.cc
-	$(CXX) -o $@ $< $(ASMFLAGS) ${$(DIR_GTEST)CXXFLAGS} ${$(DIR_GTEST)INCS}
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$(DIR_GTEST)CXXFLAGS} ${$(DIR_GTEST)INCS}
+	$(QUIET)echo "Assembly listing $(CYAN)$(notdir $<) $(NONE)..."
 
 %.exe: $(DIR_GTEST)/samples/%.o
-	$(CXX) -o $@ $^ ${$(DIR_GTEST)LIBS}
+	$(QUIET)$(CXX) -o $@ $^ ${$(DIR_GTEST)LIBS}
+	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
 
 $(DIR_GTEST)/gtest.a : $(DIR_GTEST)/src/gtest-all.o
-	$(AR) $(ARFLAGS) $@ $^
+	$(QUIET)$(AR) $(ARFLAGS) $@ $^
+	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
 
 $(DIR_GTEST)/gtest_main.a : $(DIR_GTEST)/src/gtest-all.o $(DIR_GTEST)/src/gtest_main.o
-	$(AR) $(ARFLAGS) $@ $^
+	$(QUIET)$(AR) $(ARFLAGS) $@ $^
+	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
