@@ -20,7 +20,8 @@ all: $(OBJ)
 asm: $(ASM)
 clean:
 	$(QUIET)rm -f $(OBJ) $(DEP) $(ASM) $(TESTS:%.exe=$(d)/%.exe)
-	$(QUIET)rm -f $(d)/samples/*.o $(d)/src/gtest-all.o $(d)/src/gtest_main.o $(d)/gtest_main.a
+	$(QUIET)rm -f $(d)/samples/*.o $(d)/src/gtest-all.o \
+		$(d)/src/gtest_main.o $(d)/gtest_main.a $(d)/gtest.a
 
 test: $(TESTS)
 	$(QUIET)for t in $^ ; do ./"$$t" ; done
