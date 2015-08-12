@@ -22,3 +22,6 @@
 # Flex and Bison
 *.yy.c
 *.tab.c
+
+# OSX shit
+.DS_Store
