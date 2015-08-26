@@ -190,7 +190,7 @@ test: $(TESTS)
 
 # Sample linking rules for building executables:
 #test_heapsort.exe: $(d)/heapsort.o $(d)/test_heapsort.o $(ROOT)/utils/utils.o
-#gtest_dag.exe: $(d)/gtest_dag.o $(d)/dag.o $(ROOT)/gtest/gtest_main.a
+#gtest_dag.exe: $(ROOT)/gtest/gtest_main.a $(d)/gtest_dag.o $(d)/dag.o
 """
 texts=dict()
 texts['root']=rootmk
