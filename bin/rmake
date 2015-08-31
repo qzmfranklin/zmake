@@ -1,0 +1,41 @@
+#!/usr/local/bin/python3
+
+import argparse
+import os
+import subprocess
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+            description = 'Recursively run a command',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-C', '--directory',
+            type = str,
+            help = 'the directory to start the recursion with')
+    parser.add_argument('--target',
+            metavar = 'TARGET',
+            type = str,
+            help = 'the target to make')
+    parser.add_argument('-j',
+            metavar = 'NUM',
+            type = int,
+            help = 'make -j')
+
+    args = parser.parse_args()
+
+    root_dir = os.path.realpath(args.dir)
+
+    if not os.path.exists(root_dir):
+        raise RuntimeError(root_dir + ' does not exist!')
+    if not os.path.isdir(root_dir):
+        raise RuntimeError(root_dir + ' is not a directory!')
+
+    for root, dirs, files in os.walk(root_dir):
+        for dir in dirs:
+            dirname = os.path.join(root, dir)
+            cmdlist = [ 'make', '-C', dirname ]
+            if args.target:
+                cmdlist.append(args.target)
+            if args.j > 1:
+                cmdlist += [ '-j', str(args.j) ]
+            print(subprocess.list2cmdline(cmdlist))
+            subprocess.call(cmdlist)

@@ -1,9 +1,9 @@
 #	PROJECT-WIDE COMMON COMPILING FLAGS
-CC		:=clang++
+CC		:=clang
 CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 	-DNDEBUG -fpermissive -pthread
 
-CXX		:=$(CC)
+CXX		:=clang++
 CXXFLAGS	:=$(CFLAGS) -std=c++11
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
