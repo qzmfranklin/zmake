@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import hashlib
-import shutil
 import os
 import glob
 import re
@@ -93,7 +91,7 @@ REV_GREY	:=\033[07;37m
 
 template_files['rules.mk'] = """\
 #  THIS DIRECTORY
-TMP:=$(realpath .)
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 $(TMP)DIR:=$(TMP)
 
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
@@ -106,9 +104,9 @@ $($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
 $($(TMP)DIR)INCS:=$(INCS)
 $($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP+=$($($(TMP)DIR)CPP:%.c=$($(TMP)DIR)/%.d) $($($(TMP)DIR)CPP:%.cc=$($(TMP)DIR)/%.d) $($($(TMP)DIR)C:%.cpp=$($(TMP)DIR)/%.d)
-OBJ+=$($($(TMP)DIR)CPP:%.c=$($(TMP)DIR)/%.o) $($($(TMP)DIR)CPP:%.cc=$($(TMP)DIR)/%.o) $($($(TMP)DIR)C:%.cpp=$($(TMP)DIR)/%.o)
-ASM+=$($($(TMP)DIR)CPP:%.c=$($(TMP)DIR)/%.s) $($($(TMP)DIR)CPP:%.cc=$($(TMP)DIR)/%.s) $($($(TMP)DIR)C:%.cpp=$($(TMP)DIR)/%.s)
+DEP:=$(DEP) $($($(TMP)DIR)C:%.c=$($(TMP)DIR)/%.d) $($($(TMP)DIR)CC:%.cc=$($(TMP)DIR)/%.d) $($($(TMP)DIR)CPP:%.cpp=$($(TMP)DIR)/%.d)
+OBJ:=$(OBJ) $($($(TMP)DIR)C:%.c=$($(TMP)DIR)/%.o) $($($(TMP)DIR)CC:%.cc=$($(TMP)DIR)/%.o) $($($(TMP)DIR)CPP:%.cpp=$($(TMP)DIR)/%.o)
+ASM:=$(ASM) $($($(TMP)DIR)C:%.c=$($(TMP)DIR)/%.s) $($($(TMP)DIR)CC:%.cc=$($(TMP)DIR)/%.s) $($($(TMP)DIR)CPP:%.cpp=$($(TMP)DIR)/%.s)
 
 $($(TMP)DIR)/%.o: $($(TMP)DIR)/%.c
 	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
@@ -138,10 +136,12 @@ $($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cpp
 """
 
 template_files['Makefile'] = """\
-ROOT    :=$(realpath #ABSOLUTE_ROOT_OF_SOURCE_FILES#)
-d       :=$(realpath .)
+ROOT    :=$(realpath #RELATIVE_PATH_TO_ROOT#)
+D       :=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))# this directory
 -include $(ROOT)/root.mk
--include $(ROOT)#INCLUDE_ALL_BRANCHES_HERE#
+-include $(ROOT)/gtest/rules.mk
+-include $(D)/rules.mk
+# Inlcude more rules.mk here if you this directory depends on them.
 -include $(DEP)
 
 # List all the executables you want to run when you type `make test` in $(TESTS)
@@ -158,20 +158,12 @@ test: $(TESTS)
 	$(QUIET)for t in $^ ; do ./"$$t" ; done
 
 # Sample linking rules for building executables:
-#test_heapsort.exe: $(d)/heapsort.o $(d)/test_heapsort.o $(ROOT)/utils/utils.o
-#gtest_dag.exe: $(ROOT)/gtest/gtest_main.a $(d)/gtest_dag.o $(d)/dag.o
+#test_heapsort.exe: $(D)/heapsort.o $(D)/test_heapsort.o $(ROOT)/utils/utils.o
+#gtest_dag.exe: $(ROOT)/gtest/gtest_main.a $(D)/gtest_dag.o $(D)/dag.o
 """
 
 template_files['gtest/rules.mk'] = """\
-# This is a hand crafted file to integrate the Google Test Framework into this
-# Makefile system. This is significantly different from the rules.mk generated
-# by the zmake script. Please do not change this file unless you really know
-# what you are doing.
-#
-# Historically this file is very different from the main rules.mk files, but it
-# is no longer that different. But still, keep it as it is for now.
-
-TMP:=$(realpath .)
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 $(TMP)DIR:=$(TMP)
 
 $($(TMP)DIR)CC:=$(wildcard $($(TMP)DIR)/src/*.cc) $(wildcard $($(TMP)DIR)/samples/*.cc)
@@ -181,9 +173,8 @@ $($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
 $($(TMP)DIR)INCS:=$(INCS)
 $($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP+=${$($(TMP)DIR)CC:%.cc=%.d}
-#OBJ+=${$($(TMP)DIR)CC:%.cc=%.o}
-ASM+=${$($(TMP)DIR)CC:%.cc=%.s}
+DEP:=$(DEP) $($($(TMP)DIR)CC:%.cc=%.d)
+ASM:=$(ASM) $($($(TMP)DIR)CC:%.cc=%.s)
 
 $($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
 	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
@@ -345,9 +336,9 @@ def gen_branch(root,path,text,files):
 
 def gen_branch_only(dir,text):
     """--branch-only"""
-    dir=os.path.abspath(dir)
-    root=find_root(dir)
-    files=os.listdir(dir)
+    dir   = os.path.abspath(dir)
+    root  = find_root(dir)
+    files = os.listdir(dir)
     gen_branch(root,dir,text,files)
 
 def rwalk(dir,texts):
@@ -357,28 +348,11 @@ def rwalk(dir,texts):
         gen_branch(root,path,texts['rules.mk'],files)
 
 
-def collect_branch(root):
-    """return the list of rules.mk files for generating Makefile"""
-    dirlist=list()
-    for path,dirs,files in os.walk(root):
-        fname=os.path.join(path,'rules.mk')
-        if os.path.isfile(fname):
-            dirlist.append(os.path.join(path.replace(root,''),'rules.mk'))
-    return dirlist
-
-
 def gen_makefile(dir,target,text):
     """recursively find root.mk before generating makefile"""
     root=find_root(dir)
-    relpath = os.path.relpath(dir, root)
-    reldepth = re.sub('[^/]*', '..', relpath)
-    tmp=text.replace('#ABSOLUTE_ROOT_OF_SOURCE_FILES#', reldepth)
-    dirlist=collect_branch(root)
-    tmp=tmp.replace('#INCLUDE_ALL_BRANCHES_HERE#',
-                    '\n-include $(ROOT)'.join(dirlist))
-    tmp=tmp.replace('#ABSOLUTE_PATH_OF_CURRENT_DIRECTORY#',
-                    os.path.realpath(dir).replace(root,'$(ROOT)'))
-
+    relpath = os.path.relpath(root, dir)
+    tmp=text.replace('#RELATIVE_PATH_TO_ROOT#', relpath)
     strfile2(target,tmp)
 
 
@@ -396,6 +370,26 @@ def delete_all(dir):
             print('deleted', fname)
 
 
+def install_gtest():
+    '''
+    Install gtest to @rootdir.
+    Requires internet connection and git to work.
+    If git is not installed, return false and print error message.
+    '''
+    import shutil
+    git = shutil.which('git')
+    if not git:
+        raise RuntimeError('Cannot find git in PATH. Please install git.')
+    repo_url = 'https://github.com/google/googletest.git'
+    cmdlist = [ git, 'clone', repo_url, 'gtest' ]
+
+    import subprocess
+    retval = subprocess.check_call(cmdlist)
+    if retval != 0:
+        print(file = sys.stderr, subprocess.list2cmdline(cmdlist))
+        return false
+
+
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(
             description = 'Generating module files for constructing a single Makefile',
@@ -404,7 +398,7 @@ if __name__ == '__main__':
     parser.add_argument('--dir',
             type    = str,
             default = '.',
-            help    = 'list of directories to work')
+            help    = 'the directory to work from')
     parser.add_argument('-R', '--recursive',
             action  = 'store_true',
             default = False,
@@ -452,6 +446,7 @@ if __name__ == '__main__':
     elif args.delete:
         delete_all(args.dir)
     elif args.gtest:
+        # TODO: implement me!
         pass
     elif args.makefile:
         gen_makefile(args.dir,'Makefile',template_files['Makefile'])
