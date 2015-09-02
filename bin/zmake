@@ -387,8 +387,8 @@ def install_gtest():
     import subprocess
     retval = subprocess.check_call(cmdlist)
     if retval != 0:
-        print(file = sys.stderr, subprocess.list2cmdline(cmdlist))
-        return false
+        print(subprocess.list2cmdline(cmdlist), file = sys.stderr)
+        return False
 
 
 if __name__ == '__main__':
@@ -423,8 +423,8 @@ if __name__ == '__main__':
     group_mk.add_argument('-D', '--delete-recursively',
             action  = 'store_true',
             default = False,
-            help    = 'recursively delete all .mk files in, implies -R')
-    group_mk.add_argument('-g', '--gtest',
+            help    = 'recursively delete all .mk files in, implies -R and -f')
+    group_mk.add_argument('-g', '--install-gtest',
             action  = 'store_true',
             default = False,
             help    = 'install gtest with customized zmake-like Makefile and modules')
@@ -446,7 +446,7 @@ if __name__ == '__main__':
             gen_branch_only(args.directory, template_files['rules.mk'])
     elif args.delete_recursively:
         delete_all(args.directory)
-    elif args.gtest:
+    elif args.install_gtest:
         # TODO: implement me!
         pass
     elif args.makefile:
