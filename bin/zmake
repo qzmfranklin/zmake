@@ -281,25 +281,25 @@ def strfile2(fname,str):
 
 #strfile2('rootnew.mk',rootmk)
 
-def find_root(dir):
+def find_root(directory):
     """return the absolute path of root.mk (excluding file name)"""
-    flag=False
-    root=os.path.realpath(dir)
+    flag = False
+    root = os.path.realpath(directory)
 
     if os.path.isfile(os.path.join(root,'root.mk')):
-        flag=True
+        flag = True
     else:
-        depth=99 #default maximal depth of search
+        depth = 99 #default maximal depth of search
         for i in range(depth):
-            root=os.path.normpath(os.path.join(root,'..'))
+            root = os.path.normpath(os.path.join(root,'..'))
             #print(root)
-            if root=='/':
+            if root == '/':
                 if os.path.isfile('/root.mk'):
-                    flag=True
+                    flag = True
                 break
             else:
                 if os.path.isfile(os.path.join(root,'root.mk')):
-                    flag=True
+                    flag = True
                     break
     if flag:
         return root
@@ -310,7 +310,7 @@ def find_root(dir):
 
 def gen_root(root,text):
     """generate root.mk"""
-    fname=os.path.join(root,'root.mk')
+    fname = os.path.join(root,'root.mk')
     strfile2(fname,text)
 
 #gen_root(args.root,rootmk)
@@ -325,41 +325,42 @@ def gen_branch(root,path,text,files):
         return
 
     fname = os.path.join(path,'rules.mk')
-    #relative_path=path.replace(os.path.normpath(root),'')
-    #relative_path = os.path.relpath(path, root)
-    #hashstr=hashlib.md5(relative_path.encode('utf-8')).hexdigest()
-    ##print(hashstr)
-    #tmp=text.replace('#RELATIVE_PATH_FROM_ROOT#',relative_path)
-    #tmp=tmp.replace('DIR_RANDOM_NUM','DIR'+hashstr)
-    #strfile2(fname,tmp)
     strfile2(fname,text)
 
-def gen_branch_only(dir,text):
-    """--branch-only"""
-    dir   = os.path.abspath(dir)
-    root  = find_root(dir)
-    files = os.listdir(dir)
-    gen_branch(root,dir,text,files)
+def gen_branch_only(directory,text):
+    '''
+    Generate rules.mk for one directroy
+    '''
+    directory   = os.path.abspath(directory)
+    root  = find_root(directory)
+    files = os.listdir(directory)
+    gen_branch(root, directory, text, files)
 
-def rwalk(dir,texts):
-    """recursively rules.mk's"""
-    root=find_root(dir)
+def rwalk(directory,text):
+    '''
+    Generate rules.mk recursively
+    '''
+    root = find_root(directory)
     for path,dirs,files in os.walk(root):
-        gen_branch(root,path,texts['rules.mk'],files)
+        gen_branch(root, path, text, files)
 
 
-def gen_makefile(dir,target,text):
-    """recursively find root.mk before generating makefile"""
-    root=find_root(dir)
-    relpath = os.path.relpath(root, dir)
-    tmp=text.replace('#RELATIVE_PATH_TO_ROOT#', relpath)
-    strfile2(target,tmp)
+def gen_makefile(directory, text):
+    '''
+    Generate Makefile in the given directory.
+    '''
+    root = find_root(directory)
+    relpath = os.path.relpath(root, directory)
+    tmp = text.replace('#RELATIVE_PATH_TO_ROOT#', relpath)
+    strfile2('Makefile',tmp)
 
 
-def delete_all(dir):
-    """recursively delete all .mk files"""
-    #root=find_root(dir)
-    for path,dirs,files in os.walk(dir):
+def delete_all(directory):
+    '''
+    Recursively delete all rules.mk files.
+    '''
+    #root=find_root(directory)
+    for path,dirs,files in os.walk(directory):
         fname=os.path.join(path,'rules.mk')
         if os.path.isfile(fname):
             os.remove(fname)
@@ -395,7 +396,7 @@ if __name__ == '__main__':
             description = 'Generating module files for constructing a single Makefile',
             formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--dir',
+    parser.add_argument('-C', '--directory',
             type    = str,
             default = '.',
             help    = 'the directory to work from')
@@ -419,10 +420,10 @@ if __name__ == '__main__':
             action  = 'store_true',
             default = False,
             help    = 'generate rules.mk for a single directory')
-    group_mk.add_argument('-d', '--delete',
+    group_mk.add_argument('-D', '--delete-recursively',
             action  = 'store_true',
             default = False,
-            help    = 'recursively delete all .mk files in')
+            help    = 'recursively delete all .mk files in, implies -R')
     group_mk.add_argument('-g', '--gtest',
             action  = 'store_true',
             default = False,
@@ -434,21 +435,21 @@ if __name__ == '__main__':
     group_mk.add_argument('-r', '--root',
             action  = 'store_true',
             default = False,
-            help    = 'generate [dir]/root.mk')
+            help    = 'generate [DIRECTORY]/root.mk')
 
     args = parser.parse_args()
 
     if args.branch:
         if args.recursive:
-            rwalk(args.dir,template_files)
+            rwalk(args.directory, template_files['rules.mk'])
         else:
-            gen_branch_only(args.dir,template_files['rules.mk'])
-    elif args.delete:
-        delete_all(args.dir)
+            gen_branch_only(args.directory, template_files['rules.mk'])
+    elif args.delete_recursively:
+        delete_all(args.directory)
     elif args.gtest:
         # TODO: implement me!
         pass
     elif args.makefile:
-        gen_makefile(args.dir,'Makefile',template_files['Makefile'])
+        gen_makefile(args.directory, template_files['Makefile'])
     elif args.root:
-        gen_root(args.dir,template_files['root.mk'])
+        gen_root(args.directory,template_files['root.mk'])
