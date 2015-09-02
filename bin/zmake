@@ -133,6 +133,9 @@ $($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cpp
 %.exe: $($(TMP)DIR)/%.o
 	$(QUIET)$(CXX) -o $@ $^ $($($(TMP)DIR)LIBS)
 	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
+
+# Recursive inclusion
+-include $(wildcard $(TMP)/*/$(notdir $(lastword $(MAKEFILE_LIST))))
 """
 
 template_files['Makefile'] = """\

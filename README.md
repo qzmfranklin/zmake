@@ -1,16 +1,49 @@
 zmake
-=====
-A new method of writing Makefiles.
+====
 
-**NOTE**: We use `root/` to denote the directory where you cloned zmake.git on your own computer.
+# Overview
 
-**NOTE**: This README.md is outdated. Will update as soon as the changes are stablized and tested.
+## What is zmake?
 
-**TODO**: So far, zmake is no more than a method and a script for writing Makefiles. The idea of using complete DAGs and having directory-specific pattern rules is restricted by the syntax and quirks and the time honored make program. A new make program that is built with easy specification of the DAG and directory-specific pattern rules is currently underway. As of 11/09/2014, only part of the DAG class is implemented, as in `demo/algorithm/graph/dag/`. Need a parser to parse the new Makefiles. A Nearly fully parallelized scheduler is already implemented in dag::schedule().
+> MUST READ THIS PART BEFORE MOVING FORWARD
 
-# A Brief History of Makefiles
+- The **zmake method** is a novel method of writing Makefiles for C/C++ projects.
+ 
+- The zmake method is **modular**, **non-recursive** and builds targets **incrementally** in only **one pass**.
 
-The reader is assumed to be familiar with Unix/Linux shell commands, compiler options, and some GNU Makefile terminologies such as targets, prerequisites, dependencies, and recipes.
+- The **zmake program** is a python3 program for generating Makefile modules that implement the zmake method.
+
+- The **zmake repository** is a collection of the zmake program of many demo programs that demonstrate the use of the zmake method.
+
+- The meaning of the word **zmake**, when used alone, should be clear from the context.
+
+
+## What does the zmake method do as a build system?
+
+
+- Automatic construction and tracking of dependencies.
+
+- Guaranteed one-pass and incremental build.
+
+- You can `make` from any directory, not only from the root directory of your project.
+
+- Easy integration with the GoogleTest framework. Use `zmake --install-gtest` to download and install the gtest library, write your own tests, then `make test` will build your tests and run them.
+
+- Originally, the author developed zmake for his personal projects at the University of Michigan. It suits the use of scientific programming very well.
+
+
+## What zmake is NOT?
+
+- It is *not* a full blown build system that attempts to meet every possible demand. Instead, it is lightweight.
+
+- It is *not* a substitue for your own build system if your project is sitting on XCode or Android Studio. Again, it is lightweight.
+
+- It only supports in-source build at the moment. If you need out-of-source build, please let me know.
+
+
+# What is the zmake method?
+
+> The reader is assumed to be familiar with Unix/Linux shell commands, common C/C++ compiler flags, and some GNU Makefile terminologies such as targets, prerequisites, dependencies, and recipes.
 
 
 ## Sample Project
@@ -54,7 +87,7 @@ The .cpp files are the C++ source files.
 The .h files are the C/C++ header files.
 The .exe files are the executables *to build*.
 
-## The Necessity of a Build System
+## Why do we need a build system?
 
 There are two stages to building the .exe files. First, each .c/.cpp file is compiled with the `-c` option into .o file (object file). Second, object files are linked into .exe files.
 
@@ -75,6 +108,7 @@ A project of compiling languages such as C/C++/Fortran/Java may demand the follo
 ## The GNU make Program and the Makefile
 
 The standard tool for constructing a build system is the GNU make program. The way it works is :
+
   1. The programmer writes the DAG and the recipes into a file named **Makefile**.
   2. When the programmer wishes to build the project, he invokes the make program.
   3. The make program reads in the DAG and the recipes from the Makefile.
@@ -382,36 +416,15 @@ Manually putting up a `Makefile` from all the `.mk` is a labor intensive job. Le
 The `-g/--makefile` option instructs the `zmake` script to first find `root.mk` and then generate a `Makefile`.
 
 Open the `demo/algorithm/sort/heapsort/Makefile` with your favorite editor, add
+
 ```
 cmp_sort.exe: ${d}/cmp_sort.o ${d}/heapsort/heapsort.o ${d}/quicksort/quicksort.o \
     ${ROOT}/utils/utils.o ${ROOT}/utils/Table.o
 ```
+
 at the end of the Makefile. Save, back to terminal (in `demo/sort/`), type
 
-    make cmp_sort.exe
-    ./cmp_sort.exe
-
-## Renew Existing Makefiles for a New Path
-
-The global variable `ROOT:=path/to/project` is hardcoded into Makefiles. When you copy your project from `dir1/` to `dir2/`, the `ROOT` does not change. You may use
-
 ```
-zmake --renew
+make cmp_sort.exe
+./cmp_sort.ex
 ```
-
-to update the Makefile in the current directory `./`. Or you can use
-
-```
-zmake --renew path/to/another/dir
-```
-to update the Makefile in any directory.
-
-If you want to update all Makefiles searchable by zmake, add `-R` to --renew:
-```
-zmake --renew -R
-```
-
-The way the `--renew` flag works is
-
-  1. It instructs the zmake script to find the root.mk. Denote the directory containing root.mk as `root/`.
-  2. Recursively scan all subdirectories in `root/` for Makefiles. Change the `ROOT:=old/path/` to `ROOT:=new/path/`.
