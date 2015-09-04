@@ -6,9 +6,9 @@
  * Copyright Divakar Viswanath, 2009-2014
  */
 
-/*     
+/*
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of version 2 of the GNU General Public License as 
+ * it under the terms of version 2 of the GNU General Public License as
  * published by the Free Software Foundation.
 
  * This program is distributed in the hope that it will be useful,
@@ -25,8 +25,8 @@
 
 class TimeStat: public StatVector {
 	private:
-		unsigned int a1, d1;
-		unsigned int a2, d2;
+		uint32_t a1, d1;
+		uint32_t a2, d2;
 	public:
 		TimeStat(const int n): StatVector(n) {}
 		inline void tic(){//does not use cpuid
@@ -39,7 +39,7 @@ class TimeStat: public StatVector {
 			return tmp;
 		}
 	private:
-		inline double convert(unsigned int A1, unsigned int D1, 
+		inline double convert(unsigned int A1, unsigned int D1,
 				unsigned int A2, unsigned int D2){
 			double val;
 			val = D2-D1;

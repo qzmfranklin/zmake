@@ -355,7 +355,7 @@ def gen_makefile(directory, text):
     root = find_root(directory)
     relpath = os.path.relpath(root, directory)
     tmp = text.replace('#RELATIVE_PATH_TO_ROOT#', relpath)
-    strfile2('Makefile',tmp)
+    strfile2(os.path.join(os.path.realpath(directory), 'Makefile'), tmp)
 
 
 def delete_all(directory):
