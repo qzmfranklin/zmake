@@ -176,8 +176,9 @@ $($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
 $($(TMP)DIR)INCS:=$(INCS)
 $($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP:=$(DEP) $($($(TMP)DIR)CC:%.cc=%.d)
-ASM:=$(ASM) $($($(TMP)DIR)CC:%.cc=%.s)
+DEP:=$(DEP) $($(TMP)CC:%.cc=%.d)
+#OBJ:=$(OBJ) $($(TMP)CC:%.cc=%.d)
+ASM:=$(ASM) $($(TMP)CC:%.cc=%.s)
 
 $($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
 	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
