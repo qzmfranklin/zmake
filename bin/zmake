@@ -334,15 +334,20 @@ def gen_branch(root,path,text,files):
 def gen_branch_only(directory,text):
     '''
     Generate rules.mk for one directroy
+    Always generate
     '''
     directory   = os.path.abspath(directory)
     root  = find_root(directory)
     files = os.listdir(directory)
-    gen_branch(root, directory, text, files)
+    #gen_branch(root, directory, text, files)
+    fname = os.path.join(directory, 'rules.mk')
+    strfile2(fname,text)
 
 def rwalk(directory,text):
     '''
     Generate rules.mk recursively
+    If the directory does not have any cpp, cc, c files, do not generate the
+    rules.mk module
     '''
     root = find_root(directory)
     for path,dirs,files in os.walk(root):
