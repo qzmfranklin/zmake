@@ -10,6 +10,7 @@ if __name__ == '__main__':
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-C', '--directory',
             type = str,
+            default = '.',
             help = 'the directory to start the recursion with')
     parser.add_argument('--target',
             metavar = 'TARGET',
@@ -18,11 +19,12 @@ if __name__ == '__main__':
     parser.add_argument('-j',
             metavar = 'NUM',
             type = int,
+            default = 1,
             help = 'make -j')
 
     args = parser.parse_args()
 
-    root_dir = os.path.realpath(args.dir)
+    root_dir = os.path.realpath(args.directory)
 
     if not os.path.exists(root_dir):
         raise RuntimeError(root_dir + ' does not exist!')
