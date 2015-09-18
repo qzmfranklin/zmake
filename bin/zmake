@@ -158,7 +158,7 @@ asm: $(ASM)
 clean:
 	$(QUIET)rm -f *.exe $(OBJ) $(DEP) $(ASM)
 test: $(TESTS)
-	$(QUIET)for t in $^ ; do ./"$$t" ; done
+	$(QUIET)for t in $^ ; do ./"$$t" || exit 1 ; done
 
 # Sample linking rules for building executables:
 #test_heapsort.exe: $(D)/heapsort.o $(D)/test_heapsort.o $(ROOT)/utils/utils.o
@@ -227,7 +227,7 @@ clean:
 		$(d)/src/gtest_main.o $(d)/gtest_main.a $(d)/gtest.a
 
 test: $(TESTS)
-	$(QUIET)for t in $^ ; do ./"$$t" ; done
+	$(QUIET)for t in $^ ; do ./"$$t" || exit 1; done
 
 sample1_unittest.exe:  $(d)/gtest_main.a $(d)/samples/sample1_unittest.o $(d)/samples/sample1.o
 sample2_unittest.exe:  $(d)/gtest_main.a $(d)/samples/sample2_unittest.o $(d)/samples/sample2.o
