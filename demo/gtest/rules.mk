@@ -9,33 +9,35 @@
 #
 # Do not use $(DIR_GTEST) anywhere outside of this file
 
-DIR_GTEST:=$(ROOT)/gtest
-$(DIR_GTEST)CC:=$(wildcard $(DIR_GTEST)/src/*.cc) $(wildcard $(DIR_GTEST)/samples/*.cc)
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+$(TMP)DIR:=$(TMP)
 
-$(DIR_GTEST)CFLAGS:=$(CFLAGS)
-$(DIR_GTEST)CXXFLAGS:=$(CXXFLAGS)
-$(DIR_GTEST)INCS:=$(INCS)
-$(DIR_GTEST)LIBS:=$(LIBS)
+$($(TMP)DIR)CC:=$(wildcard $(TMP)/src/*.cc) $(wildcard $(TMP)/samples/*.cc)
 
-DEP+=${$(DIR_GTEST)CC:%.cc=%.d}
-#OBJ+=${$(DIR_GTEST)CC:%.cc=%.o}
-ASM+=${$(DIR_GTEST)CC:%.cc=%.s}
+$($(TMP)DIR)CFLAGS:=$(CFLAGS)
+$($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
+$($(TMP)DIR)INCS:=$(INCS)
+$($(TMP)DIR)LIBS:=$(LIBS)
 
-$(DIR_GTEST)/%.o: $(DIR_GTEST)/%.cc
-	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$(DIR_GTEST)CXXFLAGS} ${$(DIR_GTEST)INCS}
+DEP:=$(DEP) $($(TMP)CC:%.cc=%.d)
+#OBJ:=$(OBJ) $($(TMP)CC:%.cc=%.d)
+ASM:=$(ASM) $($(TMP)CC:%.cc=%.s)
+
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
 	$(QUIET)echo "Compiling $(GREEN)$(notdir $<) $(NONE)..."
-$(DIR_GTEST)/%.s: $(DIR_GTEST)/%.cc
-	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$(DIR_GTEST)CXXFLAGS} ${$(DIR_GTEST)INCS}
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cc
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
 	$(QUIET)echo "Assembly listing $(CYAN)$(notdir $<) $(NONE)..."
 
-%.exe: $(DIR_GTEST)/samples/%.o
-	$(QUIET)$(CXX) -o $@ $^ ${$(DIR_GTEST)LIBS}
+%.exe: $($(TMP)DIR)/samples/%.o
+	$(QUIET)$(CXX) -o $@ $^ ${$($(TMP)DIR)LIBS}
 	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
 
-$(DIR_GTEST)/gtest.a : $(DIR_GTEST)/src/gtest-all.o
+$($(TMP)DIR)/gtest.a : $($(TMP)DIR)/src/gtest-all.o
 	$(QUIET)$(AR) $(ARFLAGS) $@ $^
 	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
 
-$(DIR_GTEST)/gtest_main.a : $(DIR_GTEST)/src/gtest-all.o $(DIR_GTEST)/src/gtest_main.o
+$($(TMP)DIR)/gtest_main.a : $($(TMP)DIR)/src/gtest-all.o $($(TMP)DIR)/src/gtest_main.o
 	$(QUIET)$(AR) $(ARFLAGS) $@ $^
 	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
