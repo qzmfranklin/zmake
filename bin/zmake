@@ -6,6 +6,33 @@ import re
 import sys
 import argparse
 
+# 0xAAAABBBB is version AAAA.BBBB
+ZMAKE_VERSION = 0x00000009
+
+def _version_major(version: int) -> int:
+    out = 0
+    for i in range(4):
+        bit_shift = 4 * i + 16
+        major = (version & (0x0F << bit_shift)) >> bit_shift
+        if major > 9:
+            raise RuntimeError('Major version number {} is not a decimal number.'.format(major))
+        out += major * 10 ** i
+
+    return out
+
+def _version_minor(version: int) -> int:
+    out = 0
+    for i in range(4):
+        bit_shift = 4 * i
+        minor = (version & (0x0F << bit_shift)) >> bit_shift
+        if minor > 9:
+            raise RuntimeError('Minor version number {} is not a decimal number.'.format(minor))
+        out += minor * 10 ** i
+
+    return out
+
+def _version_string(version: int) -> str:
+    return  '{}.{}'.format(_version_major(version), _version_minor(version))
 
 template_files = dict()
 template_files['root.mk'] = """\
@@ -402,49 +429,59 @@ def install_gtest():
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(
-            description = 'Generating module files for constructing a single Makefile',
-            formatter_class = argparse.ArgumentDefaultsHelpFormatter)
+            description = 'Version: {}. Generating module files for constructing a single Makefile'.format(_version_string(ZMAKE_VERSION)),
+            formatter_class = argparse.ArgumentDefaultsHelpFormatter
+            )
 
     parser.add_argument('-C', '--directory',
             type    = str,
             default = '.',
-            help    = 'the directory to work from')
+            help    = 'the directory to work from'
+            )
     parser.add_argument('-R', '--recursive',
             action  = 'store_true',
             default = False,
-            help    = 'recursively, works with -r, -b, -m')
+            help    = 'recursively, works with -r, -b, -m'
+            )
 
     group_general=parser.add_mutually_exclusive_group()
     group_general.add_argument('-f', '--force',
             action  = 'store_true',
             default = False,
-            help    = 'force overwriting existing files')
+            help    = 'force overwriting existing files'
+            )
     group_general.add_argument('-s', '--skip',
             action  = 'store_true',
             default = False,
-            help    = 'skip any existing file')
+            help    = 'skip any existing file'
+            )
 
     group_mk=parser.add_mutually_exclusive_group(required = True)
     group_mk.add_argument('-b', '--branch',
             action  = 'store_true',
             default = False,
-            help    = 'generate rules.mk for a single directory')
+            help    = 'generate rules.mk for a single directory'
+            )
     group_mk.add_argument('-D', '--delete-recursively',
             action  = 'store_true',
             default = False,
-            help    = 'recursively delete all .mk files in, implies -R and -f')
+            help    = 'recursively delete all .mk files in, implies -R and -f'
+            )
     group_mk.add_argument('-g', '--install-gtest',
             action  = 'store_true',
             default = False,
-            help    = 'install gtest with customized zmake-like Makefile and modules')
+            help    = 'install gtest with customized zmake-like Makefile and modules'
+            )
     group_mk.add_argument('-m', '--makefile',
             action  = 'store_true',
             default = False,
-            help    = 'generate a Makefile')
+            help    = 'generate a Makefile'
+            )
     group_mk.add_argument('-r', '--root',
             action  = 'store_true',
             default = False,
-            help    = 'generate [DIRECTORY]/root.mk')
+            help    = 'generate [DIRECTORY]/root.mk'
+            )
 
     args = parser.parse_args()
 
