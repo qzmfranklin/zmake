@@ -6,6 +6,8 @@ CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
 CXX		:=$(CC)
 CXXFLAGS	:=$(CFLAGS) -std=c++11
 
+QUIET		:=@
+
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
 INCS		:=-iquote $(ROOT) -isystem $(ROOT)/gtest/include -isystem $(ROOT)/gtest
 LIBS		:=-pthread
