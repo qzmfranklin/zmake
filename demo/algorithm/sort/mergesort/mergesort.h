@@ -15,7 +15,7 @@ struct st_glob {
 	struct st_glob *next;
 };
 
-	
+
 #ifdef __cplusplus
 }
 #endif
