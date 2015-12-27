@@ -1,6 +1,18 @@
 zmake
 ====
 
+# LICENSE
+This public git repository is licensed under GPL3, plus the following non-commercial condition:
+
+- Use of any part of the code or methodology, direct or indirect, explicit or
+  implicit, for building or testing any part of a commercial product is strictly
+  prohibited. Adapting existing system to using the zmake method, or adapting
+  the zmake scripts to use for building or testing is considered violation of
+  this clause.
+
+If you need a commercial license, please contact the author for endorsement.
+
+
 # Overview
 
 ## What is zmake?
@@ -8,7 +20,7 @@ zmake
 > MUST READ THIS PART BEFORE MOVING FORWARD
 
 - The **zmake method** is a novel method of writing Makefiles for C/C++ projects.
- 
+
 - The zmake method is **modular**, **non-recursive** and builds targets **incrementally** in only **one pass**.
 
 - The **zmake program** is a python3 program for generating Makefile modules that implement the zmake method.
@@ -45,6 +57,7 @@ zmake
 
 > The reader is assumed to be familiar with Unix/Linux shell commands, common C/C++ compiler flags, and some GNU Makefile terminologies such as targets, prerequisites, dependencies, and recipes.
 
+To fully explain the zmake method, we need to start by looking at the concepts of compilation, linking, dependency, Makefiles and the traditional ways of writing Makefiles.
 
 ## Sample Project
 
@@ -53,7 +66,7 @@ zmake
 > The source tree has grown significantly since the early days of this git repo. A partial display of the source as below should be enough for exposition purposes.
 
 ```
-root/demo/
+demo/
 ├── algorithm/sort/
 │   ├── cmp_sort.cpp
 │   ├── cmp_sort.exe
@@ -167,133 +180,224 @@ The disadvantages of Emile's solutions are:
 # A New Method of Writing Makefiles
 
 ## Introduction to Modules
+
 The above discussion on how to write Makefiles lead us to develop **a new method of writing a single Makefile that supports directory-specific pattern rules and can build in one pass**.
 
 Similar to Peter's and Emile's methods, this new method has a `rules.mk` file in each subdirectory. Take a look at `demo/sort/quicksort/rules.mk` as an example:
 
+> The rules.mk file and some parts of the root.mk file you see by now is
+  different from the one listed below. The newer versions added more features
+  but the core methodology remained the same.
+
+
 ```
 #  THIS DIRECTORY
-DIR00006:=${ROOT}/algorithm/sort/quicksort
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+$(TMP)DIR:=$(TMP)
+
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00006}C:=
-${DIR00006}CPP:=quicksort.cpp test_quicksort.cpp
+$($(TMP)DIR)C  :=$(wildcard $(TMP)/*.c)
+$($(TMP)DIR)CC :=$(wildcard $(TMP)/*.cc)
+$($(TMP)DIR)CPP:=$(wildcard $(TMP)/*.cpp)
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00006}CFLAGS:=${CFLAGS}
-${DIR00006}CXXFLAGS:=${CXXFLAGS}
-${DIR00006}INCS:=${INCS}
-${DIR00006}LIBS:=${LIBS}
+$($(TMP)DIR)CFLAGS:=$(CFLAGS)
+$($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
+$($(TMP)DIR)INCS:=$(INCS)
+$($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.d} ${${DIR00006}C:%.c=${DIR00006}/%.d}
-OBJ+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.o} ${${DIR00006}C:%.c=${DIR00006}/%.o}
-ASM+=${${DIR00006}CPP:%.cpp=${DIR00006}/%.s} ${${DIR00006}C:%.c=${DIR00006}/%.s}
+DEP:=$(DEP) $($(TMP)C:%.c=%.d) $($(TMP)CC:%.cc=%.d) $($(TMP)CPP:%.cpp=%.d)
+OBJ:=$(OBJ) $($(TMP)C:%.c=%.o) $($(TMP)CC:%.cc=%.o) $($(TMP)CPP:%.cpp=%.o)
+ASM:=$(ASM) $($(TMP)C:%.c=%.s) $($(TMP)CC:%.cc=%.s) $($(TMP)CPP:%.cpp=%.s)
 
-${DIR00006}/%.o: ${DIR00006}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00006}CFLAGS} ${${DIR00006}INCS}
-${DIR00006}/%.s: ${DIR00006}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00006}CFLAGS} ${${DIR00006}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
 
-${DIR00006}/%.o: ${DIR00006}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00006}CXXFLAGS} ${${DIR00006}INCS}
-${DIR00006}/%.s: ${DIR00006}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00006}CXXFLAGS} ${${DIR00006}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00006}/%.o
-	${CXX} -o $@ $^ ${${DIR00006}LIBS}
+%.exe: $($(TMP)DIR)/%.o
+	$(QUIET)echo "make $(MAGENTA)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $^ $($($(TMP)DIR)LIBS)
+
+# Recursive inclusion
+-include $(wildcard $(TMP)/*/$(notdir $(lastword $(MAKEFILE_LIST))))
 ```
 
-* `ROOT` stores the *absolute path* of the root of the source tree. `ROOT` is defined in Makefiles as a global variable, e.g., in this example, `ROOT:=~/git/zmake/demo`.
 
-* `DIR00006` is a unique identifier of the `quicksort/` directory. It stores the *absolute path* of this directory (in this case, `${ROOT}/sort/quicksort`). **NOTE**: As of 09/06/2014, the `DIRXXXXX` is replaced by a very long hash string. `DIRXXXXX` is only used here for clarity.
+* `MAKEFILE_LIST` is a variable maintained by the make program. It stores all
+  files that are included, including the original Makefile. It is guaranteed to
+  put the last included file, which is this rule.mk file in discussion at the
+  end of the list. Therefore $(lastword $(MAKEFILE_LIST)) is just the file name
+  of this rules.mk file.
 
-* `${DIRXXXXX}CFLAGS/CXXFLAGS/INCS/LIBS` store the C compiling options, C++ compiling options, include directories, and the linking options for all recipes in this subdirectory, respectively. Because `DIRXXXXX` is unique, all four variables are unique across different `rules.mk` files.
+* `TMP` takes the real path of the directory name of $(lastword
+  $(MAKEFILE_LIST)). It is guaranteed to be unique across the entire project as
+  long as there is no remote files symlinked to existing files.
 
-* `CXX` is the C++ compiler. It is defined in `demo/root.mk`: `CXX:=g++`.
+* `$(TMP)DIR` is the namespace, so to speak, of this ruls.mk file. For example,
+  when `$(TMP)` is evaluated to `/path/to/this/rulesmk`, `$($(TMP)DIR)` is
+  evaluated to `/path/to/this/rulesmkDIR`, which is guaranteed to be unique as
+  long as `$(TMP)` is the real path, i.e., starting from `/` and with symlink
+  resolved.
 
-* `DEPFlAGS` is defined in `demo/root.mk`: `DEPFLAGS:=-MMD -MP`. It instructs the compiler to generate .d files.
+* `$($(TMP)DIR)CFLAGS)` is the compilation flags that are used for compiling
+  C files in this directory. Similarly `$($(TMP)DIR)CXXFLAGS` is the compilation
+  flags for C++ files in this directory. Note that because `$(TMP)DIR` has
+  unique value, the compiling flags of this directory will not tamper with those
+  of other directories.
 
-* `ASMFLAGS` is defined in `demo/root.mk`: `ASMFLAGS:=-S`. It instructs the compiler to generate assembly listing files.
+* The pattern rules are listed for .c, .cc, and .cpp files. Without losing
+  generality, we use the pattern rules for .cpp files for exposition. First
+  let's look at the pattern matching: ``` $($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cpp
+  ``` (a). Pattern rule (a) differs from ``` %.o: %.cpp ``` (b) in an important
+  way. (a) only matches .cpp files with .o files in a certain directory but (b)
+  matches .cpp files with .o files in all directories. This is how zmake
+  achieved directory level modularity.
 
-The core of this method lies in the pattern rules such as the following:
+* The dependency of .o files on the .h files are automatically tracked by the .d
+  files generated by the `-MMD -MP` preprocessing flags. The Makefile will try
+  to include .d files it needs to compile .o files for by the `-include`
+  directive. It is the makefile's perk that if it fails to include a target, it
+  treats it as a target and try to make it. The .d files are thus asked to be
+  generated. It might seem that we need to add a `%.d: %.cpp` pattern rule for
+  the .d files. But surprisingly (I do not understand why either) enough,
+  everythin works just fine without the `%.d: %.cpp` pattern rules. If you can
+  help me understand why, I would like to thank you with a cup of starbuck
+  coffee.
 
-```
-${DIR00006}/%.o: ${DIR00006}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00006}CXXFLAGS} ${${DIR00006}INCS}
-```
-The above pattern rule applies to
-```
-${ROOT}/algorithm/sort/quicksort/*.o: ${ROOT}/algorithm/sort/quicksort/*.cpp
-```
-But it does **not** apply to targets in other directories. For example, it does not apply to
-```
-${ROOT}/algorithm/sort/cmp_sort.o: ${ROOT}/algorithm/sort/cmp_sort.cpp
-```
-Because `${${DIXXXXX}CXXFLAGS}` and `${${DIRXXXXX}INCS}` are unique to each subdirectory, the pattern rules defined in `rules.mk` only apply to their own subdirectory.
+* The pattern rule for linking is different from the pattern rules for the .o
+  files. The main reason is to allow the Makefiles constructed from these
+  rules.mk files, as we shall see later, to easily specify the linking
+  dependencies, thus minimizing developer work.
+
+* The last line simply tries to include the rules.mk files in the subdirectories
+  of this directory. With this recursive inclusion, you only need to include
+  very few rules.mk files in Makefiles constructed from rules.mk files.
+
+* `QUIET` is a global variable defined in the root.mk file. It should be either
+  undefined or defined by be a single @ character. In the later case, the
+  recipes in the rules.mk file, when invoked and executed, do not get printed to
+  stdout.
+
+* The reason for using `QUIET` is completely aethetic. Because zmake uses full
+  path for directories and files, the recipes, when expanded, are not readible.
+  In addition to hiding the full command, we need to print out something
+  indicating to the developer what the make program is doing. This is done by
+  the echo commands in the recipes in the rules.mk files.
+
+* `CXX` is the C++ compiler. It is defined in the `demo/root.mk` file.
+
+* `DEPFlAGS` is defined in `demo/root.mk`: `DEPFLAGS:=-MMD -MP`. It instructs
+  the compiler to generate .d files.
+
+* `ASMFLAGS` is defined in `demo/root.mk`: `ASMFLAGS:=-S`. It instructs the
+  compiler to generate assembly listing files.
+
+* Source files are picked up by the Makefile wildcard command, so that when you
+  add files, remove files, or change file names the build system picks up
+  changes automatically for you.
 
 The `demo/root.mk` mentioned before is (with minor modifications):
 ```
 #	PROJECT-WIDE COMMON COMPILING FLAGS
-CC        :=g++
-CFLAGS    :=-O3 -Wall -Drestrict=__restrict__
+CC		:=clang
+CFLAGS 		:=-O3 -Wshadow -Wno-unused-result -Drestrict=__restrict__ \
+	-DNDEBUG -fpermissive -pthread
 
-CXX       :=${CC}
-CXXFLAGS  :=${CFLAGS}
+CXX		:=clang++
+CXXFLAGS	:=$(CFLAGS) -std=c++11
 
 #       PROJECT-WIDE DEFAULT LINKING LIBRARIES AND INCLUDE DIRECTORIES
-INCS      :=-iquote ${ROOT}
-LIBS      :=
+INCS		:=-iquote $(ROOT) \
+			-isystem $(ROOT)/gtest/include \
+			-isystem $(ROOT)/gtest
+LIBS		:=
+
+QUIET		:=@
 
 #	INTERNAL VARIABLES
-OBJ       :=# .o files
-DEP       :=# .d files
-ASM       :=# .s files
-DEPFLAGS  :=-MMD -MP# preprocessor generates .d files
-ASMFLAGS  :=-S# source code commented assembly code
+OBJ		:=# .o files
+DEP		:=# .d files
+ASM		:=# .s files
+DEPFLAGS	:=-MMD -MP# preprocessor generates .d files
+ASMFLAGS	:=-S# source code commented assembly code
 .SUFFIXES:
 ```
 
 The comments are very self-explanatory. I will only explain the last line:
+
 ```
 .SUFFIXES:
 ```
-It undefines any existing pattern rules (including those default pattern rules of the GNU make program). The default pattern rules will conflict with the pattern rules defined in `rules.mk` files in case of in-source build.
+
+It undefines any existing pattern rules (including those default pattern rules
+of the GNU make program). The default pattern rules will conflict with the
+pattern rules defined in `rules.mk` files in case of in-source build.
+
 
 ## Constructing Makefiles from Modules
 
+Once we have the root.mk file and the ruls.mk file(s), the next step is to
+construct Makefile.
+
 Take `demo/algorithm/sort/Makefile` as an example:
-```
-ROOT    :/path/to/zmake/demo
-d       :=${ROOT}/algorithm/sort# this directory
--include ${ROOT}/root.mk
--include ${ROOT}/utils/rules.mk
--include ${ROOT}/algorithm/sort/rules.mk
--include ${ROOT}/algorithm/sort/heapsort/rules.mk
--include ${ROOT}/algorithm/sort/quicksort/rules.mk
--include ${DEP}
 
-.PHONY: all asm clean
-all: ${OBJ}
-asm: ${ASM}
+```
+ROOT    :=$(realpath ../..)
+D       :=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))# this directory
+-include $(ROOT)/root.mk
+-include $(ROOT)/utils/rules.mk
+-include $(ROOT)/gtest/rules.mk
+-include $(D)/rules.mk
+# Inlcude more rules.mk here if you this directory depends on them.
+-include $(DEP)
+
+.PHONY: all asm clean test
+all: $(OBJ)
+asm: $(ASM)
 clean:
-	rm -f *.exe ${OBJ} ${DEP} ${ASM}
+	$(QUIET)rm -f *.exe $(OBJ) $(DEP) $(ASM)
 
-cmp_sort.exe: ${d}/cmp_sort.o ${d}/heapsort/heapsort.o ${d}/quicksort/quicksort.o \
-	${ROOT}/utils/utils.o ${ROOT}/utils/Table.o
+cmp_sort.exe: $(D)/cmp_sort.o \
+	$(D)/heapsort/heapsort.o \
+	$(D)/quicksort/quicksort.o \
+	$(ROOT)/utils/utils.o \
+	$(ROOT)/utils/Table.o
 ```
-First tell the Makefile the path of the source tree (`ROOT`) and the current subdirecotry (`d`). Then include `root.mk`. Then include `rules.mk` files in **any order** you want. Then include .d files (`-include ${DEP}`). Then define some basic phony targets (`all asm clean`). Then list the dependencies (in the form of `target: prerequisites`) for **each executables** to build.
 
-**NOTE**:
-* The Makefile only uses absolute paths and filenames.
+* `ROOT` is the the real path of the directory that contains the root.mk file
+  directly.
 
-* The zmake script has removed the support for out-of-source build. If the demand for an out-of-source build version rises, I may make one.
+* `-include`d rules.mk files will recursively include ruls.mk files in their own
+  subdirectories. Therefore we do not need to include `$(D)/quicksort/rules.mk`
+  or `$(D)/heapsort/rules.mk`.
 
-* `d` stores the absolute path of *this directory*. It is only defined for convenience.
+* `D` stores the absolute path of *this directory*. It is only defined for
+  convenience.
 
-* The pattern rules for .exe files are stored in `rules.mk` files. If you want, however, you can overwrite pattern rules with explicit recipes.
+* The pattern rules for .exe files are stored in `rules.mk` files. If you want,
+  however, you can overwrite pattern rules with explicit recipes.
 
 
 # The zmake Script
-The `zmake` script streamlines the process of generating a valid build system using the above-mentioned method.
+The `zmake` script streamlines the process of generating a valid build system
+using the above-mentioned method.
 
 ## List of Requirement
 * POSIX OS.
@@ -321,23 +425,26 @@ Or, you can get help from the command line. Make sure that the `zmake` script is
 Then you should see:
 
 ```
-usage: zmake [-h] [-f | -s] [-d | -b | -r | -R] [-g | --renew] [dir]
+usage: zmake [-h] [-C DIRECTORY] [-R] [-f | -s] (-b | -D | -g | -m | -r)
 
-Generating module files for constructing a single Makefile
-
-positional arguments:
-  dir                directory of source files (.)
+Version: 0.9. Generating module files for constructing a single Makefile
 
 optional arguments:
-  -h, --help         show this help message and exit
-  -f, --force        force overwriting existing files (False)
-  -s, --skip         skip any existing file (False)
-  -d, --delete       recursively delete all .mk files in [dir] (False)
-  -b, --branch-only  generate rules.mk for a single directory (False)
-  -r, --root-only    generate [dir]/root.mk (False)
-  -R, --recursive    recursively generate rules.mk's (False)
-  -g, --makefile     generate a Makefile (False)
-  --renew            renew ${ROOT} in all Makefiles (False)
+  -h, --help            show this help message and exit
+  -C DIRECTORY, --directory DIRECTORY
+                        the directory to work from (default: .)
+  -R, --recursive       recursively, works with -r, -b, -m (default: False)
+  -f, --force           force overwriting existing files (default: False)
+  -s, --skip            skip any existing file (default: False)
+  -b, --branch          generate rules.mk for a single directory (default:
+                        False)
+  -D, --delete-recursively
+                        recursively delete all .mk files in, implies -R and -f
+                        (default: False)
+  -g, --install-gtest   install gtest with customized zmake-like Makefile and
+                        modules (default: False)
+  -m, --makefile        generate a Makefile (default: False)
+  -r, --root            generate [DIRECTORY]/root.mk (default: False)
 ```
 
 ## Generate root.mk
@@ -428,3 +535,11 @@ at the end of the Makefile. Save, back to terminal (in `demo/sort/`), type
 make cmp_sort.exe
 ./cmp_sort.ex
 ```
+
+## Out-of-source build
+The zmake project can work with out-of-source build. Actually out-of-source
+build was originally implemented but later removed because a) the zmake project is
+moving forward very fast, and b) in-source build worked for me just fine.
+
+If you need out-of-source build with zmake, it is definitely possible. Please
+just leave a comment to let me know.
