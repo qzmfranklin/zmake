@@ -1,28 +1,46 @@
 #  THIS DIRECTORY
-DIR00013:=${ROOT}/rte2dvis/mesh
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+$(TMP)DIR:=$(TMP)
+
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR00013}C:=
-${DIR00013}CPP:=test_msh_ray_tracing.cpp msh_ray_tracing.cpp dumpmsh.cpp test_mshio.cpp mshio.cpp 
+$($(TMP)DIR)C  :=$(wildcard $(TMP)/*.c)
+$($(TMP)DIR)CC :=$(wildcard $(TMP)/*.cc)
+$($(TMP)DIR)CPP:=$(wildcard $(TMP)/*.cpp)
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR00013}CFLAGS:=${CFLAGS}
-${DIR00013}CXXFLAGS:=${CXXFLAGS}
-${DIR00013}INCS:=${INCS}
-${DIR00013}LIBS:=${LIBS}
+$($(TMP)DIR)CFLAGS:=$(CFLAGS)
+$($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
+$($(TMP)DIR)INCS:=$(INCS)
+$($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP+=${${DIR00013}CPP:%.cpp=${DIR00013}/%.d} ${${DIR00013}C:%.c=${DIR00013}/%.d} 
-OBJ+=${${DIR00013}CPP:%.cpp=${DIR00013}/%.o} ${${DIR00013}C:%.c=${DIR00013}/%.o} 
-ASM+=${${DIR00013}CPP:%.cpp=${DIR00013}/%.s} ${${DIR00013}C:%.c=${DIR00013}/%.s} 
+DEP:=$(DEP) $($(TMP)C:%.c=%.d) $($(TMP)CC:%.cc=%.d) $($(TMP)CPP:%.cpp=%.d)
+OBJ:=$(OBJ) $($(TMP)C:%.c=%.o) $($(TMP)CC:%.cc=%.o) $($(TMP)CPP:%.cpp=%.o)
+ASM:=$(ASM) $($(TMP)C:%.c=%.s) $($(TMP)CC:%.cc=%.s) $($(TMP)CPP:%.cpp=%.s)
 
-${DIR00013}/%.o: ${DIR00013}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR00013}CFLAGS} ${${DIR00013}INCS}
-${DIR00013}/%.s: ${DIR00013}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR00013}CFLAGS} ${${DIR00013}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
 
-${DIR00013}/%.o: ${DIR00013}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR00013}CXXFLAGS} ${${DIR00013}INCS}
-${DIR00013}/%.s: ${DIR00013}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR00013}CXXFLAGS} ${${DIR00013}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
 
 # Linking pattern rule for this directory
-%.exe: ${DIR00013}/%.o
-	${CXX} -o $@ $^ ${${DIR00013}LIBS}
+%.exe: $($(TMP)DIR)/%.o
+	$(QUIET)echo "make $(MAGENTA)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $^ $($($(TMP)DIR)LIBS)
+
+# Recursive inclusion
+-include $(wildcard $(TMP)/*/$(notdir $(lastword $(MAKEFILE_LIST))))

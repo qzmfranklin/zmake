@@ -1,28 +1,46 @@
 #  THIS DIRECTORY
-DIR5076308ff7f4da4db4e00981e28e7928:=${ROOT}/hack/proc
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+$(TMP)DIR:=$(TMP)
+
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIR5076308ff7f4da4db4e00981e28e7928}C:=
-${DIR5076308ff7f4da4db4e00981e28e7928}CPP:=address_space.cpp 
+$($(TMP)DIR)C  :=$(wildcard $(TMP)/*.c)
+$($(TMP)DIR)CC :=$(wildcard $(TMP)/*.cc)
+$($(TMP)DIR)CPP:=$(wildcard $(TMP)/*.cpp)
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIR5076308ff7f4da4db4e00981e28e7928}CFLAGS:=${CFLAGS}
-${DIR5076308ff7f4da4db4e00981e28e7928}CXXFLAGS:=${CXXFLAGS}
-${DIR5076308ff7f4da4db4e00981e28e7928}INCS:=${INCS}
-${DIR5076308ff7f4da4db4e00981e28e7928}LIBS:=${LIBS}
+$($(TMP)DIR)CFLAGS:=$(CFLAGS)
+$($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
+$($(TMP)DIR)INCS:=$(INCS)
+$($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP+=${${DIR5076308ff7f4da4db4e00981e28e7928}CPP:%.cpp=${DIR5076308ff7f4da4db4e00981e28e7928}/%.d} ${${DIR5076308ff7f4da4db4e00981e28e7928}C:%.c=${DIR5076308ff7f4da4db4e00981e28e7928}/%.d} 
-OBJ+=${${DIR5076308ff7f4da4db4e00981e28e7928}CPP:%.cpp=${DIR5076308ff7f4da4db4e00981e28e7928}/%.o} ${${DIR5076308ff7f4da4db4e00981e28e7928}C:%.c=${DIR5076308ff7f4da4db4e00981e28e7928}/%.o} 
-ASM+=${${DIR5076308ff7f4da4db4e00981e28e7928}CPP:%.cpp=${DIR5076308ff7f4da4db4e00981e28e7928}/%.s} ${${DIR5076308ff7f4da4db4e00981e28e7928}C:%.c=${DIR5076308ff7f4da4db4e00981e28e7928}/%.s} 
+DEP:=$(DEP) $($(TMP)C:%.c=%.d) $($(TMP)CC:%.cc=%.d) $($(TMP)CPP:%.cpp=%.d)
+OBJ:=$(OBJ) $($(TMP)C:%.c=%.o) $($(TMP)CC:%.cc=%.o) $($(TMP)CPP:%.cpp=%.o)
+ASM:=$(ASM) $($(TMP)C:%.c=%.s) $($(TMP)CC:%.cc=%.s) $($(TMP)CPP:%.cpp=%.s)
 
-${DIR5076308ff7f4da4db4e00981e28e7928}/%.o: ${DIR5076308ff7f4da4db4e00981e28e7928}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}CFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}INCS}
-${DIR5076308ff7f4da4db4e00981e28e7928}/%.s: ${DIR5076308ff7f4da4db4e00981e28e7928}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}CFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
 
-${DIR5076308ff7f4da4db4e00981e28e7928}/%.o: ${DIR5076308ff7f4da4db4e00981e28e7928}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}CXXFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}INCS}
-${DIR5076308ff7f4da4db4e00981e28e7928}/%.s: ${DIR5076308ff7f4da4db4e00981e28e7928}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}CXXFLAGS} ${${DIR5076308ff7f4da4db4e00981e28e7928}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
 
 # Linking pattern rule for this directory
-%.exe: ${DIR5076308ff7f4da4db4e00981e28e7928}/%.o
-	${CXX} -o $@ $^ ${${DIR5076308ff7f4da4db4e00981e28e7928}LIBS}
+%.exe: $($(TMP)DIR)/%.o
+	$(QUIET)echo "make $(MAGENTA)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $^ $($($(TMP)DIR)LIBS)
+
+# Recursive inclusion
+-include $(wildcard $(TMP)/*/$(notdir $(lastword $(MAKEFILE_LIST))))

@@ -1,33 +1,46 @@
 #  THIS DIRECTORY
-DIR5a371ca09d660bb6863a788a9b8e6034:=$(ROOT)/algorithm/diffpar
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+$(TMP)DIR:=$(TMP)
+
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-$(DIR5a371ca09d660bb6863a788a9b8e6034)C:=$(wildcard *.c)
-$(DIR5a371ca09d660bb6863a788a9b8e6034)CPP:=$(wildcard *.cpp)
+$($(TMP)DIR)C  :=$(wildcard $(TMP)/*.c)
+$($(TMP)DIR)CC :=$(wildcard $(TMP)/*.cc)
+$($(TMP)DIR)CPP:=$(wildcard $(TMP)/*.cpp)
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-$(DIR5a371ca09d660bb6863a788a9b8e6034)CFLAGS:=$(CFLAGS)
-$(DIR5a371ca09d660bb6863a788a9b8e6034)CXXFLAGS:=$(CXXFLAGS)
-$(DIR5a371ca09d660bb6863a788a9b8e6034)INCS:=$(INCS)
-$(DIR5a371ca09d660bb6863a788a9b8e6034)LIBS:=$(LIBS)
+$($(TMP)DIR)CFLAGS:=$(CFLAGS)
+$($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
+$($(TMP)DIR)INCS:=$(INCS)
+$($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP+=$($(DIR5a371ca09d660bb6863a788a9b8e6034)CPP:%.cpp=$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.d) $($(DIR5a371ca09d660bb6863a788a9b8e6034)C:%.c=$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.d)
-OBJ+=$($(DIR5a371ca09d660bb6863a788a9b8e6034)CPP:%.cpp=$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.o) $($(DIR5a371ca09d660bb6863a788a9b8e6034)C:%.c=$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.o)
-ASM+=$($(DIR5a371ca09d660bb6863a788a9b8e6034)CPP:%.cpp=$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.s) $($(DIR5a371ca09d660bb6863a788a9b8e6034)C:%.c=$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.s)
+DEP:=$(DEP) $($(TMP)C:%.c=%.d) $($(TMP)CC:%.cc=%.d) $($(TMP)CPP:%.cpp=%.d)
+OBJ:=$(OBJ) $($(TMP)C:%.c=%.o) $($(TMP)CC:%.cc=%.o) $($(TMP)CPP:%.cpp=%.o)
+ASM:=$(ASM) $($(TMP)C:%.c=%.s) $($(TMP)CC:%.cc=%.s) $($(TMP)CPP:%.cpp=%.s)
 
-$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.o: $(DIR5a371ca09d660bb6863a788a9b8e6034)/%.c
-	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)CFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)INCS)
-	$(QUIET)echo "Compiling $(GREEN)$(notdir $<) $(NONE)..."
-$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.s: $(DIR5a371ca09d660bb6863a788a9b8e6034)/%.c
-	$(QUIET)$(CC) -o $@ $< $(ASMFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)CFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)INCS)
-	$(QUIET)echo "Assembly listing $(CYAN)$(notdir $<) $(NONE)..."
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
 
-$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.o: $(DIR5a371ca09d660bb6863a788a9b8e6034)/%.cpp
-	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)CXXFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)INCS)
-	$(QUIET)echo "Compiling $(GREEN)$(notdir $<) $(NONE)..."
-$(DIR5a371ca09d660bb6863a788a9b8e6034)/%.s: $(DIR5a371ca09d660bb6863a788a9b8e6034)/%.cpp
-	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)CXXFLAGS) $($(DIR5a371ca09d660bb6863a788a9b8e6034)INCS)
-	$(QUIET)echo "Assembly listing $(CYAN)$(notdir $<) $(NONE)..."
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
 
 # Linking pattern rule for this directory
-%.exe: $(DIR5a371ca09d660bb6863a788a9b8e6034)/%.o
-	$(QUIET)$(CXX) -o $@ $^ $($(DIR5a371ca09d660bb6863a788a9b8e6034)LIBS)
-	$(QUIET)echo "Linking $(MAGENTA)$(notdir $@) $(NONE)..."
+%.exe: $($(TMP)DIR)/%.o
+	$(QUIET)echo "make $(MAGENTA)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $^ $($($(TMP)DIR)LIBS)
+
+# Recursive inclusion
+-include $(wildcard $(TMP)/*/$(notdir $(lastword $(MAKEFILE_LIST))))

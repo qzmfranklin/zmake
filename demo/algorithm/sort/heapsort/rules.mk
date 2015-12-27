@@ -1,28 +1,46 @@
 #  THIS DIRECTORY
-DIRe44f356aa5b2bd12256f02ae0783e04d:=${ROOT}/algorithm/sort/heapsort
+TMP:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+$(TMP)DIR:=$(TMP)
+
 #  ALL C/C++ FILES IN THIS DIRECTORY (WITHOUT PATHNAME)
-${DIRe44f356aa5b2bd12256f02ae0783e04d}C:=
-${DIRe44f356aa5b2bd12256f02ae0783e04d}CPP:=test_heapsort.cpp heapsort.cpp 
+$($(TMP)DIR)C  :=$(wildcard $(TMP)/*.c)
+$($(TMP)DIR)CC :=$(wildcard $(TMP)/*.cc)
+$($(TMP)DIR)CPP:=$(wildcard $(TMP)/*.cpp)
 #  DIRECTORY-SPECIFIC COMPILING FLAGS AND INCLUDE DIRECTORIES
-${DIRe44f356aa5b2bd12256f02ae0783e04d}CFLAGS:=${CFLAGS}
-${DIRe44f356aa5b2bd12256f02ae0783e04d}CXXFLAGS:=${CXXFLAGS}
-${DIRe44f356aa5b2bd12256f02ae0783e04d}INCS:=${INCS}
-${DIRe44f356aa5b2bd12256f02ae0783e04d}LIBS:=${LIBS}
+$($(TMP)DIR)CFLAGS:=$(CFLAGS)
+$($(TMP)DIR)CXXFLAGS:=$(CXXFLAGS)
+$($(TMP)DIR)INCS:=$(INCS)
+$($(TMP)DIR)LIBS:=$(LIBS)
 
-DEP+=${${DIRe44f356aa5b2bd12256f02ae0783e04d}CPP:%.cpp=${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.d} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}C:%.c=${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.d} 
-OBJ+=${${DIRe44f356aa5b2bd12256f02ae0783e04d}CPP:%.cpp=${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.o} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}C:%.c=${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.o} 
-ASM+=${${DIRe44f356aa5b2bd12256f02ae0783e04d}CPP:%.cpp=${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.s} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}C:%.c=${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.s} 
+DEP:=$(DEP) $($(TMP)C:%.c=%.d) $($(TMP)CC:%.cc=%.d) $($(TMP)CPP:%.cpp=%.d)
+OBJ:=$(OBJ) $($(TMP)C:%.c=%.o) $($(TMP)CC:%.cc=%.o) $($(TMP)CPP:%.cpp=%.o)
+ASM:=$(ASM) $($(TMP)C:%.c=%.s) $($(TMP)CC:%.cc=%.s) $($(TMP)CPP:%.cpp=%.s)
 
-${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.o: ${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.c
-	${CC} -o $@ -c $< ${DEPFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}CFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}INCS}
-${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.s: ${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.c
-	${CC} -o $@ $< ${ASMFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}CFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.c
+	$(QUIET)$(CC) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CFLAGS) $($($(TMP)DIR)INCS)
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
 
-${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.o: ${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.cpp
-	${CXX} -o $@ -c $< ${DEPFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}CXXFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}INCS}
-${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.s: ${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.cpp
-	${CXX} -o $@ $< ${ASMFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}CXXFLAGS} ${${DIRe44f356aa5b2bd12256f02ae0783e04d}INCS}
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cc
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) ${$($(TMP)DIR)CXXFLAGS} ${$($(TMP)DIR)INCS}
+
+$($(TMP)DIR)/%.o: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(GREEN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ -c $< $(DEPFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
+$($(TMP)DIR)/%.s: $($(TMP)DIR)/%.cpp
+	$(QUIET)echo "make $(CYAN)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $< $(ASMFLAGS) $($($(TMP)DIR)CXXFLAGS) $($($(TMP)DIR)INCS)
 
 # Linking pattern rule for this directory
-%.exe: ${DIRe44f356aa5b2bd12256f02ae0783e04d}/%.o
-	${CXX} -o $@ $^ ${${DIRe44f356aa5b2bd12256f02ae0783e04d}LIBS}
+%.exe: $($(TMP)DIR)/%.o
+	$(QUIET)echo "make $(MAGENTA)$@ $(NONE)"
+	$(QUIET)$(CXX) -o $@ $^ $($($(TMP)DIR)LIBS)
+
+# Recursive inclusion
+-include $(wildcard $(TMP)/*/$(notdir $(lastword $(MAKEFILE_LIST))))

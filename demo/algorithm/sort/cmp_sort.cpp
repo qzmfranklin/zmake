@@ -65,11 +65,11 @@ public:
 	double nlogn() { return num*log(1.0*num)/log(2.0); }
 
 	double test(const int type, const int n) {
-		assert(status==1); 
+		assert(status==1);
 		TimeStat clk(n);
 		for (int j = 0; j < n; j++) {
 			for (int i = 0; i < num; i++)
-				data[i]=bk[i]; 
+				data[i]=bk[i];
 			switch ((enum SORT_TYPE)type) {
 			case HEAP2:
 				clk.tic();
@@ -118,13 +118,13 @@ public:
 		return clk.median();
 	}
 private:
-	static int compare (const void * a, const void * b) 
+	static int compare (const void * a, const void * b)
 	{ return ( *(int*)a - *(int*)b ); }
 };
 
 int main(int argc, char const* argv[])
 {
-	if (argc<1) {
+	if (argc < 2) {
 		fprintf(stderr,"Usage: cmp_sort.exe [num_trials]\n");
 		exit(1);
 	}
